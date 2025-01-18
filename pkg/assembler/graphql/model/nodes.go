@@ -136,6 +136,72 @@ type BuilderSpec struct {
 	URI *string `json:"uri,omitempty"`
 }
 
+// CVSS is a representation of the Common Vulnerability Scoring System (CVSS) v3.1
+// base score. It is a floating point number between 0.0 and 10.0.
+type Cvss struct {
+	// Base score of the vulnerability
+	VulnImpact float64 `json:"VulnImpact"`
+	// Version of the CVSS standard
+	Version float64 `json:"Version"`
+	// Vector string of the vulnerability
+	AttackString string `json:"AttackString"`
+}
+
+type CVSSInput struct {
+	VulnImpact   float64 `json:"VulnImpact"`
+	Version      float64 `json:"Version"`
+	AttackString string  `json:"AttackString"`
+}
+
+type CVSSSpec struct {
+	VulnImpact   *float64 `json:"VulnImpact,omitempty"`
+	Version      *float64 `json:"Version,omitempty"`
+	AttackString *string  `json:"AttackString,omitempty"`
+}
+
+// CWE is a representation of the Common Weakness Enumeration (CWE) identifier.
+// It is a string of the form "CWE-<number>".
+type Cwe struct {
+	// CWE identifier
+	ID string `json:"ID"`
+	// Abastraction of the CWE
+	Abstraction string `json:"Abstraction"`
+	// Description of the CWE
+	Name string `json:"Name"`
+	// Priority of the CWE
+	Priority float64 `json:"Priority"`
+	// Potential mitigations of the CWE
+	PotentialMitigations []*PotentialMitigations `json:"PotentialMitigations,omitempty"`
+	// Consequences of the CWE
+	Consequences []*Consequences `json:"Consequences,omitempty"`
+	// Demonstrative examples of the CWE
+	DemostrativeExamples []*DemostrativeExamples `json:"DemostrativeExamples,omitempty"`
+	// Detection methods of the CWE
+	DetectionMethods []*DetectionMethods `json:"DetectionMethods,omitempty"`
+}
+
+type CWEInput struct {
+	ID                   string                       `json:"ID"`
+	Abstraction          string                       `json:"Abstraction"`
+	Name                 string                       `json:"Name"`
+	Priority             float64                      `json:"Priority"`
+	PotentialMitigations []*PotentialMitigationsInput `json:"PotentialMitigations,omitempty"`
+	Consequences         []*ConsequencesInput         `json:"Consequences,omitempty"`
+	DemostrativeExamples []*DemostrativeExamplesInput `json:"DemostrativeExamples,omitempty"`
+	DetectionMethods     []*DetectionMethodsInput     `json:"DetectionMethods,omitempty"`
+}
+
+type CWEInputSpec struct {
+	ID                   *string                          `json:"ID,omitempty"`
+	Abstraction          *string                          `json:"Abstraction,omitempty"`
+	Name                 *string                          `json:"Name,omitempty"`
+	Priority             *float64                         `json:"Priority,omitempty"`
+	PotentialMitigations []*PotentialMitigationsInputSpec `json:"PotentialMitigations,omitempty"`
+	Consequences         []*ConsequencesInputSpec         `json:"Consequences,omitempty"`
+	DemostrativeExamples []*DemostrativeExamplesInputSpec `json:"DemostrativeExamples,omitempty"`
+	DetectionMethods     []*DetectionMethodsInputSpec     `json:"DetectionMethods,omitempty"`
+}
+
 // CertifyBad is an attestation that a package, source, or artifact is considered
 // bad.
 //
@@ -474,6 +540,12 @@ type CertifyVEXStatement struct {
 	Collector string `json:"collector"`
 	// Reference location of the document in the persistent blob store (if that is configured)
 	DocumentRef string `json:"documentRef"`
+	// Description of the vex statement
+	Description *string `json:"description,omitempty"`
+	// CVSS score of the vulnerability
+	Cvss *Cvss `json:"cvss,omitempty"`
+	// CWE identifier of the vulnerability
+	Cwe *Cwe `json:"cwe,omitempty"`
 }
 
 func (CertifyVEXStatement) IsNode() {}
@@ -496,6 +568,9 @@ type CertifyVEXStatementSpec struct {
 	Origin           *string                `json:"origin,omitempty"`
 	Collector        *string                `json:"collector,omitempty"`
 	DocumentRef      *string                `json:"documentRef,omitempty"`
+	Description      *string                `json:"description,omitempty"`
+	Cvss             *CVSSSpec              `json:"cvss,omitempty"`
+	Cwe              *CWEInputSpec          `json:"cwe,omitempty"`
 }
 
 // CertifyVuln is an attestation to attach vulnerability information to a package.
@@ -558,6 +633,64 @@ type CertifyVulnSpec struct {
 	Origin         *string            `json:"origin,omitempty"`
 	Collector      *string            `json:"collector,omitempty"`
 	DocumentRef    *string            `json:"documentRef,omitempty"`
+}
+
+type Consequences struct {
+	Scope      *string `json:"Scope,omitempty"`
+	Impact     *string `json:"Impact,omitempty"`
+	Notes      *string `json:"Notes,omitempty"`
+	Likelihood *string `json:"Likelihood,omitempty"`
+}
+
+type ConsequencesInput struct {
+	Scope      *string `json:"Scope,omitempty"`
+	Impact     *string `json:"Impact,omitempty"`
+	Notes      *string `json:"Notes,omitempty"`
+	Likelihood *string `json:"Likelihood,omitempty"`
+}
+
+type ConsequencesInputSpec struct {
+	Scope      *string `json:"Scope,omitempty"`
+	Impact     *string `json:"Impact,omitempty"`
+	Notes      *string `json:"Notes,omitempty"`
+	Likelihood *string `json:"Likelihood,omitempty"`
+}
+
+type DemostrativeExamples struct {
+	ID          *string `json:"id,omitempty"`
+	IntroText   *string `json:"IntroText,omitempty"`
+	ExampleCode *string `json:"ExampleCode,omitempty"`
+	BodyText    *string `json:"BodyText,omitempty"`
+}
+
+type DemostrativeExamplesInput struct {
+	IntroText   *string `json:"IntroText,omitempty"`
+	ExampleCode *string `json:"ExampleCode,omitempty"`
+	BodyText    *string `json:"BodyText,omitempty"`
+}
+
+type DemostrativeExamplesInputSpec struct {
+	IntroText   *string `json:"IntroText,omitempty"`
+	ExampleCode *string `json:"ExampleCode,omitempty"`
+	BodyText    *string `json:"BodyText,omitempty"`
+}
+
+type DetectionMethods struct {
+	Method        *string `json:"Method,omitempty"`
+	Description   *string `json:"Description,omitempty"`
+	Effectiveness *string `json:"Effectiveness,omitempty"`
+}
+
+type DetectionMethodsInput struct {
+	Method        *string `json:"Method,omitempty"`
+	Description   *string `json:"Description,omitempty"`
+	Effectiveness *string `json:"Effectiveness,omitempty"`
+}
+
+type DetectionMethodsInputSpec struct {
+	Method        *string `json:"Method,omitempty"`
+	Description   *string `json:"Description,omitempty"`
+	Effectiveness *string `json:"Effectiveness,omitempty"`
 }
 
 // FindSoftwareConnection returns the paginated results for FindSoftware.
@@ -1684,6 +1817,27 @@ type PointOfContactSpec struct {
 	DocumentRef   *string                      `json:"documentRef,omitempty"`
 }
 
+type PotentialMitigations struct {
+	Phase              *string `json:"Phase,omitempty"`
+	Description        *string `json:"Description,omitempty"`
+	Effectiveness      *string `json:"Effectiveness,omitempty"`
+	EffectivenessNotes *string `json:"EffectivenessNotes,omitempty"`
+}
+
+type PotentialMitigationsInput struct {
+	Phase              *string `json:"Phase,omitempty"`
+	Description        *string `json:"Description,omitempty"`
+	Effectiveness      *string `json:"Effectiveness,omitempty"`
+	EffectivenessNotes *string `json:"EffectivenessNotes,omitempty"`
+}
+
+type PotentialMitigationsInputSpec struct {
+	Phase              *string `json:"Phase,omitempty"`
+	Description        *string `json:"Description,omitempty"`
+	Effectiveness      *string `json:"Effectiveness,omitempty"`
+	EffectivenessNotes *string `json:"EffectivenessNotes,omitempty"`
+}
+
 type Query struct {
 }
 
@@ -2028,6 +2182,7 @@ type VexStatementInputSpec struct {
 	Origin           string           `json:"origin"`
 	Collector        string           `json:"collector"`
 	DocumentRef      string           `json:"documentRef"`
+	Description      *string          `json:"description,omitempty"`
 }
 
 // VulnEqual is an attestation to link two vulnerabilities together as being equal"
