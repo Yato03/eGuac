@@ -1,6 +1,6 @@
-## GUAC Use Cases
+## eGUAC Use Cases
 
-The following are some of the use cases that we've seen that GUAC can help solve
+The following are some of the use cases that we've seen that eGUAC can help solve
 towards. If you have any other use cases not covered here, please let us know.
 
 1. Organizations be able to share SBOM and software metadata for their software,
@@ -15,7 +15,7 @@ towards. If you have any other use cases not covered here, please let us know.
    patch plan towards remediation. (optionally with asset databases)
    1. New vulnerability surfaced, where did it come from? How to remediate (CVE
       Reported through existing tooling ( Snyk, Blackduck, or static analysis )
-      or GUAC)
+      or eGUAC)
    1. “Check engine light is on”. What now? Provide guidance to remediate
    1. Determine root cause of CVE showing up in scan
       - As an engineer, I want to understand exactly where a vulnerable
