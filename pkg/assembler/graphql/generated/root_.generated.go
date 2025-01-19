@@ -83,14 +83,14 @@ type ComplexityRoot struct {
 	}
 
 	CWE struct {
-		Abstraction          func(childComplexity int) int
+		BackgroundDetail     func(childComplexity int) int
 		Consequences         func(childComplexity int) int
 		DemostrativeExamples func(childComplexity int) int
+		Description          func(childComplexity int) int
 		DetectionMethods     func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		Name                 func(childComplexity int) int
 		PotentialMitigations func(childComplexity int) int
-		Priority             func(childComplexity int) int
 	}
 
 	CertifyBad struct {
@@ -187,6 +187,7 @@ type ComplexityRoot struct {
 		ID               func(childComplexity int) int
 		KnownSince       func(childComplexity int) int
 		Origin           func(childComplexity int) int
+		ReachableCode    func(childComplexity int) int
 		Statement        func(childComplexity int) int
 		Status           func(childComplexity int) int
 		StatusNotes      func(childComplexity int) int
@@ -220,17 +221,17 @@ type ComplexityRoot struct {
 		Scope      func(childComplexity int) int
 	}
 
-	DemostrativeExamples struct {
-		BodyText    func(childComplexity int) int
-		ExampleCode func(childComplexity int) int
-		ID          func(childComplexity int) int
-		IntroText   func(childComplexity int) int
-	}
-
 	DetectionMethods struct {
 		Description   func(childComplexity int) int
 		Effectiveness func(childComplexity int) int
+		ID            func(childComplexity int) int
 		Method        func(childComplexity int) int
+	}
+
+	Exploits struct {
+		Description func(childComplexity int) int
+		ID          func(childComplexity int) int
+		Payload     func(childComplexity int) int
 	}
 
 	FindSoftwareConnection struct {
@@ -637,6 +638,10 @@ type ComplexityRoot struct {
 		VulnerabilityMetadataList      func(childComplexity int, vulnerabilityMetadataSpec model.VulnerabilityMetadataSpec, after *string, first *int) int
 	}
 
+	ReachableCode struct {
+		PathToFile func(childComplexity int) int
+	}
+
 	SLSA struct {
 		BuildType     func(childComplexity int) int
 		BuiltBy       func(childComplexity int) int
@@ -949,12 +954,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CVSS.VulnImpact(childComplexity), true
 
-	case "CWE.Abstraction":
-		if e.complexity.CWE.Abstraction == nil {
+	case "CWE.BackgroundDetail":
+		if e.complexity.CWE.BackgroundDetail == nil {
 			break
 		}
 
-		return e.complexity.CWE.Abstraction(childComplexity), true
+		return e.complexity.CWE.BackgroundDetail(childComplexity), true
 
 	case "CWE.Consequences":
 		if e.complexity.CWE.Consequences == nil {
@@ -969,6 +974,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CWE.DemostrativeExamples(childComplexity), true
+
+	case "CWE.Description":
+		if e.complexity.CWE.Description == nil {
+			break
+		}
+
+		return e.complexity.CWE.Description(childComplexity), true
 
 	case "CWE.DetectionMethods":
 		if e.complexity.CWE.DetectionMethods == nil {
@@ -997,13 +1009,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CWE.PotentialMitigations(childComplexity), true
-
-	case "CWE.Priority":
-		if e.complexity.CWE.Priority == nil {
-			break
-		}
-
-		return e.complexity.CWE.Priority(childComplexity), true
 
 	case "CertifyBad.collector":
 		if e.complexity.CertifyBad.Collector == nil {
@@ -1404,6 +1409,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CertifyVEXStatement.Origin(childComplexity), true
 
+	case "CertifyVEXStatement.reachableCode":
+		if e.complexity.CertifyVEXStatement.ReachableCode == nil {
+			break
+		}
+
+		return e.complexity.CertifyVEXStatement.ReachableCode(childComplexity), true
+
 	case "CertifyVEXStatement.statement":
 		if e.complexity.CertifyVEXStatement.Statement == nil {
 			break
@@ -1537,34 +1549,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Consequences.Scope(childComplexity), true
 
-	case "DemostrativeExamples.BodyText":
-		if e.complexity.DemostrativeExamples.BodyText == nil {
-			break
-		}
-
-		return e.complexity.DemostrativeExamples.BodyText(childComplexity), true
-
-	case "DemostrativeExamples.ExampleCode":
-		if e.complexity.DemostrativeExamples.ExampleCode == nil {
-			break
-		}
-
-		return e.complexity.DemostrativeExamples.ExampleCode(childComplexity), true
-
-	case "DemostrativeExamples.id":
-		if e.complexity.DemostrativeExamples.ID == nil {
-			break
-		}
-
-		return e.complexity.DemostrativeExamples.ID(childComplexity), true
-
-	case "DemostrativeExamples.IntroText":
-		if e.complexity.DemostrativeExamples.IntroText == nil {
-			break
-		}
-
-		return e.complexity.DemostrativeExamples.IntroText(childComplexity), true
-
 	case "DetectionMethods.Description":
 		if e.complexity.DetectionMethods.Description == nil {
 			break
@@ -1579,12 +1563,40 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.DetectionMethods.Effectiveness(childComplexity), true
 
+	case "DetectionMethods.id":
+		if e.complexity.DetectionMethods.ID == nil {
+			break
+		}
+
+		return e.complexity.DetectionMethods.ID(childComplexity), true
+
 	case "DetectionMethods.Method":
 		if e.complexity.DetectionMethods.Method == nil {
 			break
 		}
 
 		return e.complexity.DetectionMethods.Method(childComplexity), true
+
+	case "Exploits.Description":
+		if e.complexity.Exploits.Description == nil {
+			break
+		}
+
+		return e.complexity.Exploits.Description(childComplexity), true
+
+	case "Exploits.id":
+		if e.complexity.Exploits.ID == nil {
+			break
+		}
+
+		return e.complexity.Exploits.ID(childComplexity), true
+
+	case "Exploits.Payload":
+		if e.complexity.Exploits.Payload == nil {
+			break
+		}
+
+		return e.complexity.Exploits.Payload(childComplexity), true
 
 	case "FindSoftwareConnection.edges":
 		if e.complexity.FindSoftwareConnection.Edges == nil {
@@ -3999,6 +4011,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.VulnerabilityMetadataList(childComplexity, args["vulnerabilityMetadataSpec"].(model.VulnerabilityMetadataSpec), args["after"].(*string), args["first"].(*int)), true
 
+	case "ReachableCode.PathToFile":
+		if e.complexity.ReachableCode.PathToFile == nil {
+			break
+		}
+
+		return e.complexity.ReachableCode.PathToFile(childComplexity), true
+
 	case "SLSA.buildType":
 		if e.complexity.SLSA.BuildType == nil {
 			break
@@ -4663,10 +4682,10 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputCertifyVulnSpec,
 		ec.unmarshalInputConsequencesInput,
 		ec.unmarshalInputConsequencesInputSpec,
-		ec.unmarshalInputDemostrativeExamplesInput,
-		ec.unmarshalInputDemostrativeExamplesInputSpec,
 		ec.unmarshalInputDetectionMethodsInput,
 		ec.unmarshalInputDetectionMethodsInputSpec,
+		ec.unmarshalInputExploitsInput,
+		ec.unmarshalInputExploitsInputSpec,
 		ec.unmarshalInputHasMetadataInputSpec,
 		ec.unmarshalInputHasMetadataSpec,
 		ec.unmarshalInputHasSBOMIncludesInputSpec,
@@ -4709,6 +4728,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputPointOfContactSpec,
 		ec.unmarshalInputPotentialMitigationsInput,
 		ec.unmarshalInputPotentialMitigationsInputSpec,
+		ec.unmarshalInputReachableCodeInput,
+		ec.unmarshalInputReachableCodeInputSpec,
 		ec.unmarshalInputSLSAInputSpec,
 		ec.unmarshalInputSLSAPredicateInputSpec,
 		ec.unmarshalInputSLSAPredicateSpec,
@@ -5729,22 +5750,22 @@ base score. It is a floating point number between 0.0 and 10.0.
 
 type CVSS {
   "Base score of the vulnerability"
-  VulnImpact: Float!
+  VulnImpact: Float
   "Version of the CVSS standard"
-  Version: Float!
+  Version: String
   "Vector string of the vulnerability"
-  AttackString: String!
+  AttackString: String
 }
 
 input CVSSInput {
-  VulnImpact: Float!
-  Version: Float!
-  AttackString: String!
+  VulnImpact: Float
+  Version: String
+  AttackString: String
 }
 
 input CVSSSpec {
   VulnImpact: Float
-  Version: Float
+  Version: String
   AttackString: String
 }
 
@@ -5757,42 +5778,40 @@ It is a string of the form "CWE-<number>".
 type CWE {
   "CWE identifier"
   ID: String!
-  "Abastraction of the CWE"
-  Abstraction: String!
+  "Description of the CWE"
+  Description: String!
   "Description of the CWE"
   Name: String!
-  "Priority of the CWE"
-  Priority: Float!
+  "Background of the CWE"
+  BackgroundDetail: String
   "Potential mitigations of the CWE"
-  PotentialMitigations: [PotentialMitigations!]
+  PotentialMitigations: [PotentialMitigations]
   "Consequences of the CWE"
-  Consequences: [Consequences!]
+  Consequences: [Consequences]
   "Demonstrative examples of the CWE"
-  DemostrativeExamples: [DemostrativeExamples!]
+  DemostrativeExamples: [String]
   "Detection methods of the CWE"
-  DetectionMethods: [DetectionMethods!]
+  DetectionMethods: [DetectionMethods]
 }
 
 input CWEInput {
   ID: String!
   Abstraction: String!
   Name: String!
-  Priority: Float!
-  PotentialMitigations: [PotentialMitigationsInput!]
-  Consequences: [ConsequencesInput!]
-  DemostrativeExamples: [DemostrativeExamplesInput!]
-  DetectionMethods: [DetectionMethodsInput!]
+  PotentialMitigations: [PotentialMitigationsInput]
+  Consequences: [ConsequencesInput]
+  DemostrativeExamples: [String]
+  DetectionMethods: [DetectionMethodsInput]
 }
 
 input CWEInputSpec {
   ID: String
   Abstraction: String
   Name: String
-  Priority: Float
-  PotentialMitigations: [PotentialMitigationsInputSpec!]
-  Consequences: [ConsequencesInputSpec!]
-  DemostrativeExamples: [DemostrativeExamplesInputSpec!]
-  DetectionMethods: [DetectionMethodsInputSpec!]
+  PotentialMitigations: [PotentialMitigationsInputSpec]
+  Consequences: [ConsequencesInputSpec]
+  DemostrativeExamples: [String]
+  DetectionMethods: [DetectionMethodsInputSpec]
 }
 
 type PotentialMitigations {
@@ -5837,38 +5856,22 @@ input ConsequencesInputSpec {
   Likelihood: String
 }
 
-type DemostrativeExamples {
-  id: ID
-  IntroText: String
-  ExampleCode: String
-  BodyText: String
-}
-
-input DemostrativeExamplesInput {
-  IntroText: String
-  ExampleCode: String
-  BodyText: String
-}
-
-input DemostrativeExamplesInputSpec {
-  IntroText: String
-  ExampleCode: String
-  BodyText: String
-}
-
 type DetectionMethods {
+  id: String
   Method: String
   Description: String
   Effectiveness: String
 }
 
 input DetectionMethodsInput {
+  id: String
   Method: String
   Description: String
   Effectiveness: String
 }
 
 input DetectionMethodsInputSpec {
+  id: String
   Method: String
   Description: String
   Effectiveness: String
@@ -5906,7 +5909,40 @@ type CertifyVEXStatement {
   cvss: CVSS
   "CWE identifier of the vulnerability"
   cwe: CWE
+  "Reachable code for the vulnerability"
+  reachableCode: [ReachableCode]
 }
+
+type ReachableCode {
+  PathToFile: String
+}
+
+input ReachableCodeInput {
+  PathToFile: String
+}
+
+input ReachableCodeInputSpec {
+  PathToFile: String
+}
+
+type Exploits {
+  id: String
+  Description: String
+  Payload: String
+}
+
+input ExploitsInput {
+  id: String
+  Description: String
+  Payload: String
+}
+
+input ExploitsInputSpec {
+  id: String
+  Description: String
+  Payload: String
+}
+
 
 """
 CertifyVEXStatementSpec allows filtering the list of VEX statements to
@@ -5931,7 +5967,9 @@ input CertifyVEXStatementSpec {
   description: String
   cvss: CVSSSpec
   cwe: CWEInputSpec
+  reachableCode: [ReachableCodeInputSpec]
 }
+
 
 "VexStatementInputSpec represents the input to ingest VEX statements."
 input VexStatementInputSpec {
@@ -5944,6 +5982,9 @@ input VexStatementInputSpec {
   collector: String!
   documentRef: String!
   description: String
+  cvss: CVSSInput
+  cwe: CWEInput
+  reachableCode: [ReachableCodeInputSpec]
 }
 
 """

@@ -76,22 +76,22 @@ base score. It is a floating point number between 0.0 and 10.0.
 
 type CVSS {
   "Base score of the vulnerability"
-  VulnImpact: Float!
+  VulnImpact: Float
   "Version of the CVSS standard"
-  Version: Float!
+  Version: String
   "Vector string of the vulnerability"
-  AttackString: String!
+  AttackString: String
 }
 
 input CVSSInput {
-  VulnImpact: Float!
-  Version: Float!
-  AttackString: String!
+  VulnImpact: Float
+  Version: String
+  AttackString: String
 }
 
 input CVSSSpec {
   VulnImpact: Float
-  Version: Float
+  Version: String
   AttackString: String
 }
 
@@ -104,42 +104,40 @@ It is a string of the form "CWE-<number>".
 type CWE {
   "CWE identifier"
   ID: String!
-  "Abastraction of the CWE"
-  Abstraction: String!
+  "Description of the CWE"
+  Description: String!
   "Description of the CWE"
   Name: String!
-  "Priority of the CWE"
-  Priority: Float!
+  "Background of the CWE"
+  BackgroundDetail: String
   "Potential mitigations of the CWE"
-  PotentialMitigations: [PotentialMitigations!]
+  PotentialMitigations: [PotentialMitigations]
   "Consequences of the CWE"
-  Consequences: [Consequences!]
+  Consequences: [Consequences]
   "Demonstrative examples of the CWE"
-  DemostrativeExamples: [DemostrativeExamples!]
+  DemostrativeExamples: [String]
   "Detection methods of the CWE"
-  DetectionMethods: [DetectionMethods!]
+  DetectionMethods: [DetectionMethods]
 }
 
 input CWEInput {
   ID: String!
   Abstraction: String!
   Name: String!
-  Priority: Float!
-  PotentialMitigations: [PotentialMitigationsInput!]
-  Consequences: [ConsequencesInput!]
-  DemostrativeExamples: [DemostrativeExamplesInput!]
-  DetectionMethods: [DetectionMethodsInput!]
+  PotentialMitigations: [PotentialMitigationsInput]
+  Consequences: [ConsequencesInput]
+  DemostrativeExamples: [String]
+  DetectionMethods: [DetectionMethodsInput]
 }
 
 input CWEInputSpec {
   ID: String
   Abstraction: String
   Name: String
-  Priority: Float
-  PotentialMitigations: [PotentialMitigationsInputSpec!]
-  Consequences: [ConsequencesInputSpec!]
-  DemostrativeExamples: [DemostrativeExamplesInputSpec!]
-  DetectionMethods: [DetectionMethodsInputSpec!]
+  PotentialMitigations: [PotentialMitigationsInputSpec]
+  Consequences: [ConsequencesInputSpec]
+  DemostrativeExamples: [String]
+  DetectionMethods: [DetectionMethodsInputSpec]
 }
 
 type PotentialMitigations {
@@ -184,38 +182,22 @@ input ConsequencesInputSpec {
   Likelihood: String
 }
 
-type DemostrativeExamples {
-  id: ID
-  IntroText: String
-  ExampleCode: String
-  BodyText: String
-}
-
-input DemostrativeExamplesInput {
-  IntroText: String
-  ExampleCode: String
-  BodyText: String
-}
-
-input DemostrativeExamplesInputSpec {
-  IntroText: String
-  ExampleCode: String
-  BodyText: String
-}
-
 type DetectionMethods {
+  id: String
   Method: String
   Description: String
   Effectiveness: String
 }
 
 input DetectionMethodsInput {
+  id: String
   Method: String
   Description: String
   Effectiveness: String
 }
 
 input DetectionMethodsInputSpec {
+  id: String
   Method: String
   Description: String
   Effectiveness: String
@@ -253,7 +235,40 @@ type CertifyVEXStatement {
   cvss: CVSS
   "CWE identifier of the vulnerability"
   cwe: CWE
+  "Reachable code for the vulnerability"
+  reachableCode: [ReachableCode]
 }
+
+type ReachableCode {
+  PathToFile: String
+}
+
+input ReachableCodeInput {
+  PathToFile: String
+}
+
+input ReachableCodeInputSpec {
+  PathToFile: String
+}
+
+type Exploits {
+  id: String
+  Description: String
+  Payload: String
+}
+
+input ExploitsInput {
+  id: String
+  Description: String
+  Payload: String
+}
+
+input ExploitsInputSpec {
+  id: String
+  Description: String
+  Payload: String
+}
+
 
 """
 CertifyVEXStatementSpec allows filtering the list of VEX statements to
@@ -278,7 +293,9 @@ input CertifyVEXStatementSpec {
   description: String
   cvss: CVSSSpec
   cwe: CWEInputSpec
+  reachableCode: [ReachableCodeInputSpec]
 }
+
 
 "VexStatementInputSpec represents the input to ingest VEX statements."
 input VexStatementInputSpec {
@@ -291,6 +308,9 @@ input VexStatementInputSpec {
   collector: String!
   documentRef: String!
   description: String
+  cvss: CVSSInput
+  cwe: CWEInput
+  reachableCode: [ReachableCodeInputSpec]
 }
 
 """
