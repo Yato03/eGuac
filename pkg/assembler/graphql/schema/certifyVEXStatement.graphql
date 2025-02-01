@@ -105,8 +105,8 @@ type CWE {
   "CWE identifier"
   ID: String!
   "Description of the CWE"
-  Description: String!
-  "Description of the CWE"
+  Abstraction: String!
+  "Name of the CWE"
   Name: String!
   "Background of the CWE"
   BackgroundDetail: String
@@ -124,6 +124,7 @@ input CWEInput {
   ID: String!
   Abstraction: String!
   Name: String!
+  BackgroundDetail: String
   PotentialMitigations: [PotentialMitigationsInput]
   Consequences: [ConsequencesInput]
   DemostrativeExamples: [String]
@@ -134,6 +135,7 @@ input CWEInputSpec {
   ID: String
   Abstraction: String
   Name: String
+  BackgroundDetail: String
   PotentialMitigations: [PotentialMitigationsInputSpec]
   Consequences: [ConsequencesInputSpec]
   DemostrativeExamples: [String]
@@ -162,22 +164,22 @@ input PotentialMitigationsInputSpec {
 }
 
 type Consequences {
-  Scope: String
-  Impact: String
+  Scope: [String]
+  Impact: [String]
   Notes: String
   Likelihood: String
 }
 
 input ConsequencesInput {
-  Scope: String
-  Impact: String
+  Scope: [String]
+  Impact: [String]
   Notes: String
   Likelihood: String
 }
 
 input ConsequencesInputSpec {
-  Scope: String
-  Impact: String
+  Scope: [String]
+  Impact: [String]
   Notes: String
   Likelihood: String
 }
@@ -234,9 +236,11 @@ type CertifyVEXStatement {
   "CVSS score of the vulnerability"
   cvss: CVSS
   "CWE identifier of the vulnerability"
-  cwe: CWE
+  cwe: [CWE]
   "Reachable code for the vulnerability"
   reachableCode: [ReachableCode]
+  "Exploits"
+  exploits: [Exploits]
 }
 
 type ReachableCode {
@@ -292,8 +296,9 @@ input CertifyVEXStatementSpec {
   documentRef: String
   description: String
   cvss: CVSSSpec
-  cwe: CWEInputSpec
+  cwe: [CWEInputSpec]
   reachableCode: [ReachableCodeInputSpec]
+  exploits: [ExploitsInputSpec]
 }
 
 
@@ -309,8 +314,9 @@ input VexStatementInputSpec {
   documentRef: String!
   description: String
   cvss: CVSSInput
-  cwe: CWEInput
+  cwe: [CWEInput]
   reachableCode: [ReachableCodeInputSpec]
+  exploits: [ExploitsInputSpec]
 }
 
 """

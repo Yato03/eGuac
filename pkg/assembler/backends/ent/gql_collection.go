@@ -1120,6 +1120,11 @@ func (cv *CertifyVexQuery) collectField(ctx context.Context, oneNode bool, opCtx
 				selectedFields = append(selectedFields, certifyvex.FieldDocumentRef)
 				fieldSeen[certifyvex.FieldDocumentRef] = struct{}{}
 			}
+		case "description":
+			if _, ok := fieldSeen[certifyvex.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, certifyvex.FieldDescription)
+				fieldSeen[certifyvex.FieldDescription] = struct{}{}
+			}
 		case "id":
 		case "__typename":
 		default:

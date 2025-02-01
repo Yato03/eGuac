@@ -109,6 +109,20 @@ func (cvc *CertifyVexCreate) SetDocumentRef(s string) *CertifyVexCreate {
 	return cvc
 }
 
+// SetDescription sets the "description" field.
+func (cvc *CertifyVexCreate) SetDescription(s string) *CertifyVexCreate {
+	cvc.mutation.SetDescription(s)
+	return cvc
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cvc *CertifyVexCreate) SetNillableDescription(s *string) *CertifyVexCreate {
+	if s != nil {
+		cvc.SetDescription(*s)
+	}
+	return cvc
+}
+
 // SetID sets the "id" field.
 func (cvc *CertifyVexCreate) SetID(u uuid.UUID) *CertifyVexCreate {
 	cvc.mutation.SetID(u)
@@ -278,6 +292,10 @@ func (cvc *CertifyVexCreate) createSpec() (*CertifyVex, *sqlgraph.CreateSpec) {
 	if value, ok := cvc.mutation.DocumentRef(); ok {
 		_spec.SetField(certifyvex.FieldDocumentRef, field.TypeString, value)
 		_node.DocumentRef = value
+	}
+	if value, ok := cvc.mutation.Description(); ok {
+		_spec.SetField(certifyvex.FieldDescription, field.TypeString, value)
+		_node.Description = &value
 	}
 	if nodes := cvc.mutation.PackageIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -526,6 +544,24 @@ func (u *CertifyVexUpsert) UpdateDocumentRef() *CertifyVexUpsert {
 	return u
 }
 
+// SetDescription sets the "description" field.
+func (u *CertifyVexUpsert) SetDescription(v string) *CertifyVexUpsert {
+	u.Set(certifyvex.FieldDescription, v)
+	return u
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *CertifyVexUpsert) UpdateDescription() *CertifyVexUpsert {
+	u.SetExcluded(certifyvex.FieldDescription)
+	return u
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *CertifyVexUpsert) ClearDescription() *CertifyVexUpsert {
+	u.SetNull(certifyvex.FieldDescription)
+	return u
+}
+
 // UpdateNewValues updates the mutable fields using the new values that were set on create except the ID field.
 // Using this option is equivalent to using:
 //
@@ -739,6 +775,27 @@ func (u *CertifyVexUpsertOne) SetDocumentRef(v string) *CertifyVexUpsertOne {
 func (u *CertifyVexUpsertOne) UpdateDocumentRef() *CertifyVexUpsertOne {
 	return u.Update(func(s *CertifyVexUpsert) {
 		s.UpdateDocumentRef()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *CertifyVexUpsertOne) SetDescription(v string) *CertifyVexUpsertOne {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *CertifyVexUpsertOne) UpdateDescription() *CertifyVexUpsertOne {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *CertifyVexUpsertOne) ClearDescription() *CertifyVexUpsertOne {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.ClearDescription()
 	})
 }
 
@@ -1122,6 +1179,27 @@ func (u *CertifyVexUpsertBulk) SetDocumentRef(v string) *CertifyVexUpsertBulk {
 func (u *CertifyVexUpsertBulk) UpdateDocumentRef() *CertifyVexUpsertBulk {
 	return u.Update(func(s *CertifyVexUpsert) {
 		s.UpdateDocumentRef()
+	})
+}
+
+// SetDescription sets the "description" field.
+func (u *CertifyVexUpsertBulk) SetDescription(v string) *CertifyVexUpsertBulk {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.SetDescription(v)
+	})
+}
+
+// UpdateDescription sets the "description" field to the value that was provided on create.
+func (u *CertifyVexUpsertBulk) UpdateDescription() *CertifyVexUpsertBulk {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.UpdateDescription()
+	})
+}
+
+// ClearDescription clears the value of the "description" field.
+func (u *CertifyVexUpsertBulk) ClearDescription() *CertifyVexUpsertBulk {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.ClearDescription()
 	})
 }
 

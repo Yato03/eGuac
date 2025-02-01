@@ -198,6 +198,26 @@ func (cvu *CertifyVexUpdate) SetNillableDocumentRef(s *string) *CertifyVexUpdate
 	return cvu
 }
 
+// SetDescription sets the "description" field.
+func (cvu *CertifyVexUpdate) SetDescription(s string) *CertifyVexUpdate {
+	cvu.mutation.SetDescription(s)
+	return cvu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cvu *CertifyVexUpdate) SetNillableDescription(s *string) *CertifyVexUpdate {
+	if s != nil {
+		cvu.SetDescription(*s)
+	}
+	return cvu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (cvu *CertifyVexUpdate) ClearDescription() *CertifyVexUpdate {
+	cvu.mutation.ClearDescription()
+	return cvu
+}
+
 // SetPackage sets the "package" edge to the PackageVersion entity.
 func (cvu *CertifyVexUpdate) SetPackage(p *PackageVersion) *CertifyVexUpdate {
 	return cvu.SetPackageID(p.ID)
@@ -306,6 +326,12 @@ func (cvu *CertifyVexUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cvu.mutation.DocumentRef(); ok {
 		_spec.SetField(certifyvex.FieldDocumentRef, field.TypeString, value)
+	}
+	if value, ok := cvu.mutation.Description(); ok {
+		_spec.SetField(certifyvex.FieldDescription, field.TypeString, value)
+	}
+	if cvu.mutation.DescriptionCleared() {
+		_spec.ClearField(certifyvex.FieldDescription, field.TypeString)
 	}
 	if cvu.mutation.PackageCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -580,6 +606,26 @@ func (cvuo *CertifyVexUpdateOne) SetNillableDocumentRef(s *string) *CertifyVexUp
 	return cvuo
 }
 
+// SetDescription sets the "description" field.
+func (cvuo *CertifyVexUpdateOne) SetDescription(s string) *CertifyVexUpdateOne {
+	cvuo.mutation.SetDescription(s)
+	return cvuo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cvuo *CertifyVexUpdateOne) SetNillableDescription(s *string) *CertifyVexUpdateOne {
+	if s != nil {
+		cvuo.SetDescription(*s)
+	}
+	return cvuo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (cvuo *CertifyVexUpdateOne) ClearDescription() *CertifyVexUpdateOne {
+	cvuo.mutation.ClearDescription()
+	return cvuo
+}
+
 // SetPackage sets the "package" edge to the PackageVersion entity.
 func (cvuo *CertifyVexUpdateOne) SetPackage(p *PackageVersion) *CertifyVexUpdateOne {
 	return cvuo.SetPackageID(p.ID)
@@ -718,6 +764,12 @@ func (cvuo *CertifyVexUpdateOne) sqlSave(ctx context.Context) (_node *CertifyVex
 	}
 	if value, ok := cvuo.mutation.DocumentRef(); ok {
 		_spec.SetField(certifyvex.FieldDocumentRef, field.TypeString, value)
+	}
+	if value, ok := cvuo.mutation.Description(); ok {
+		_spec.SetField(certifyvex.FieldDescription, field.TypeString, value)
+	}
+	if cvuo.mutation.DescriptionCleared() {
+		_spec.ClearField(certifyvex.FieldDescription, field.TypeString)
 	}
 	if cvuo.mutation.PackageCleared() {
 		edge := &sqlgraph.EdgeSpec{

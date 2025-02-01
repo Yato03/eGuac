@@ -165,8 +165,8 @@ type Cwe struct {
 	// CWE identifier
 	ID string `json:"ID"`
 	// Description of the CWE
-	Description string `json:"Description"`
-	// Description of the CWE
+	Abstraction string `json:"Abstraction"`
+	// Name of the CWE
 	Name string `json:"Name"`
 	// Background of the CWE
 	BackgroundDetail *string `json:"BackgroundDetail,omitempty"`
@@ -184,6 +184,7 @@ type CWEInput struct {
 	ID                   string                       `json:"ID"`
 	Abstraction          string                       `json:"Abstraction"`
 	Name                 string                       `json:"Name"`
+	BackgroundDetail     *string                      `json:"BackgroundDetail,omitempty"`
 	PotentialMitigations []*PotentialMitigationsInput `json:"PotentialMitigations,omitempty"`
 	Consequences         []*ConsequencesInput         `json:"Consequences,omitempty"`
 	DemostrativeExamples []*string                    `json:"DemostrativeExamples,omitempty"`
@@ -194,6 +195,7 @@ type CWEInputSpec struct {
 	ID                   *string                          `json:"ID,omitempty"`
 	Abstraction          *string                          `json:"Abstraction,omitempty"`
 	Name                 *string                          `json:"Name,omitempty"`
+	BackgroundDetail     *string                          `json:"BackgroundDetail,omitempty"`
 	PotentialMitigations []*PotentialMitigationsInputSpec `json:"PotentialMitigations,omitempty"`
 	Consequences         []*ConsequencesInputSpec         `json:"Consequences,omitempty"`
 	DemostrativeExamples []*string                        `json:"DemostrativeExamples,omitempty"`
@@ -543,9 +545,11 @@ type CertifyVEXStatement struct {
 	// CVSS score of the vulnerability
 	Cvss *Cvss `json:"cvss,omitempty"`
 	// CWE identifier of the vulnerability
-	Cwe *Cwe `json:"cwe,omitempty"`
+	Cwe []*Cwe `json:"cwe,omitempty"`
 	// Reachable code for the vulnerability
 	ReachableCode []*ReachableCode `json:"reachableCode,omitempty"`
+	// Exploits
+	Exploits []*Exploits `json:"exploits,omitempty"`
 }
 
 func (CertifyVEXStatement) IsNode() {}
@@ -570,8 +574,9 @@ type CertifyVEXStatementSpec struct {
 	DocumentRef      *string                   `json:"documentRef,omitempty"`
 	Description      *string                   `json:"description,omitempty"`
 	Cvss             *CVSSSpec                 `json:"cvss,omitempty"`
-	Cwe              *CWEInputSpec             `json:"cwe,omitempty"`
+	Cwe              []*CWEInputSpec           `json:"cwe,omitempty"`
 	ReachableCode    []*ReachableCodeInputSpec `json:"reachableCode,omitempty"`
+	Exploits         []*ExploitsInputSpec      `json:"exploits,omitempty"`
 }
 
 // CertifyVuln is an attestation to attach vulnerability information to a package.
@@ -637,24 +642,24 @@ type CertifyVulnSpec struct {
 }
 
 type Consequences struct {
-	Scope      *string `json:"Scope,omitempty"`
-	Impact     *string `json:"Impact,omitempty"`
-	Notes      *string `json:"Notes,omitempty"`
-	Likelihood *string `json:"Likelihood,omitempty"`
+	Scope      []*string `json:"Scope,omitempty"`
+	Impact     []*string `json:"Impact,omitempty"`
+	Notes      *string   `json:"Notes,omitempty"`
+	Likelihood *string   `json:"Likelihood,omitempty"`
 }
 
 type ConsequencesInput struct {
-	Scope      *string `json:"Scope,omitempty"`
-	Impact     *string `json:"Impact,omitempty"`
-	Notes      *string `json:"Notes,omitempty"`
-	Likelihood *string `json:"Likelihood,omitempty"`
+	Scope      []*string `json:"Scope,omitempty"`
+	Impact     []*string `json:"Impact,omitempty"`
+	Notes      *string   `json:"Notes,omitempty"`
+	Likelihood *string   `json:"Likelihood,omitempty"`
 }
 
 type ConsequencesInputSpec struct {
-	Scope      *string `json:"Scope,omitempty"`
-	Impact     *string `json:"Impact,omitempty"`
-	Notes      *string `json:"Notes,omitempty"`
-	Likelihood *string `json:"Likelihood,omitempty"`
+	Scope      []*string `json:"Scope,omitempty"`
+	Impact     []*string `json:"Impact,omitempty"`
+	Notes      *string   `json:"Notes,omitempty"`
+	Likelihood *string   `json:"Likelihood,omitempty"`
 }
 
 type DetectionMethods struct {
@@ -2199,8 +2204,9 @@ type VexStatementInputSpec struct {
 	DocumentRef      string                    `json:"documentRef"`
 	Description      *string                   `json:"description,omitempty"`
 	Cvss             *CVSSInput                `json:"cvss,omitempty"`
-	Cwe              *CWEInput                 `json:"cwe,omitempty"`
+	Cwe              []*CWEInput               `json:"cwe,omitempty"`
 	ReachableCode    []*ReachableCodeInputSpec `json:"reachableCode,omitempty"`
+	Exploits         []*ExploitsInputSpec      `json:"exploits,omitempty"`
 }
 
 // VulnEqual is an attestation to link two vulnerabilities together as being equal"

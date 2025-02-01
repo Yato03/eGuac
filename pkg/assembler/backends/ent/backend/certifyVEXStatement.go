@@ -200,7 +200,8 @@ func generateVexCreate(ctx context.Context, tx *ent.Tx, pkg *model.IDorPkgInput,
 		SetJustification(vexStatement.VexJustification.String()).
 		SetOrigin(vexStatement.Origin).
 		SetCollector(vexStatement.Collector).
-		SetDocumentRef(vexStatement.DocumentRef)
+		SetDocumentRef(vexStatement.DocumentRef).
+		SetDescription(*vexStatement.Description)
 
 	return certifyVexCreate, nil
 }
@@ -359,6 +360,7 @@ func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStateme
 		Origin:           record.Origin,
 		Collector:        record.Collector,
 		DocumentRef:      record.DocumentRef,
+		Description:      record.Description,
 	}
 
 }
@@ -372,6 +374,7 @@ func certifyVexPredicate(filter model.CertifyVEXStatementSpec) predicate.Certify
 		optionalPredicate(filter.Collector, certifyvex.CollectorEQ),
 		optionalPredicate(filter.Origin, certifyvex.OriginEQ),
 		optionalPredicate(filter.DocumentRef, certifyvex.DocumentRefEQ),
+		optionalPredicate(filter.Description, certifyvex.DescriptionEQ),
 	}
 	if filter.Status != nil {
 		status := filter.Status.String()

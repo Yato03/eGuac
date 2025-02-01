@@ -314,6 +314,7 @@ var (
 		{Name: "origin", Type: field.TypeString},
 		{Name: "collector", Type: field.TypeString},
 		{Name: "document_ref", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString, Nullable: true},
 		{Name: "package_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "artifact_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "vulnerability_id", Type: field.TypeUUID},
@@ -326,19 +327,19 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "certify_vexes_package_versions_package",
-				Columns:    []*schema.Column{CertifyVexesColumns[9]},
+				Columns:    []*schema.Column{CertifyVexesColumns[10]},
 				RefColumns: []*schema.Column{PackageVersionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "certify_vexes_artifacts_artifact",
-				Columns:    []*schema.Column{CertifyVexesColumns[10]},
+				Columns:    []*schema.Column{CertifyVexesColumns[11]},
 				RefColumns: []*schema.Column{ArtifactsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "certify_vexes_vulnerability_ids_vulnerability",
-				Columns:    []*schema.Column{CertifyVexesColumns[11]},
+				Columns:    []*schema.Column{CertifyVexesColumns[12]},
 				RefColumns: []*schema.Column{VulnerabilityIdsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -347,7 +348,7 @@ var (
 			{
 				Name:    "vex_artifact_id",
 				Unique:  true,
-				Columns: []*schema.Column{CertifyVexesColumns[1], CertifyVexesColumns[5], CertifyVexesColumns[2], CertifyVexesColumns[6], CertifyVexesColumns[7], CertifyVexesColumns[8], CertifyVexesColumns[11], CertifyVexesColumns[9]},
+				Columns: []*schema.Column{CertifyVexesColumns[1], CertifyVexesColumns[5], CertifyVexesColumns[2], CertifyVexesColumns[6], CertifyVexesColumns[7], CertifyVexesColumns[8], CertifyVexesColumns[12], CertifyVexesColumns[10]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "artifact_id IS NULL",
 				},
@@ -355,7 +356,7 @@ var (
 			{
 				Name:    "vex_package_id",
 				Unique:  true,
-				Columns: []*schema.Column{CertifyVexesColumns[1], CertifyVexesColumns[5], CertifyVexesColumns[2], CertifyVexesColumns[6], CertifyVexesColumns[7], CertifyVexesColumns[8], CertifyVexesColumns[11], CertifyVexesColumns[10]},
+				Columns: []*schema.Column{CertifyVexesColumns[1], CertifyVexesColumns[5], CertifyVexesColumns[2], CertifyVexesColumns[6], CertifyVexesColumns[7], CertifyVexesColumns[8], CertifyVexesColumns[12], CertifyVexesColumns[11]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "package_id IS NULL",
 				},

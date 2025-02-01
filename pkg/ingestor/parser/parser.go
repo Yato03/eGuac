@@ -30,6 +30,7 @@ import (
 	"github.com/guacsec/guac/pkg/ingestor/parser/deps_dev"
 	"github.com/guacsec/guac/pkg/ingestor/parser/dsse"
 	"github.com/guacsec/guac/pkg/ingestor/parser/eol"
+	"github.com/guacsec/guac/pkg/ingestor/parser/extended_vex"
 	"github.com/guacsec/guac/pkg/ingestor/parser/opaque"
 	"github.com/guacsec/guac/pkg/ingestor/parser/open_vex"
 	"github.com/guacsec/guac/pkg/ingestor/parser/scorecard"
@@ -51,6 +52,7 @@ func init() {
 	_ = RegisterDocumentParser(open_vex.NewOpenVEXParser, processor.DocumentOpenVEX)
 	_ = RegisterDocumentParser(eol.NewEOLCertificationParser, processor.DocumentITE6EOL)
 	_ = RegisterDocumentParser(opaque.NewOpaqueParser, processor.DocumentOpaque)
+	_ = RegisterDocumentParser(extended_vex.NewExtendedVEXParser, processor.DocumentExtendedVEX)
 }
 
 var (

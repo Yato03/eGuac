@@ -3088,6 +3088,84 @@ var (
 		},
 	}
 
+	// Extended Vex
+	//go:embed exampledata/extended_vex.json
+	ExtendedVexExample []byte
+
+	//go:embed exampledata/extended_vex_small.json
+	ExtendedVexSmallExample []byte
+
+	ExtendedVexIngest = []assembler.VexIngest{
+		{
+			Pkg: &generated.PkgInputSpec{
+				Name:      "fast-xml-parser",
+				Version:   strP("4.1.2"),
+				Namespace: strP(""),
+				Type:      "npm",
+				Subpath:   strP(""),
+			},
+			Artifact: nil,
+			Vulnerability: &generated.VulnerabilityInputSpec{
+				Type:            "cve",
+				VulnerabilityID: "cve-2023-34104",
+			},
+			VexData: &generated.VexStatementInputSpec{
+				KnownSince:       parseRfc3339("2024-09-06T13:11:08.068416Z"),
+				Origin:           "https://github.com/GermanMT/VexGen",
+				VexJustification: generated.VexJustificationVulnerableCodeNotPresent,
+				Status:           generated.VexStatusAffected,
+				Statement:        "a short description",
+				Description:      "a short description",
+				Cvss: &generated.CVSSInput{
+					VulnImpact:   ptrfrom.Float64(3.6),
+					Version:      ptrfrom.String("3.1"),
+					AttackString: ptrfrom.String("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"),
+				},
+				Cwe: []*generated.CWEInput{
+					{
+						ID:   "https://cwe.mitre.org/data/definitions/1333.html",
+						Name: "1333",
+						PotentialMitigations: []*generated.PotentialMitigationsInput{
+							{
+								Phase:              ptrfrom.String("Architecture and Design"),
+								Description:        ptrfrom.String("Use regular expressions that do not support backtracking, e.g. by removing nested quantifiers."),
+								Effectiveness:      ptrfrom.String("High"),
+								EffectivenessNotes: ptrfrom.String("This is one of the few effective solutions when using user-provided regular expressions."),
+							},
+						},
+						Consequences: []*generated.ConsequencesInput{
+							{
+								Scope:      []*string{ptrfrom.String("Availability")},
+								Impact:     []*string{ptrfrom.String("DoS: Resource Consumption (CPU)")},
+								Notes:      ptrfrom.String(""),
+								Likelihood: ptrfrom.String("High"),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ExtendedVexCertifyVulnIngest = []assembler.CertifyVulnIngest{
+		{
+			Pkg: &generated.PkgInputSpec{
+				Name:      "fast-xml-parser",
+				Version:   strP("4.1.2"),
+				Namespace: strP(""),
+				Type:      "npm",
+				Subpath:   strP(""),
+			},
+			Vulnerability: &generated.VulnerabilityInputSpec{
+				Type:            "cve",
+				VulnerabilityID: "cve-2023-34104",
+			},
+			VulnData: &generated.ScanMetadataInput{
+				TimeScanned: parseRfc3339("2024-09-06T13:11:08.068416Z"),
+			},
+		},
+	}
+
 	// CSAF
 	//go:embed exampledata/rhsa-csaf.json
 	CsafExampleRedHat []byte

@@ -18,10 +18,11 @@ package keyvalue
 import (
 	"context"
 	"errors"
-	"github.com/guacsec/guac/internal/testing/ptrfrom"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/guacsec/guac/internal/testing/ptrfrom"
 
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
@@ -44,6 +45,27 @@ type vexLink struct {
 	Origin          string
 	Collector       string
 	DocumentRef     string
+	Description     string
+	Exploits        []model.Exploits
+	Cvss            model.CVSSInput
+	Cwe             []model.CWEInput
+}
+
+func convertCweInputs(inputs []*model.CWEInput) []model.CWEInput {
+	var result []model.CWEInput
+	for _, input := range inputs {
+		result = append(result, *input)
+	}
+	return result
+}
+
+func convertCweInputsToPointers(inputs []model.CWEInput) []*model.CWEInput {
+	var result []*model.CWEInput
+	for _, input := range inputs {
+		inputCopy := input
+		result = append(result, &inputCopy)
+	}
+	return result
 }
 
 func (n *vexLink) ID() string { return n.ThisID }
@@ -61,6 +83,8 @@ func (n *vexLink) Key() string {
 		n.Origin,
 		n.Collector,
 		n.DocumentRef,
+		n.Description,
+		*n.Cvss.AttackString,
 	}, ":"))
 }
 
@@ -124,6 +148,10 @@ func (c *demoClient) ingestVEXStatement(ctx context.Context, subject model.Packa
 		Origin:        vexStatement.Origin,
 		Collector:     vexStatement.Collector,
 		DocumentRef:   vexStatement.DocumentRef,
+		Description:   *vexStatement.Description,
+		Cvss:          *vexStatement.Cvss,
+		Cwe:           convertCweInputs(vexStatement.Cwe),
+		Exploits:      convertExploitsInputs(vexStatement.Exploits),
 	}
 
 	lock(&c.m, readOnly)
@@ -190,6 +218,27 @@ func (c *demoClient) ingestVEXStatement(ctx context.Context, subject model.Packa
 	}
 
 	return in.ThisID, nil
+}
+
+func convertExploitsInputs(exploitsInputSpec []*model.ExploitsInputSpec) []model.Exploits {
+	var result []model.Exploits
+	for _, input := range exploitsInputSpec {
+		result = append(result, model.Exploits{
+			ID:          input.ID,
+			Description: input.Description,
+			Payload:     input.Payload,
+		})
+	}
+	return result
+}
+
+func convertExploitToPointers(inputs []model.Exploits) []*model.Exploits {
+	var result []*model.Exploits
+	for _, input := range inputs {
+		inputCopy := input
+		result = append(result, &inputCopy)
+	}
+	return result
 }
 
 // Query CertifyVex
@@ -509,6 +558,20 @@ func (c *demoClient) vexIfMatch(ctx context.Context, filter *model.CertifyVEXSta
 	if filter != nil && noMatch(filter.DocumentRef, link.DocumentRef) {
 		return nil, nil
 	}
+	if filter != nil && noMatch(filter.Description, link.Description) {
+		return nil, nil
+	}
+	if filter != nil && filter.Cvss != nil {
+		if filter.Cvss.AttackString != nil && *filter.Cvss.AttackString != *link.Cvss.AttackString {
+			return nil, nil
+		}
+		if filter.Cvss.VulnImpact != nil && *filter.Cvss.VulnImpact != *link.Cvss.VulnImpact {
+			return nil, nil
+		}
+		if filter.Cvss.Version != nil && *filter.Cvss.Version != *link.Cvss.Version {
+			return nil, nil
+		}
+	}
 
 	foundCertifyVex, err := c.buildCertifyVEXStatement(ctx, link, filter, false)
 	if err != nil {
@@ -518,7 +581,6 @@ func (c *demoClient) vexIfMatch(ctx context.Context, filter *model.CertifyVEXSta
 		return nil, nil
 	}
 	return foundCertifyVex, nil
-
 }
 
 func (c *demoClient) buildCertifyVEXStatement(ctx context.Context, link *vexLink, filter *model.CertifyVEXStatementSpec, ingestOrIDProvided bool) (*model.CertifyVEXStatement, error) {
@@ -599,7 +661,6 @@ func (c *demoClient) buildCertifyVEXStatement(ctx context.Context, link *vexLink
 	return &model.CertifyVEXStatement{
 		ID:               link.ThisID,
 		Subject:          subj,
-		Vulnerability:    vuln,
 		Status:           link.Status,
 		VexJustification: link.Justification,
 		Statement:        link.Statement,
@@ -608,5 +669,73 @@ func (c *demoClient) buildCertifyVEXStatement(ctx context.Context, link *vexLink
 		Origin:           link.Origin,
 		Collector:        link.Collector,
 		DocumentRef:      link.DocumentRef,
+		Description:      &link.Description,
+		Exploits:         convertExploitToPointers(link.Exploits),
+		Cvss:             (*model.Cvss)(&link.Cvss),
+		Cwe:              convertCwesInputToCwes(convertCweInputsToPointers(link.Cwe)),
 	}, nil
+}
+
+func convertCwesInputToCwes(input []*model.CWEInput) []*model.Cwe {
+	var out []*model.Cwe
+	for _, cwe := range input {
+		cweValue := convertCweInputToCwe(*cwe)
+		out = append(out, &cweValue)
+	}
+	return out
+}
+
+func convertCweInputToCwe(input model.CWEInput) model.Cwe {
+	var potentialMitigations []*model.PotentialMitigations
+
+	if input.PotentialMitigations != nil {
+		for _, mitigation := range input.PotentialMitigations {
+			p := model.PotentialMitigations{
+				Phase:              mitigation.Phase,
+				Description:        mitigation.Description,
+				Effectiveness:      mitigation.Effectiveness,
+				EffectivenessNotes: mitigation.EffectivenessNotes,
+			}
+			potentialMitigations = append(potentialMitigations, &p)
+		}
+	}
+
+	var consequences []*model.Consequences
+
+	if input.Consequences != nil {
+		for _, consequence := range input.Consequences {
+			c := model.Consequences{
+				Scope:      consequence.Scope,
+				Impact:     consequence.Impact,
+				Notes:      consequence.Notes,
+				Likelihood: consequence.Likelihood,
+			}
+			consequences = append(consequences, &c)
+		}
+	}
+
+	var detectionMethods []*model.DetectionMethods
+
+	if input.DetectionMethods != nil {
+		for _, detectionMethod := range input.DetectionMethods {
+			d := model.DetectionMethods{
+				ID:            detectionMethod.ID,
+				Method:        detectionMethod.Method,
+				Description:   detectionMethod.Description,
+				Effectiveness: detectionMethod.Effectiveness,
+			}
+			detectionMethods = append(detectionMethods, &d)
+		}
+	}
+
+	return model.Cwe{
+		ID:                   input.ID,
+		Abstraction:          input.Abstraction,
+		Name:                 input.Name,
+		BackgroundDetail:     input.BackgroundDetail,
+		PotentialMitigations: potentialMitigations,
+		Consequences:         consequences,
+		DemostrativeExamples: input.DemostrativeExamples,
+		DetectionMethods:     detectionMethods,
+	}
 }

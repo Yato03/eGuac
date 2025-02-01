@@ -43,6 +43,8 @@ type CertifyVex struct {
 	Collector string `json:"collector,omitempty"`
 	// DocumentRef holds the value of the "document_ref" field.
 	DocumentRef string `json:"document_ref,omitempty"`
+	// Description holds the value of the "description" field.
+	Description *string `json:"description,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CertifyVexQuery when eager-loading is set.
 	Edges        CertifyVexEdges `json:"edges"`
@@ -104,7 +106,7 @@ func (*CertifyVex) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case certifyvex.FieldPackageID, certifyvex.FieldArtifactID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
-		case certifyvex.FieldStatus, certifyvex.FieldStatement, certifyvex.FieldStatusNotes, certifyvex.FieldJustification, certifyvex.FieldOrigin, certifyvex.FieldCollector, certifyvex.FieldDocumentRef:
+		case certifyvex.FieldStatus, certifyvex.FieldStatement, certifyvex.FieldStatusNotes, certifyvex.FieldJustification, certifyvex.FieldOrigin, certifyvex.FieldCollector, certifyvex.FieldDocumentRef, certifyvex.FieldDescription:
 			values[i] = new(sql.NullString)
 		case certifyvex.FieldKnownSince:
 			values[i] = new(sql.NullTime)
@@ -199,6 +201,13 @@ func (cv *CertifyVex) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				cv.DocumentRef = value.String
 			}
+		case certifyvex.FieldDescription:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field description", values[i])
+			} else if value.Valid {
+				cv.Description = new(string)
+				*cv.Description = value.String
+			}
 		default:
 			cv.selectValues.Set(columns[i], values[i])
 		}
@@ -286,6 +295,11 @@ func (cv *CertifyVex) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("document_ref=")
 	builder.WriteString(cv.DocumentRef)
+	builder.WriteString(", ")
+	if v := cv.Description; v != nil {
+		builder.WriteString("description=")
+		builder.WriteString(*v)
+	}
 	builder.WriteByte(')')
 	return builder.String()
 }

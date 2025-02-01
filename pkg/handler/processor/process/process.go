@@ -37,6 +37,7 @@ import (
 	"github.com/guacsec/guac/pkg/handler/processor/cyclonedx"
 	"github.com/guacsec/guac/pkg/handler/processor/deps_dev"
 	"github.com/guacsec/guac/pkg/handler/processor/dsse"
+	"github.com/guacsec/guac/pkg/handler/processor/extended_vex"
 	"github.com/guacsec/guac/pkg/handler/processor/guesser"
 	"github.com/guacsec/guac/pkg/handler/processor/ite6"
 	"github.com/guacsec/guac/pkg/handler/processor/jsonlines"
@@ -68,6 +69,7 @@ func init() {
 	_ = RegisterDocumentProcessor(&cyclonedx.CycloneDXProcessor{}, processor.DocumentCycloneDX)
 	_ = RegisterDocumentProcessor(&deps_dev.DepsDev{}, processor.DocumentDepsDev)
 	_ = RegisterDocumentProcessor(&jsonlines.JsonLinesProcessor{}, processor.DocumentOpaque)
+	_ = RegisterDocumentProcessor(&extended_vex.ExtendedVEXProcessor{}, processor.DocumentExtendedVEX)
 }
 
 func RegisterDocumentProcessor(p processor.DocumentProcessor, d processor.DocumentType) error {

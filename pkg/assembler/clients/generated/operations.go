@@ -7387,6 +7387,110 @@ type BuildersResponse struct {
 // GetBuilders returns BuildersResponse.Builders, and is useful for accessing the field via an interface.
 func (v *BuildersResponse) GetBuilders() []BuildersBuildersBuilder { return v.Builders }
 
+type CVSSInput struct {
+	VulnImpact   *float64 `json:"VulnImpact"`
+	Version      *string  `json:"Version"`
+	AttackString *string  `json:"AttackString"`
+}
+
+// GetVulnImpact returns CVSSInput.VulnImpact, and is useful for accessing the field via an interface.
+func (v *CVSSInput) GetVulnImpact() *float64 { return v.VulnImpact }
+
+// GetVersion returns CVSSInput.Version, and is useful for accessing the field via an interface.
+func (v *CVSSInput) GetVersion() *string { return v.Version }
+
+// GetAttackString returns CVSSInput.AttackString, and is useful for accessing the field via an interface.
+func (v *CVSSInput) GetAttackString() *string { return v.AttackString }
+
+type CVSSSpec struct {
+	VulnImpact   *float64 `json:"VulnImpact"`
+	Version      *string  `json:"Version"`
+	AttackString *string  `json:"AttackString"`
+}
+
+// GetVulnImpact returns CVSSSpec.VulnImpact, and is useful for accessing the field via an interface.
+func (v *CVSSSpec) GetVulnImpact() *float64 { return v.VulnImpact }
+
+// GetVersion returns CVSSSpec.Version, and is useful for accessing the field via an interface.
+func (v *CVSSSpec) GetVersion() *string { return v.Version }
+
+// GetAttackString returns CVSSSpec.AttackString, and is useful for accessing the field via an interface.
+func (v *CVSSSpec) GetAttackString() *string { return v.AttackString }
+
+type CWEInput struct {
+	ID                   string                       `json:"ID"`
+	Abstraction          string                       `json:"Abstraction"`
+	Name                 string                       `json:"Name"`
+	BackgroundDetail     *string                      `json:"BackgroundDetail"`
+	PotentialMitigations []*PotentialMitigationsInput `json:"PotentialMitigations"`
+	Consequences         []*ConsequencesInput         `json:"Consequences"`
+	DemostrativeExamples []*string                    `json:"DemostrativeExamples"`
+	DetectionMethods     []*DetectionMethodsInput     `json:"DetectionMethods"`
+}
+
+// GetID returns CWEInput.ID, and is useful for accessing the field via an interface.
+func (v *CWEInput) GetID() string { return v.ID }
+
+// GetAbstraction returns CWEInput.Abstraction, and is useful for accessing the field via an interface.
+func (v *CWEInput) GetAbstraction() string { return v.Abstraction }
+
+// GetName returns CWEInput.Name, and is useful for accessing the field via an interface.
+func (v *CWEInput) GetName() string { return v.Name }
+
+// GetBackgroundDetail returns CWEInput.BackgroundDetail, and is useful for accessing the field via an interface.
+func (v *CWEInput) GetBackgroundDetail() *string { return v.BackgroundDetail }
+
+// GetPotentialMitigations returns CWEInput.PotentialMitigations, and is useful for accessing the field via an interface.
+func (v *CWEInput) GetPotentialMitigations() []*PotentialMitigationsInput {
+	return v.PotentialMitigations
+}
+
+// GetConsequences returns CWEInput.Consequences, and is useful for accessing the field via an interface.
+func (v *CWEInput) GetConsequences() []*ConsequencesInput { return v.Consequences }
+
+// GetDemostrativeExamples returns CWEInput.DemostrativeExamples, and is useful for accessing the field via an interface.
+func (v *CWEInput) GetDemostrativeExamples() []*string { return v.DemostrativeExamples }
+
+// GetDetectionMethods returns CWEInput.DetectionMethods, and is useful for accessing the field via an interface.
+func (v *CWEInput) GetDetectionMethods() []*DetectionMethodsInput { return v.DetectionMethods }
+
+type CWEInputSpec struct {
+	ID                   *string                          `json:"ID"`
+	Abstraction          *string                          `json:"Abstraction"`
+	Name                 *string                          `json:"Name"`
+	BackgroundDetail     *string                          `json:"BackgroundDetail"`
+	PotentialMitigations []*PotentialMitigationsInputSpec `json:"PotentialMitigations"`
+	Consequences         []*ConsequencesInputSpec         `json:"Consequences"`
+	DemostrativeExamples []*string                        `json:"DemostrativeExamples"`
+	DetectionMethods     []*DetectionMethodsInputSpec     `json:"DetectionMethods"`
+}
+
+// GetID returns CWEInputSpec.ID, and is useful for accessing the field via an interface.
+func (v *CWEInputSpec) GetID() *string { return v.ID }
+
+// GetAbstraction returns CWEInputSpec.Abstraction, and is useful for accessing the field via an interface.
+func (v *CWEInputSpec) GetAbstraction() *string { return v.Abstraction }
+
+// GetName returns CWEInputSpec.Name, and is useful for accessing the field via an interface.
+func (v *CWEInputSpec) GetName() *string { return v.Name }
+
+// GetBackgroundDetail returns CWEInputSpec.BackgroundDetail, and is useful for accessing the field via an interface.
+func (v *CWEInputSpec) GetBackgroundDetail() *string { return v.BackgroundDetail }
+
+// GetPotentialMitigations returns CWEInputSpec.PotentialMitigations, and is useful for accessing the field via an interface.
+func (v *CWEInputSpec) GetPotentialMitigations() []*PotentialMitigationsInputSpec {
+	return v.PotentialMitigations
+}
+
+// GetConsequences returns CWEInputSpec.Consequences, and is useful for accessing the field via an interface.
+func (v *CWEInputSpec) GetConsequences() []*ConsequencesInputSpec { return v.Consequences }
+
+// GetDemostrativeExamples returns CWEInputSpec.DemostrativeExamples, and is useful for accessing the field via an interface.
+func (v *CWEInputSpec) GetDemostrativeExamples() []*string { return v.DemostrativeExamples }
+
+// GetDetectionMethods returns CWEInputSpec.DetectionMethods, and is useful for accessing the field via an interface.
+func (v *CWEInputSpec) GetDetectionMethods() []*DetectionMethodsInputSpec { return v.DetectionMethods }
+
 // CertifyBadCertifyBad includes the requested fields of the GraphQL type CertifyBad.
 // The GraphQL type's documentation follows.
 //
@@ -8751,17 +8855,22 @@ func (v *CertifyScorecardSpec) GetDocumentRef() *string { return v.DocumentRef }
 //
 // Note that setting noVuln vulnerability type is invalid for VEX statements!
 type CertifyVEXStatementSpec struct {
-	Id               *string                `json:"id"`
-	Subject          *PackageOrArtifactSpec `json:"subject"`
-	Vulnerability    *VulnerabilitySpec     `json:"vulnerability"`
-	Status           *VexStatus             `json:"status"`
-	VexJustification *VexJustification      `json:"vexJustification"`
-	Statement        *string                `json:"statement"`
-	StatusNotes      *string                `json:"statusNotes"`
-	KnownSince       *time.Time             `json:"knownSince"`
-	Origin           *string                `json:"origin"`
-	Collector        *string                `json:"collector"`
-	DocumentRef      *string                `json:"documentRef"`
+	Id               *string                   `json:"id"`
+	Subject          *PackageOrArtifactSpec    `json:"subject"`
+	Vulnerability    *VulnerabilitySpec        `json:"vulnerability"`
+	Status           *VexStatus                `json:"status"`
+	VexJustification *VexJustification         `json:"vexJustification"`
+	Statement        *string                   `json:"statement"`
+	StatusNotes      *string                   `json:"statusNotes"`
+	KnownSince       *time.Time                `json:"knownSince"`
+	Origin           *string                   `json:"origin"`
+	Collector        *string                   `json:"collector"`
+	DocumentRef      *string                   `json:"documentRef"`
+	Description      *string                   `json:"description"`
+	Cvss             *CVSSSpec                 `json:"cvss"`
+	Cwe              []*CWEInputSpec           `json:"cwe"`
+	ReachableCode    []*ReachableCodeInputSpec `json:"reachableCode"`
+	Exploits         []*ExploitsInputSpec      `json:"exploits"`
 }
 
 // GetId returns CertifyVEXStatementSpec.Id, and is useful for accessing the field via an interface.
@@ -8796,6 +8905,23 @@ func (v *CertifyVEXStatementSpec) GetCollector() *string { return v.Collector }
 
 // GetDocumentRef returns CertifyVEXStatementSpec.DocumentRef, and is useful for accessing the field via an interface.
 func (v *CertifyVEXStatementSpec) GetDocumentRef() *string { return v.DocumentRef }
+
+// GetDescription returns CertifyVEXStatementSpec.Description, and is useful for accessing the field via an interface.
+func (v *CertifyVEXStatementSpec) GetDescription() *string { return v.Description }
+
+// GetCvss returns CertifyVEXStatementSpec.Cvss, and is useful for accessing the field via an interface.
+func (v *CertifyVEXStatementSpec) GetCvss() *CVSSSpec { return v.Cvss }
+
+// GetCwe returns CertifyVEXStatementSpec.Cwe, and is useful for accessing the field via an interface.
+func (v *CertifyVEXStatementSpec) GetCwe() []*CWEInputSpec { return v.Cwe }
+
+// GetReachableCode returns CertifyVEXStatementSpec.ReachableCode, and is useful for accessing the field via an interface.
+func (v *CertifyVEXStatementSpec) GetReachableCode() []*ReachableCodeInputSpec {
+	return v.ReachableCode
+}
+
+// GetExploits returns CertifyVEXStatementSpec.Exploits, and is useful for accessing the field via an interface.
+func (v *CertifyVEXStatementSpec) GetExploits() []*ExploitsInputSpec { return v.Exploits }
 
 // CertifyVulnCertifyVuln includes the requested fields of the GraphQL type CertifyVuln.
 // The GraphQL type's documentation follows.
@@ -9136,6 +9262,44 @@ const (
 	ComparatorLessEqual    Comparator = "LESS_EQUAL"
 )
 
+type ConsequencesInput struct {
+	Scope      []*string `json:"Scope"`
+	Impact     []*string `json:"Impact"`
+	Notes      *string   `json:"Notes"`
+	Likelihood *string   `json:"Likelihood"`
+}
+
+// GetScope returns ConsequencesInput.Scope, and is useful for accessing the field via an interface.
+func (v *ConsequencesInput) GetScope() []*string { return v.Scope }
+
+// GetImpact returns ConsequencesInput.Impact, and is useful for accessing the field via an interface.
+func (v *ConsequencesInput) GetImpact() []*string { return v.Impact }
+
+// GetNotes returns ConsequencesInput.Notes, and is useful for accessing the field via an interface.
+func (v *ConsequencesInput) GetNotes() *string { return v.Notes }
+
+// GetLikelihood returns ConsequencesInput.Likelihood, and is useful for accessing the field via an interface.
+func (v *ConsequencesInput) GetLikelihood() *string { return v.Likelihood }
+
+type ConsequencesInputSpec struct {
+	Scope      []*string `json:"Scope"`
+	Impact     []*string `json:"Impact"`
+	Notes      *string   `json:"Notes"`
+	Likelihood *string   `json:"Likelihood"`
+}
+
+// GetScope returns ConsequencesInputSpec.Scope, and is useful for accessing the field via an interface.
+func (v *ConsequencesInputSpec) GetScope() []*string { return v.Scope }
+
+// GetImpact returns ConsequencesInputSpec.Impact, and is useful for accessing the field via an interface.
+func (v *ConsequencesInputSpec) GetImpact() []*string { return v.Impact }
+
+// GetNotes returns ConsequencesInputSpec.Notes, and is useful for accessing the field via an interface.
+func (v *ConsequencesInputSpec) GetNotes() *string { return v.Notes }
+
+// GetLikelihood returns ConsequencesInputSpec.Likelihood, and is useful for accessing the field via an interface.
+func (v *ConsequencesInputSpec) GetLikelihood() *string { return v.Likelihood }
+
 // DeleteResponse is returned by Delete on success.
 type DeleteResponse struct {
 	// Delete node with ID and all associated relationships.
@@ -9472,6 +9636,44 @@ const (
 	DependencyTypeUnknown DependencyType = "UNKNOWN"
 )
 
+type DetectionMethodsInput struct {
+	Id            *string `json:"id"`
+	Method        *string `json:"Method"`
+	Description   *string `json:"Description"`
+	Effectiveness *string `json:"Effectiveness"`
+}
+
+// GetId returns DetectionMethodsInput.Id, and is useful for accessing the field via an interface.
+func (v *DetectionMethodsInput) GetId() *string { return v.Id }
+
+// GetMethod returns DetectionMethodsInput.Method, and is useful for accessing the field via an interface.
+func (v *DetectionMethodsInput) GetMethod() *string { return v.Method }
+
+// GetDescription returns DetectionMethodsInput.Description, and is useful for accessing the field via an interface.
+func (v *DetectionMethodsInput) GetDescription() *string { return v.Description }
+
+// GetEffectiveness returns DetectionMethodsInput.Effectiveness, and is useful for accessing the field via an interface.
+func (v *DetectionMethodsInput) GetEffectiveness() *string { return v.Effectiveness }
+
+type DetectionMethodsInputSpec struct {
+	Id            *string `json:"id"`
+	Method        *string `json:"Method"`
+	Description   *string `json:"Description"`
+	Effectiveness *string `json:"Effectiveness"`
+}
+
+// GetId returns DetectionMethodsInputSpec.Id, and is useful for accessing the field via an interface.
+func (v *DetectionMethodsInputSpec) GetId() *string { return v.Id }
+
+// GetMethod returns DetectionMethodsInputSpec.Method, and is useful for accessing the field via an interface.
+func (v *DetectionMethodsInputSpec) GetMethod() *string { return v.Method }
+
+// GetDescription returns DetectionMethodsInputSpec.Description, and is useful for accessing the field via an interface.
+func (v *DetectionMethodsInputSpec) GetDescription() *string { return v.Description }
+
+// GetEffectiveness returns DetectionMethodsInputSpec.Effectiveness, and is useful for accessing the field via an interface.
+func (v *DetectionMethodsInputSpec) GetEffectiveness() *string { return v.Effectiveness }
+
 // Edge allows filtering path/neighbors output to only contain a subset of all
 // possible GUAC links.
 //
@@ -9573,6 +9775,21 @@ const (
 	EdgeVulnEqualVulnerability           Edge = "VULN_EQUAL_VULNERABILITY"
 	EdgeVulnMetadataVulnerability        Edge = "VULN_METADATA_VULNERABILITY"
 )
+
+type ExploitsInputSpec struct {
+	Id          *string `json:"id"`
+	Description *string `json:"Description"`
+	Payload     *string `json:"Payload"`
+}
+
+// GetId returns ExploitsInputSpec.Id, and is useful for accessing the field via an interface.
+func (v *ExploitsInputSpec) GetId() *string { return v.Id }
+
+// GetDescription returns ExploitsInputSpec.Description, and is useful for accessing the field via an interface.
+func (v *ExploitsInputSpec) GetDescription() *string { return v.Description }
+
+// GetPayload returns ExploitsInputSpec.Payload, and is useful for accessing the field via an interface.
+func (v *ExploitsInputSpec) GetPayload() *string { return v.Payload }
 
 // FindPackagesThatNeedScanningResponse is returned by FindPackagesThatNeedScanning on success.
 type FindPackagesThatNeedScanningResponse struct {
@@ -27275,6 +27492,44 @@ func (v *PointOfContactsResponse) GetPointOfContact() []PointOfContactsPointOfCo
 	return v.PointOfContact
 }
 
+type PotentialMitigationsInput struct {
+	Phase              *string `json:"Phase"`
+	Description        *string `json:"Description"`
+	Effectiveness      *string `json:"Effectiveness"`
+	EffectivenessNotes *string `json:"EffectivenessNotes"`
+}
+
+// GetPhase returns PotentialMitigationsInput.Phase, and is useful for accessing the field via an interface.
+func (v *PotentialMitigationsInput) GetPhase() *string { return v.Phase }
+
+// GetDescription returns PotentialMitigationsInput.Description, and is useful for accessing the field via an interface.
+func (v *PotentialMitigationsInput) GetDescription() *string { return v.Description }
+
+// GetEffectiveness returns PotentialMitigationsInput.Effectiveness, and is useful for accessing the field via an interface.
+func (v *PotentialMitigationsInput) GetEffectiveness() *string { return v.Effectiveness }
+
+// GetEffectivenessNotes returns PotentialMitigationsInput.EffectivenessNotes, and is useful for accessing the field via an interface.
+func (v *PotentialMitigationsInput) GetEffectivenessNotes() *string { return v.EffectivenessNotes }
+
+type PotentialMitigationsInputSpec struct {
+	Phase              *string `json:"Phase"`
+	Description        *string `json:"Description"`
+	Effectiveness      *string `json:"Effectiveness"`
+	EffectivenessNotes *string `json:"EffectivenessNotes"`
+}
+
+// GetPhase returns PotentialMitigationsInputSpec.Phase, and is useful for accessing the field via an interface.
+func (v *PotentialMitigationsInputSpec) GetPhase() *string { return v.Phase }
+
+// GetDescription returns PotentialMitigationsInputSpec.Description, and is useful for accessing the field via an interface.
+func (v *PotentialMitigationsInputSpec) GetDescription() *string { return v.Description }
+
+// GetEffectiveness returns PotentialMitigationsInputSpec.Effectiveness, and is useful for accessing the field via an interface.
+func (v *PotentialMitigationsInputSpec) GetEffectiveness() *string { return v.Effectiveness }
+
+// GetEffectivenessNotes returns PotentialMitigationsInputSpec.EffectivenessNotes, and is useful for accessing the field via an interface.
+func (v *PotentialMitigationsInputSpec) GetEffectivenessNotes() *string { return v.EffectivenessNotes }
+
 // QueryPackagesListForScanQueryPackagesListForScanPackageConnection includes the requested fields of the GraphQL type PackageConnection.
 // The GraphQL type's documentation follows.
 //
@@ -27474,6 +27729,13 @@ const (
 	// indirect dependency
 	QueryTypeEol QueryType = "EOL"
 )
+
+type ReachableCodeInputSpec struct {
+	PathToFile *string `json:"PathToFile"`
+}
+
+// GetPathToFile returns ReachableCodeInputSpec.PathToFile, and is useful for accessing the field via an interface.
+func (v *ReachableCodeInputSpec) GetPathToFile() *string { return v.PathToFile }
 
 // SLSAInputSpec is the same as SLSA but for mutation input.
 type SLSAInputSpec struct {
@@ -28615,14 +28877,19 @@ const (
 
 // VexStatementInputSpec represents the input to ingest VEX statements.
 type VexStatementInputSpec struct {
-	Status           VexStatus        `json:"status"`
-	VexJustification VexJustification `json:"vexJustification"`
-	Statement        string           `json:"statement"`
-	StatusNotes      string           `json:"statusNotes"`
-	KnownSince       time.Time        `json:"knownSince"`
-	Origin           string           `json:"origin"`
-	Collector        string           `json:"collector"`
-	DocumentRef      string           `json:"documentRef"`
+	Status           VexStatus                 `json:"status"`
+	VexJustification VexJustification          `json:"vexJustification"`
+	Statement        string                    `json:"statement"`
+	StatusNotes      string                    `json:"statusNotes"`
+	KnownSince       time.Time                 `json:"knownSince"`
+	Origin           string                    `json:"origin"`
+	Collector        string                    `json:"collector"`
+	DocumentRef      string                    `json:"documentRef"`
+	Description      *string                   `json:"description"`
+	Cvss             *CVSSInput                `json:"cvss"`
+	Cwe              []*CWEInput               `json:"cwe"`
+	ReachableCode    []*ReachableCodeInputSpec `json:"reachableCode"`
+	Exploits         []*ExploitsInputSpec      `json:"exploits"`
 }
 
 // GetStatus returns VexStatementInputSpec.Status, and is useful for accessing the field via an interface.
@@ -28648,6 +28915,21 @@ func (v *VexStatementInputSpec) GetCollector() string { return v.Collector }
 
 // GetDocumentRef returns VexStatementInputSpec.DocumentRef, and is useful for accessing the field via an interface.
 func (v *VexStatementInputSpec) GetDocumentRef() string { return v.DocumentRef }
+
+// GetDescription returns VexStatementInputSpec.Description, and is useful for accessing the field via an interface.
+func (v *VexStatementInputSpec) GetDescription() *string { return v.Description }
+
+// GetCvss returns VexStatementInputSpec.Cvss, and is useful for accessing the field via an interface.
+func (v *VexStatementInputSpec) GetCvss() *CVSSInput { return v.Cvss }
+
+// GetCwe returns VexStatementInputSpec.Cwe, and is useful for accessing the field via an interface.
+func (v *VexStatementInputSpec) GetCwe() []*CWEInput { return v.Cwe }
+
+// GetReachableCode returns VexStatementInputSpec.ReachableCode, and is useful for accessing the field via an interface.
+func (v *VexStatementInputSpec) GetReachableCode() []*ReachableCodeInputSpec { return v.ReachableCode }
+
+// GetExploits returns VexStatementInputSpec.Exploits, and is useful for accessing the field via an interface.
+func (v *VexStatementInputSpec) GetExploits() []*ExploitsInputSpec { return v.Exploits }
 
 // Records the status of a VEX statement subject.
 type VexStatus string

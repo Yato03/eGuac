@@ -83,10 +83,10 @@ type ComplexityRoot struct {
 	}
 
 	CWE struct {
+		Abstraction          func(childComplexity int) int
 		BackgroundDetail     func(childComplexity int) int
 		Consequences         func(childComplexity int) int
 		DemostrativeExamples func(childComplexity int) int
-		Description          func(childComplexity int) int
 		DetectionMethods     func(childComplexity int) int
 		ID                   func(childComplexity int) int
 		Name                 func(childComplexity int) int
@@ -184,6 +184,7 @@ type ComplexityRoot struct {
 		Cwe              func(childComplexity int) int
 		Description      func(childComplexity int) int
 		DocumentRef      func(childComplexity int) int
+		Exploits         func(childComplexity int) int
 		ID               func(childComplexity int) int
 		KnownSince       func(childComplexity int) int
 		Origin           func(childComplexity int) int
@@ -954,6 +955,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CVSS.VulnImpact(childComplexity), true
 
+	case "CWE.Abstraction":
+		if e.complexity.CWE.Abstraction == nil {
+			break
+		}
+
+		return e.complexity.CWE.Abstraction(childComplexity), true
+
 	case "CWE.BackgroundDetail":
 		if e.complexity.CWE.BackgroundDetail == nil {
 			break
@@ -974,13 +982,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CWE.DemostrativeExamples(childComplexity), true
-
-	case "CWE.Description":
-		if e.complexity.CWE.Description == nil {
-			break
-		}
-
-		return e.complexity.CWE.Description(childComplexity), true
 
 	case "CWE.DetectionMethods":
 		if e.complexity.CWE.DetectionMethods == nil {
@@ -1387,6 +1388,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CertifyVEXStatement.DocumentRef(childComplexity), true
+
+	case "CertifyVEXStatement.exploits":
+		if e.complexity.CertifyVEXStatement.Exploits == nil {
+			break
+		}
+
+		return e.complexity.CertifyVEXStatement.Exploits(childComplexity), true
 
 	case "CertifyVEXStatement.id":
 		if e.complexity.CertifyVEXStatement.ID == nil {
@@ -5779,8 +5787,8 @@ type CWE {
   "CWE identifier"
   ID: String!
   "Description of the CWE"
-  Description: String!
-  "Description of the CWE"
+  Abstraction: String!
+  "Name of the CWE"
   Name: String!
   "Background of the CWE"
   BackgroundDetail: String
@@ -5798,6 +5806,7 @@ input CWEInput {
   ID: String!
   Abstraction: String!
   Name: String!
+  BackgroundDetail: String
   PotentialMitigations: [PotentialMitigationsInput]
   Consequences: [ConsequencesInput]
   DemostrativeExamples: [String]
@@ -5808,6 +5817,7 @@ input CWEInputSpec {
   ID: String
   Abstraction: String
   Name: String
+  BackgroundDetail: String
   PotentialMitigations: [PotentialMitigationsInputSpec]
   Consequences: [ConsequencesInputSpec]
   DemostrativeExamples: [String]
@@ -5836,22 +5846,22 @@ input PotentialMitigationsInputSpec {
 }
 
 type Consequences {
-  Scope: String
-  Impact: String
+  Scope: [String]
+  Impact: [String]
   Notes: String
   Likelihood: String
 }
 
 input ConsequencesInput {
-  Scope: String
-  Impact: String
+  Scope: [String]
+  Impact: [String]
   Notes: String
   Likelihood: String
 }
 
 input ConsequencesInputSpec {
-  Scope: String
-  Impact: String
+  Scope: [String]
+  Impact: [String]
   Notes: String
   Likelihood: String
 }
@@ -5908,9 +5918,11 @@ type CertifyVEXStatement {
   "CVSS score of the vulnerability"
   cvss: CVSS
   "CWE identifier of the vulnerability"
-  cwe: CWE
+  cwe: [CWE]
   "Reachable code for the vulnerability"
   reachableCode: [ReachableCode]
+  "Exploits"
+  exploits: [Exploits]
 }
 
 type ReachableCode {
@@ -5966,8 +5978,9 @@ input CertifyVEXStatementSpec {
   documentRef: String
   description: String
   cvss: CVSSSpec
-  cwe: CWEInputSpec
+  cwe: [CWEInputSpec]
   reachableCode: [ReachableCodeInputSpec]
+  exploits: [ExploitsInputSpec]
 }
 
 
@@ -5983,8 +5996,9 @@ input VexStatementInputSpec {
   documentRef: String!
   description: String
   cvss: CVSSInput
-  cwe: CWEInput
+  cwe: [CWEInput]
   reachableCode: [ReachableCodeInputSpec]
+  exploits: [ExploitsInputSpec]
 }
 
 """

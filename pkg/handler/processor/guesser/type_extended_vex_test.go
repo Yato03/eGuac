@@ -22,7 +22,7 @@ import (
 	"github.com/guacsec/guac/pkg/handler/processor"
 )
 
-func Test_openVexTypeGuesser_GuessDocumentType(t *testing.T) {
+func Test_extendedVexTypeGuesser_GuessDocumentType(t *testing.T) {
 	type args struct {
 		blob   []byte
 		format processor.FormatType
@@ -33,7 +33,7 @@ func Test_openVexTypeGuesser_GuessDocumentType(t *testing.T) {
 		want processor.DocumentType
 	}{
 		{
-			name: "invalid openvex Document",
+			name: "invalid Extended vex Document",
 			args: args{
 				blob: []byte(`{
 					"abc": "def"
@@ -43,25 +43,25 @@ func Test_openVexTypeGuesser_GuessDocumentType(t *testing.T) {
 			want: processor.DocumentUnknown,
 		},
 		{
-			name: "valid openvex Document",
+			name: "normal vex document",
 			args: args{
-				blob:   testdata.NotAffectedOpenVEXExample,
-				format: processor.FormatJSON,
-			},
-			want: processor.DocumentOpenVEX,
-		},
-		{
-			name: "extended vex Document",
-			args: args{
-				blob:   testdata.ExtendedVexExample,
+				blob:   testdata.AffectedOpenVex,
 				format: processor.FormatJSON,
 			},
 			want: processor.DocumentUnknown,
 		},
+		{
+			name: "valid Extended vex Document",
+			args: args{
+				blob:   testdata.ExtendedVexExample,
+				format: processor.FormatJSON,
+			},
+			want: processor.DocumentExtendedVEX,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			op := &openVexTypeGuesser{}
+			op := &eVexTypeGuesser{}
 			if got := op.GuessDocumentType(tt.args.blob, tt.args.format); got != tt.want {
 				t.Errorf("GuessDocumentType() = %v, want %v", got, tt.want)
 			}

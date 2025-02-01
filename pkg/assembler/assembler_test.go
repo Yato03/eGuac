@@ -562,6 +562,8 @@ func TestIngestPredicates(t *testing.T) {
 						KnownSince:       tm,
 						Origin:           "Demo ingestion",
 						Collector:        "Demo ingestion",
+						Description:      ptrfrom.String("this package is not vulnerable to this GHSA"),
+						Cvss:             &generated.CVSSInput{VulnImpact: ptrfrom.Float64(2.0), Version: ptrfrom.String("1.0"), AttackString: ptrfrom.String("AttackString")},
 					},
 				},
 				{
@@ -579,6 +581,7 @@ func TestIngestPredicates(t *testing.T) {
 						KnownSince:       tm,
 						Origin:           "Demo ingestion",
 						Collector:        "Demo ingestion",
+						Description:      ptrfrom.String("this artifact is under investigation for this CVE"),
 					},
 				},
 				{

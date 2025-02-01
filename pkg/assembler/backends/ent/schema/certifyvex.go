@@ -47,6 +47,7 @@ func (CertifyVex) Fields() []ent.Field {
 		field.String("origin"),
 		field.String("collector"),
 		field.String("document_ref"),
+		field.String("description").Optional().Nillable(),
 	}
 }
 

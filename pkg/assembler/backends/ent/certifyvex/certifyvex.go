@@ -35,6 +35,8 @@ const (
 	FieldCollector = "collector"
 	// FieldDocumentRef holds the string denoting the document_ref field in the database.
 	FieldDocumentRef = "document_ref"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
 	// EdgePackage holds the string denoting the package edge name in mutations.
 	EdgePackage = "package"
 	// EdgeArtifact holds the string denoting the artifact edge name in mutations.
@@ -80,6 +82,7 @@ var Columns = []string{
 	FieldOrigin,
 	FieldCollector,
 	FieldDocumentRef,
+	FieldDescription,
 }
 
 // ValidColumn reports if the column name is valid (part of the table columns).
@@ -158,6 +161,11 @@ func ByCollector(opts ...sql.OrderTermOption) OrderOption {
 // ByDocumentRef orders the results by the document_ref field.
 func ByDocumentRef(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDocumentRef, opts...).ToFunc()
+}
+
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
 }
 
 // ByPackageField orders the results by package field.

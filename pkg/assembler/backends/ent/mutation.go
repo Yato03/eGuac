@@ -6591,6 +6591,7 @@ type CertifyVexMutation struct {
 	origin               *string
 	collector            *string
 	document_ref         *string
+	description          *string
 	clearedFields        map[string]struct{}
 	_package             *uuid.UUID
 	cleared_package      bool
@@ -7129,6 +7130,55 @@ func (m *CertifyVexMutation) ResetDocumentRef() {
 	m.document_ref = nil
 }
 
+// SetDescription sets the "description" field.
+func (m *CertifyVexMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *CertifyVexMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the CertifyVex entity.
+// If the CertifyVex object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertifyVexMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *CertifyVexMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[certifyvex.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *CertifyVexMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[certifyvex.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *CertifyVexMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, certifyvex.FieldDescription)
+}
+
 // ClearPackage clears the "package" edge to the PackageVersion entity.
 func (m *CertifyVexMutation) ClearPackage() {
 	m.cleared_package = true
@@ -7244,7 +7294,7 @@ func (m *CertifyVexMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CertifyVexMutation) Fields() []string {
-	fields := make([]string, 0, 11)
+	fields := make([]string, 0, 12)
 	if m._package != nil {
 		fields = append(fields, certifyvex.FieldPackageID)
 	}
@@ -7278,6 +7328,9 @@ func (m *CertifyVexMutation) Fields() []string {
 	if m.document_ref != nil {
 		fields = append(fields, certifyvex.FieldDocumentRef)
 	}
+	if m.description != nil {
+		fields = append(fields, certifyvex.FieldDescription)
+	}
 	return fields
 }
 
@@ -7308,6 +7361,8 @@ func (m *CertifyVexMutation) Field(name string) (ent.Value, bool) {
 		return m.Collector()
 	case certifyvex.FieldDocumentRef:
 		return m.DocumentRef()
+	case certifyvex.FieldDescription:
+		return m.Description()
 	}
 	return nil, false
 }
@@ -7339,6 +7394,8 @@ func (m *CertifyVexMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldCollector(ctx)
 	case certifyvex.FieldDocumentRef:
 		return m.OldDocumentRef(ctx)
+	case certifyvex.FieldDescription:
+		return m.OldDescription(ctx)
 	}
 	return nil, fmt.Errorf("unknown CertifyVex field %s", name)
 }
@@ -7425,6 +7482,13 @@ func (m *CertifyVexMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDocumentRef(v)
 		return nil
+	case certifyvex.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
 	}
 	return fmt.Errorf("unknown CertifyVex field %s", name)
 }
@@ -7461,6 +7525,9 @@ func (m *CertifyVexMutation) ClearedFields() []string {
 	if m.FieldCleared(certifyvex.FieldArtifactID) {
 		fields = append(fields, certifyvex.FieldArtifactID)
 	}
+	if m.FieldCleared(certifyvex.FieldDescription) {
+		fields = append(fields, certifyvex.FieldDescription)
+	}
 	return fields
 }
 
@@ -7480,6 +7547,9 @@ func (m *CertifyVexMutation) ClearField(name string) error {
 		return nil
 	case certifyvex.FieldArtifactID:
 		m.ClearArtifactID()
+		return nil
+	case certifyvex.FieldDescription:
+		m.ClearDescription()
 		return nil
 	}
 	return fmt.Errorf("unknown CertifyVex nullable field %s", name)
@@ -7521,6 +7591,9 @@ func (m *CertifyVexMutation) ResetField(name string) error {
 		return nil
 	case certifyvex.FieldDocumentRef:
 		m.ResetDocumentRef()
+		return nil
+	case certifyvex.FieldDescription:
+		m.ResetDescription()
 		return nil
 	}
 	return fmt.Errorf("unknown CertifyVex field %s", name)

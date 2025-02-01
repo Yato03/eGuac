@@ -185,8 +185,8 @@ func (ec *executionContext) fieldContext_CWE_ID(_ context.Context, field graphql
 	return fc, nil
 }
 
-func (ec *executionContext) _CWE_Description(ctx context.Context, field graphql.CollectedField, obj *model.Cwe) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_CWE_Description(ctx, field)
+func (ec *executionContext) _CWE_Abstraction(ctx context.Context, field graphql.CollectedField, obj *model.Cwe) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CWE_Abstraction(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -199,7 +199,7 @@ func (ec *executionContext) _CWE_Description(ctx context.Context, field graphql.
 	}()
 	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Description, nil
+		return obj.Abstraction, nil
 	})
 
 	if resTmp == nil {
@@ -213,7 +213,7 @@ func (ec *executionContext) _CWE_Description(ctx context.Context, field graphql.
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_CWE_Description(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_CWE_Abstraction(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "CWE",
 		Field:      field,
@@ -1050,9 +1050,9 @@ func (ec *executionContext) _CertifyVEXStatement_cwe(ctx context.Context, field 
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*model.Cwe)
+	res := resTmp.([]*model.Cwe)
 	fc.Result = res
-	return ec.marshalOCWE2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCwe(ctx, field.Selections, res)
+	return ec.marshalOCWE2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCwe(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_CertifyVEXStatement_cwe(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1065,8 +1065,8 @@ func (ec *executionContext) fieldContext_CertifyVEXStatement_cwe(_ context.Conte
 			switch field.Name {
 			case "ID":
 				return ec.fieldContext_CWE_ID(ctx, field)
-			case "Description":
-				return ec.fieldContext_CWE_Description(ctx, field)
+			case "Abstraction":
+				return ec.fieldContext_CWE_Abstraction(ctx, field)
 			case "Name":
 				return ec.fieldContext_CWE_Name(ctx, field)
 			case "BackgroundDetail":
@@ -1128,6 +1128,52 @@ func (ec *executionContext) fieldContext_CertifyVEXStatement_reachableCode(_ con
 	return fc, nil
 }
 
+func (ec *executionContext) _CertifyVEXStatement_exploits(ctx context.Context, field graphql.CollectedField, obj *model.CertifyVEXStatement) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CertifyVEXStatement_exploits(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp := ec._fieldMiddleware(ctx, obj, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Exploits, nil
+	})
+
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Exploits)
+	fc.Result = res
+	return ec.marshalOExploits2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐExploits(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CertifyVEXStatement_exploits(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CertifyVEXStatement",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "id":
+				return ec.fieldContext_Exploits_id(ctx, field)
+			case "Description":
+				return ec.fieldContext_Exploits_Description(ctx, field)
+			case "Payload":
+				return ec.fieldContext_Exploits_Payload(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Exploits", field.Name)
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Consequences_Scope(ctx context.Context, field graphql.CollectedField, obj *model.Consequences) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Consequences_Scope(ctx, field)
 	if err != nil {
@@ -1148,9 +1194,9 @@ func (ec *executionContext) _Consequences_Scope(ctx context.Context, field graph
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Consequences_Scope(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1186,9 +1232,9 @@ func (ec *executionContext) _Consequences_Impact(ctx context.Context, field grap
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*string)
+	res := resTmp.([]*string)
 	fc.Result = res
-	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
+	return ec.marshalOString2ᚕᚖstring(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Consequences_Impact(_ context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1980,6 +2026,8 @@ func (ec *executionContext) fieldContext_VEXEdge_node(_ context.Context, field g
 				return ec.fieldContext_CertifyVEXStatement_cwe(ctx, field)
 			case "reachableCode":
 				return ec.fieldContext_CertifyVEXStatement_reachableCode(ctx, field)
+			case "exploits":
+				return ec.fieldContext_CertifyVEXStatement_exploits(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type CertifyVEXStatement", field.Name)
 		},
@@ -2080,7 +2128,7 @@ func (ec *executionContext) unmarshalInputCWEInput(ctx context.Context, obj inte
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"ID", "Abstraction", "Name", "PotentialMitigations", "Consequences", "DemostrativeExamples", "DetectionMethods"}
+	fieldsInOrder := [...]string{"ID", "Abstraction", "Name", "BackgroundDetail", "PotentialMitigations", "Consequences", "DemostrativeExamples", "DetectionMethods"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2108,6 +2156,13 @@ func (ec *executionContext) unmarshalInputCWEInput(ctx context.Context, obj inte
 				return it, err
 			}
 			it.Name = data
+		case "BackgroundDetail":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("BackgroundDetail"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BackgroundDetail = data
 		case "PotentialMitigations":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("PotentialMitigations"))
 			data, err := ec.unmarshalOPotentialMitigationsInput2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐPotentialMitigationsInput(ctx, v)
@@ -2149,7 +2204,7 @@ func (ec *executionContext) unmarshalInputCWEInputSpec(ctx context.Context, obj 
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"ID", "Abstraction", "Name", "PotentialMitigations", "Consequences", "DemostrativeExamples", "DetectionMethods"}
+	fieldsInOrder := [...]string{"ID", "Abstraction", "Name", "BackgroundDetail", "PotentialMitigations", "Consequences", "DemostrativeExamples", "DetectionMethods"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2177,6 +2232,13 @@ func (ec *executionContext) unmarshalInputCWEInputSpec(ctx context.Context, obj 
 				return it, err
 			}
 			it.Name = data
+		case "BackgroundDetail":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("BackgroundDetail"))
+			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.BackgroundDetail = data
 		case "PotentialMitigations":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("PotentialMitigations"))
 			data, err := ec.unmarshalOPotentialMitigationsInputSpec2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐPotentialMitigationsInputSpec(ctx, v)
@@ -2218,7 +2280,7 @@ func (ec *executionContext) unmarshalInputCertifyVEXStatementSpec(ctx context.Co
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "subject", "vulnerability", "status", "vexJustification", "statement", "statusNotes", "knownSince", "origin", "collector", "documentRef", "description", "cvss", "cwe", "reachableCode"}
+	fieldsInOrder := [...]string{"id", "subject", "vulnerability", "status", "vexJustification", "statement", "statusNotes", "knownSince", "origin", "collector", "documentRef", "description", "cvss", "cwe", "reachableCode", "exploits"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2318,7 +2380,7 @@ func (ec *executionContext) unmarshalInputCertifyVEXStatementSpec(ctx context.Co
 			it.Cvss = data
 		case "cwe":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe"))
-			data, err := ec.unmarshalOCWEInputSpec2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCWEInputSpec(ctx, v)
+			data, err := ec.unmarshalOCWEInputSpec2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCWEInputSpec(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2330,6 +2392,13 @@ func (ec *executionContext) unmarshalInputCertifyVEXStatementSpec(ctx context.Co
 				return it, err
 			}
 			it.ReachableCode = data
+		case "exploits":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("exploits"))
+			data, err := ec.unmarshalOExploitsInputSpec2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐExploitsInputSpec(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Exploits = data
 		}
 	}
 
@@ -2352,14 +2421,14 @@ func (ec *executionContext) unmarshalInputConsequencesInput(ctx context.Context,
 		switch k {
 		case "Scope":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Scope"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Scope = data
 		case "Impact":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Impact"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2400,14 +2469,14 @@ func (ec *executionContext) unmarshalInputConsequencesInputSpec(ctx context.Cont
 		switch k {
 		case "Scope":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Scope"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
 			it.Scope = data
 		case "Impact":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("Impact"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2869,7 +2938,7 @@ func (ec *executionContext) unmarshalInputVexStatementInputSpec(ctx context.Cont
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"status", "vexJustification", "statement", "statusNotes", "knownSince", "origin", "collector", "documentRef", "description", "cvss", "cwe", "reachableCode"}
+	fieldsInOrder := [...]string{"status", "vexJustification", "statement", "statusNotes", "knownSince", "origin", "collector", "documentRef", "description", "cvss", "cwe", "reachableCode", "exploits"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -2948,7 +3017,7 @@ func (ec *executionContext) unmarshalInputVexStatementInputSpec(ctx context.Cont
 			it.Cvss = data
 		case "cwe":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("cwe"))
-			data, err := ec.unmarshalOCWEInput2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCWEInput(ctx, v)
+			data, err := ec.unmarshalOCWEInput2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCWEInput(ctx, v)
 			if err != nil {
 				return it, err
 			}
@@ -2960,6 +3029,13 @@ func (ec *executionContext) unmarshalInputVexStatementInputSpec(ctx context.Cont
 				return it, err
 			}
 			it.ReachableCode = data
+		case "exploits":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("exploits"))
+			data, err := ec.unmarshalOExploitsInputSpec2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐExploitsInputSpec(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Exploits = data
 		}
 	}
 
@@ -3053,8 +3129,8 @@ func (ec *executionContext) _CWE(ctx context.Context, sel ast.SelectionSet, obj 
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "Description":
-			out.Values[i] = ec._CWE_Description(ctx, field, obj)
+		case "Abstraction":
+			out.Values[i] = ec._CWE_Abstraction(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -3170,6 +3246,8 @@ func (ec *executionContext) _CertifyVEXStatement(ctx context.Context, sel ast.Se
 			out.Values[i] = ec._CertifyVEXStatement_cwe(ctx, field, obj)
 		case "reachableCode":
 			out.Values[i] = ec._CertifyVEXStatement_reachableCode(ctx, field, obj)
+		case "exploits":
+			out.Values[i] = ec._CertifyVEXStatement_exploits(ctx, field, obj)
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -3744,11 +3822,72 @@ func (ec *executionContext) unmarshalOCVSSSpec2ᚖgithubᚗcomᚋguacsecᚋguac�
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
+func (ec *executionContext) marshalOCWE2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCwe(ctx context.Context, sel ast.SelectionSet, v []*model.Cwe) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCWE2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCwe(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) marshalOCWE2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCwe(ctx context.Context, sel ast.SelectionSet, v *model.Cwe) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}
 	return ec._CWE(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOCWEInput2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCWEInput(ctx context.Context, v interface{}) ([]*model.CWEInput, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.CWEInput, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOCWEInput2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCWEInput(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) unmarshalOCWEInput2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCWEInput(ctx context.Context, v interface{}) (*model.CWEInput, error) {
@@ -3757,6 +3896,26 @@ func (ec *executionContext) unmarshalOCWEInput2ᚖgithubᚗcomᚋguacsecᚋguac�
 	}
 	res, err := ec.unmarshalInputCWEInput(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalOCWEInputSpec2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCWEInputSpec(ctx context.Context, v interface{}) ([]*model.CWEInputSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.CWEInputSpec, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOCWEInputSpec2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCWEInputSpec(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func (ec *executionContext) unmarshalOCWEInputSpec2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐCWEInputSpec(ctx context.Context, v interface{}) (*model.CWEInputSpec, error) {
@@ -3972,6 +4131,82 @@ func (ec *executionContext) unmarshalODetectionMethodsInputSpec2ᚖgithubᚗcom�
 		return nil, nil
 	}
 	res, err := ec.unmarshalInputDetectionMethodsInputSpec(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOExploits2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐExploits(ctx context.Context, sel ast.SelectionSet, v []*model.Exploits) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOExploits2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐExploits(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
+func (ec *executionContext) marshalOExploits2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐExploits(ctx context.Context, sel ast.SelectionSet, v *model.Exploits) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Exploits(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOExploitsInputSpec2ᚕᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐExploitsInputSpec(ctx context.Context, v interface{}) ([]*model.ExploitsInputSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	var vSlice []interface{}
+	if v != nil {
+		vSlice = graphql.CoerceList(v)
+	}
+	var err error
+	res := make([]*model.ExploitsInputSpec, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalOExploitsInputSpec2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐExploitsInputSpec(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) unmarshalOExploitsInputSpec2ᚖgithubᚗcomᚋguacsecᚋguacᚋpkgᚋassemblerᚋgraphqlᚋmodelᚐExploitsInputSpec(ctx context.Context, v interface{}) (*model.ExploitsInputSpec, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputExploitsInputSpec(ctx, v)
 	return &res, graphql.ErrorOnPath(ctx, err)
 }
 

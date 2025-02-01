@@ -16,21 +16,21 @@
 package guesser
 
 import (
-	"github.com/openvex/go-vex/pkg/vex"
+	vex "github.com/guacsec/guac/pkg/evex"
 
 	"github.com/guacsec/guac/pkg/handler/processor"
 )
 
-type openVexTypeGuesser struct{}
+type eVexTypeGuesser struct{}
 
-func (_ *openVexTypeGuesser) GuessDocumentType(blob []byte, format processor.FormatType) processor.DocumentType {
+func (_ *eVexTypeGuesser) GuessDocumentType(blob []byte, format processor.FormatType) processor.DocumentType {
 	switch format {
 	case processor.FormatJSON:
-		// Decode the BOM
-		var decoded vex.VEX
+		// Decode the eVEX
+		var decoded vex.ExtendedVEX
 		err := json.Unmarshal(blob, &decoded)
-		if err == nil && decoded.Metadata.ID != "" && decoded.Statements != nil {
-			return processor.DocumentOpenVEX
+		if err == nil && decoded.ExtendedStatements != nil {
+			return processor.DocumentExtendedVEX
 		}
 	}
 	return processor.DocumentUnknown

@@ -219,7 +219,18 @@ func Test_GuessDocument(t *testing.T) {
 		},
 		expectedType:   processor.DocumentCsaf,
 		expectedFormat: processor.FormatJSON,
-	}}
+	},
+		{
+			name: "valid Extended vex Document",
+			document: &processor.Document{
+				Blob:              testdata.ExtendedVexExample,
+				Type:              processor.DocumentUnknown,
+				Format:            processor.FormatUnknown,
+				SourceInformation: processor.SourceInformation{},
+			},
+			expectedType:   processor.DocumentExtendedVEX,
+			expectedFormat: processor.FormatJSON,
+		}}
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			documentType, documentFormat, err := GuessDocument(context.TODO(), tt.document)
