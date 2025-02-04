@@ -118,6 +118,33 @@ var (
 			},
 		},
 	}
+	// CvsSsColumns holds the columns for the "cvs_ss" table.
+	CvsSsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "vuln_impact", Type: field.TypeFloat64},
+		{Name: "version", Type: field.TypeString},
+		{Name: "attack_vector", Type: field.TypeString},
+	}
+	// CvsSsTable holds the schema information for the "cvs_ss" table.
+	CvsSsTable = &schema.Table{
+		Name:       "cvs_ss",
+		Columns:    CvsSsColumns,
+		PrimaryKey: []*schema.Column{CvsSsColumns[0]},
+	}
+	// CwEsColumns holds the columns for the "cw_es" table.
+	CwEsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "vex_id", Type: field.TypeString},
+		{Name: "name", Type: field.TypeString},
+		{Name: "description", Type: field.TypeString},
+		{Name: "background_detail", Type: field.TypeString, Nullable: true},
+	}
+	// CwEsTable holds the schema information for the "cw_es" table.
+	CwEsTable = &schema.Table{
+		Name:       "cw_es",
+		Columns:    CwEsColumns,
+		PrimaryKey: []*schema.Column{CwEsColumns[0]},
+	}
 	// CertificationsColumns holds the columns for the "certifications" table.
 	CertificationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -315,9 +342,11 @@ var (
 		{Name: "collector", Type: field.TypeString},
 		{Name: "document_ref", Type: field.TypeString},
 		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "priority", Type: field.TypeFloat64, Nullable: true},
 		{Name: "package_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "artifact_id", Type: field.TypeUUID, Nullable: true},
 		{Name: "vulnerability_id", Type: field.TypeUUID},
+		{Name: "certify_vex_cvss", Type: field.TypeUUID, Nullable: true},
 	}
 	// CertifyVexesTable holds the schema information for the "certify_vexes" table.
 	CertifyVexesTable = &schema.Table{
@@ -327,28 +356,34 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "certify_vexes_package_versions_package",
-				Columns:    []*schema.Column{CertifyVexesColumns[10]},
+				Columns:    []*schema.Column{CertifyVexesColumns[11]},
 				RefColumns: []*schema.Column{PackageVersionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "certify_vexes_artifacts_artifact",
-				Columns:    []*schema.Column{CertifyVexesColumns[11]},
+				Columns:    []*schema.Column{CertifyVexesColumns[12]},
 				RefColumns: []*schema.Column{ArtifactsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "certify_vexes_vulnerability_ids_vulnerability",
-				Columns:    []*schema.Column{CertifyVexesColumns[12]},
+				Columns:    []*schema.Column{CertifyVexesColumns[13]},
 				RefColumns: []*schema.Column{VulnerabilityIdsColumns[0]},
 				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "certify_vexes_cvs_ss_cvss",
+				Columns:    []*schema.Column{CertifyVexesColumns[14]},
+				RefColumns: []*schema.Column{CvsSsColumns[0]},
+				OnDelete:   schema.SetNull,
 			},
 		},
 		Indexes: []*schema.Index{
 			{
 				Name:    "vex_artifact_id",
 				Unique:  true,
-				Columns: []*schema.Column{CertifyVexesColumns[1], CertifyVexesColumns[5], CertifyVexesColumns[2], CertifyVexesColumns[6], CertifyVexesColumns[7], CertifyVexesColumns[8], CertifyVexesColumns[12], CertifyVexesColumns[10]},
+				Columns: []*schema.Column{CertifyVexesColumns[1], CertifyVexesColumns[5], CertifyVexesColumns[2], CertifyVexesColumns[6], CertifyVexesColumns[7], CertifyVexesColumns[8], CertifyVexesColumns[13], CertifyVexesColumns[11]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "artifact_id IS NULL",
 				},
@@ -356,7 +391,7 @@ var (
 			{
 				Name:    "vex_package_id",
 				Unique:  true,
-				Columns: []*schema.Column{CertifyVexesColumns[1], CertifyVexesColumns[5], CertifyVexesColumns[2], CertifyVexesColumns[6], CertifyVexesColumns[7], CertifyVexesColumns[8], CertifyVexesColumns[12], CertifyVexesColumns[11]},
+				Columns: []*schema.Column{CertifyVexesColumns[1], CertifyVexesColumns[5], CertifyVexesColumns[2], CertifyVexesColumns[6], CertifyVexesColumns[7], CertifyVexesColumns[8], CertifyVexesColumns[13], CertifyVexesColumns[12]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "package_id IS NULL",
 				},
@@ -419,6 +454,51 @@ var (
 			},
 		},
 	}
+	// ConsequencesColumns holds the columns for the "consequences" table.
+	ConsequencesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "notes", Type: field.TypeString, Nullable: true},
+		{Name: "likelihood", Type: field.TypeString, Nullable: true},
+	}
+	// ConsequencesTable holds the schema information for the "consequences" table.
+	ConsequencesTable = &schema.Table{
+		Name:       "consequences",
+		Columns:    ConsequencesColumns,
+		PrimaryKey: []*schema.Column{ConsequencesColumns[0]},
+	}
+	// ConsequenceImpactsColumns holds the columns for the "consequence_impacts" table.
+	ConsequenceImpactsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "impact", Type: field.TypeString},
+	}
+	// ConsequenceImpactsTable holds the schema information for the "consequence_impacts" table.
+	ConsequenceImpactsTable = &schema.Table{
+		Name:       "consequence_impacts",
+		Columns:    ConsequenceImpactsColumns,
+		PrimaryKey: []*schema.Column{ConsequenceImpactsColumns[0]},
+	}
+	// ConsequenceScopesColumns holds the columns for the "consequence_scopes" table.
+	ConsequenceScopesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "scope", Type: field.TypeString},
+	}
+	// ConsequenceScopesTable holds the schema information for the "consequence_scopes" table.
+	ConsequenceScopesTable = &schema.Table{
+		Name:       "consequence_scopes",
+		Columns:    ConsequenceScopesColumns,
+		PrimaryKey: []*schema.Column{ConsequenceScopesColumns[0]},
+	}
+	// DemonstrativeExamplesColumns holds the columns for the "demonstrative_examples" table.
+	DemonstrativeExamplesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+	}
+	// DemonstrativeExamplesTable holds the schema information for the "demonstrative_examples" table.
+	DemonstrativeExamplesTable = &schema.Table{
+		Name:       "demonstrative_examples",
+		Columns:    DemonstrativeExamplesColumns,
+		PrimaryKey: []*schema.Column{DemonstrativeExamplesColumns[0]},
+	}
 	// DependenciesColumns holds the columns for the "dependencies" table.
 	DependenciesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -466,6 +546,33 @@ var (
 				Columns: []*schema.Column{DependenciesColumns[7]},
 			},
 		},
+	}
+	// DetectionMethodsColumns holds the columns for the "detection_methods" table.
+	DetectionMethodsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "detection_id", Type: field.TypeString, Nullable: true},
+		{Name: "method", Type: field.TypeString, Nullable: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "effectiveness", Type: field.TypeString, Nullable: true},
+	}
+	// DetectionMethodsTable holds the schema information for the "detection_methods" table.
+	DetectionMethodsTable = &schema.Table{
+		Name:       "detection_methods",
+		Columns:    DetectionMethodsColumns,
+		PrimaryKey: []*schema.Column{DetectionMethodsColumns[0]},
+	}
+	// ExploitsColumns holds the columns for the "exploits" table.
+	ExploitsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "exploit_id", Type: field.TypeString, Nullable: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "payload", Type: field.TypeString, Nullable: true},
+	}
+	// ExploitsTable holds the schema information for the "exploits" table.
+	ExploitsTable = &schema.Table{
+		Name:       "exploits",
+		Columns:    ExploitsColumns,
+		PrimaryKey: []*schema.Column{ExploitsColumns[0]},
 	}
 	// HasMetadataColumns holds the columns for the "has_metadata" table.
 	HasMetadataColumns = []*schema.Column{
@@ -914,6 +1021,43 @@ var (
 			},
 		},
 	}
+	// PotentialMitigationsColumns holds the columns for the "potential_mitigations" table.
+	PotentialMitigationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "phase", Type: field.TypeString, Nullable: true},
+		{Name: "description", Type: field.TypeString, Nullable: true},
+		{Name: "effectiveness", Type: field.TypeString, Nullable: true},
+		{Name: "effectiveness_notes", Type: field.TypeString, Nullable: true},
+	}
+	// PotentialMitigationsTable holds the schema information for the "potential_mitigations" table.
+	PotentialMitigationsTable = &schema.Table{
+		Name:       "potential_mitigations",
+		Columns:    PotentialMitigationsColumns,
+		PrimaryKey: []*schema.Column{PotentialMitigationsColumns[0]},
+	}
+	// ReachableCodesColumns holds the columns for the "reachable_codes" table.
+	ReachableCodesColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "path_to_file", Type: field.TypeString, Nullable: true},
+	}
+	// ReachableCodesTable holds the schema information for the "reachable_codes" table.
+	ReachableCodesTable = &schema.Table{
+		Name:       "reachable_codes",
+		Columns:    ReachableCodesColumns,
+		PrimaryKey: []*schema.Column{ReachableCodesColumns[0]},
+	}
+	// ReachableCodeArtifactsColumns holds the columns for the "reachable_code_artifacts" table.
+	ReachableCodeArtifactsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeUUID, Unique: true},
+		{Name: "artifact_name", Type: field.TypeString, Nullable: true},
+		{Name: "used_in_lines", Type: field.TypeString, Nullable: true},
+	}
+	// ReachableCodeArtifactsTable holds the schema information for the "reachable_code_artifacts" table.
+	ReachableCodeArtifactsTable = &schema.Table{
+		Name:       "reachable_code_artifacts",
+		Columns:    ReachableCodeArtifactsColumns,
+		PrimaryKey: []*schema.Column{ReachableCodeArtifactsColumns[0]},
+	}
 	// SlsaAttestationsColumns holds the columns for the "slsa_attestations" table.
 	SlsaAttestationsColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeUUID, Unique: true},
@@ -1172,6 +1316,106 @@ var (
 			},
 		},
 	}
+	// CweConsequenceColumns holds the columns for the "cwe_consequence" table.
+	CweConsequenceColumns = []*schema.Column{
+		{Name: "cwe_id", Type: field.TypeUUID},
+		{Name: "consequence_id", Type: field.TypeUUID},
+	}
+	// CweConsequenceTable holds the schema information for the "cwe_consequence" table.
+	CweConsequenceTable = &schema.Table{
+		Name:       "cwe_consequence",
+		Columns:    CweConsequenceColumns,
+		PrimaryKey: []*schema.Column{CweConsequenceColumns[0], CweConsequenceColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cwe_consequence_cwe_id",
+				Columns:    []*schema.Column{CweConsequenceColumns[0]},
+				RefColumns: []*schema.Column{CwEsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "cwe_consequence_consequence_id",
+				Columns:    []*schema.Column{CweConsequenceColumns[1]},
+				RefColumns: []*schema.Column{ConsequencesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// CweDemonstrativeExampleColumns holds the columns for the "cwe_demonstrative_example" table.
+	CweDemonstrativeExampleColumns = []*schema.Column{
+		{Name: "cwe_id", Type: field.TypeUUID},
+		{Name: "demonstrative_example_id", Type: field.TypeUUID},
+	}
+	// CweDemonstrativeExampleTable holds the schema information for the "cwe_demonstrative_example" table.
+	CweDemonstrativeExampleTable = &schema.Table{
+		Name:       "cwe_demonstrative_example",
+		Columns:    CweDemonstrativeExampleColumns,
+		PrimaryKey: []*schema.Column{CweDemonstrativeExampleColumns[0], CweDemonstrativeExampleColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cwe_demonstrative_example_cwe_id",
+				Columns:    []*schema.Column{CweDemonstrativeExampleColumns[0]},
+				RefColumns: []*schema.Column{CwEsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "cwe_demonstrative_example_demonstrative_example_id",
+				Columns:    []*schema.Column{CweDemonstrativeExampleColumns[1]},
+				RefColumns: []*schema.Column{DemonstrativeExamplesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// CweDetectionMethodColumns holds the columns for the "cwe_detection_method" table.
+	CweDetectionMethodColumns = []*schema.Column{
+		{Name: "cwe_id", Type: field.TypeUUID},
+		{Name: "detection_method_id", Type: field.TypeUUID},
+	}
+	// CweDetectionMethodTable holds the schema information for the "cwe_detection_method" table.
+	CweDetectionMethodTable = &schema.Table{
+		Name:       "cwe_detection_method",
+		Columns:    CweDetectionMethodColumns,
+		PrimaryKey: []*schema.Column{CweDetectionMethodColumns[0], CweDetectionMethodColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cwe_detection_method_cwe_id",
+				Columns:    []*schema.Column{CweDetectionMethodColumns[0]},
+				RefColumns: []*schema.Column{CwEsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "cwe_detection_method_detection_method_id",
+				Columns:    []*schema.Column{CweDetectionMethodColumns[1]},
+				RefColumns: []*schema.Column{DetectionMethodsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// CwePotentialMitigationColumns holds the columns for the "cwe_potential_mitigation" table.
+	CwePotentialMitigationColumns = []*schema.Column{
+		{Name: "cwe_id", Type: field.TypeUUID},
+		{Name: "potential_mitigation_id", Type: field.TypeUUID},
+	}
+	// CwePotentialMitigationTable holds the schema information for the "cwe_potential_mitigation" table.
+	CwePotentialMitigationTable = &schema.Table{
+		Name:       "cwe_potential_mitigation",
+		Columns:    CwePotentialMitigationColumns,
+		PrimaryKey: []*schema.Column{CwePotentialMitigationColumns[0], CwePotentialMitigationColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "cwe_potential_mitigation_cwe_id",
+				Columns:    []*schema.Column{CwePotentialMitigationColumns[0]},
+				RefColumns: []*schema.Column{CwEsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "cwe_potential_mitigation_potential_mitigation_id",
+				Columns:    []*schema.Column{CwePotentialMitigationColumns[1]},
+				RefColumns: []*schema.Column{PotentialMitigationsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// CertifyLegalDeclaredLicensesColumns holds the columns for the "certify_legal_declared_licenses" table.
 	CertifyLegalDeclaredLicensesColumns = []*schema.Column{
 		{Name: "certify_legal_id", Type: field.TypeUUID},
@@ -1222,6 +1466,156 @@ var (
 			},
 		},
 	}
+	// CertifyVexCweColumns holds the columns for the "certify_vex_cwe" table.
+	CertifyVexCweColumns = []*schema.Column{
+		{Name: "certify_vex_id", Type: field.TypeUUID},
+		{Name: "cwe_id", Type: field.TypeUUID},
+	}
+	// CertifyVexCweTable holds the schema information for the "certify_vex_cwe" table.
+	CertifyVexCweTable = &schema.Table{
+		Name:       "certify_vex_cwe",
+		Columns:    CertifyVexCweColumns,
+		PrimaryKey: []*schema.Column{CertifyVexCweColumns[0], CertifyVexCweColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "certify_vex_cwe_certify_vex_id",
+				Columns:    []*schema.Column{CertifyVexCweColumns[0]},
+				RefColumns: []*schema.Column{CertifyVexesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "certify_vex_cwe_cwe_id",
+				Columns:    []*schema.Column{CertifyVexCweColumns[1]},
+				RefColumns: []*schema.Column{CwEsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// CertifyVexExploitColumns holds the columns for the "certify_vex_exploit" table.
+	CertifyVexExploitColumns = []*schema.Column{
+		{Name: "certify_vex_id", Type: field.TypeUUID},
+		{Name: "exploit_id", Type: field.TypeUUID},
+	}
+	// CertifyVexExploitTable holds the schema information for the "certify_vex_exploit" table.
+	CertifyVexExploitTable = &schema.Table{
+		Name:       "certify_vex_exploit",
+		Columns:    CertifyVexExploitColumns,
+		PrimaryKey: []*schema.Column{CertifyVexExploitColumns[0], CertifyVexExploitColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "certify_vex_exploit_certify_vex_id",
+				Columns:    []*schema.Column{CertifyVexExploitColumns[0]},
+				RefColumns: []*schema.Column{CertifyVexesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "certify_vex_exploit_exploit_id",
+				Columns:    []*schema.Column{CertifyVexExploitColumns[1]},
+				RefColumns: []*schema.Column{ExploitsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// CertifyVexReachableCodeColumns holds the columns for the "certify_vex_reachable_code" table.
+	CertifyVexReachableCodeColumns = []*schema.Column{
+		{Name: "certify_vex_id", Type: field.TypeUUID},
+		{Name: "reachable_code_id", Type: field.TypeUUID},
+	}
+	// CertifyVexReachableCodeTable holds the schema information for the "certify_vex_reachable_code" table.
+	CertifyVexReachableCodeTable = &schema.Table{
+		Name:       "certify_vex_reachable_code",
+		Columns:    CertifyVexReachableCodeColumns,
+		PrimaryKey: []*schema.Column{CertifyVexReachableCodeColumns[0], CertifyVexReachableCodeColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "certify_vex_reachable_code_certify_vex_id",
+				Columns:    []*schema.Column{CertifyVexReachableCodeColumns[0]},
+				RefColumns: []*schema.Column{CertifyVexesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "certify_vex_reachable_code_reachable_code_id",
+				Columns:    []*schema.Column{CertifyVexReachableCodeColumns[1]},
+				RefColumns: []*schema.Column{ReachableCodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// ConsequenceConsequenceScopeColumns holds the columns for the "consequence_consequence_scope" table.
+	ConsequenceConsequenceScopeColumns = []*schema.Column{
+		{Name: "consequence_id", Type: field.TypeUUID},
+		{Name: "consequence_scope_id", Type: field.TypeUUID},
+	}
+	// ConsequenceConsequenceScopeTable holds the schema information for the "consequence_consequence_scope" table.
+	ConsequenceConsequenceScopeTable = &schema.Table{
+		Name:       "consequence_consequence_scope",
+		Columns:    ConsequenceConsequenceScopeColumns,
+		PrimaryKey: []*schema.Column{ConsequenceConsequenceScopeColumns[0], ConsequenceConsequenceScopeColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "consequence_consequence_scope_consequence_id",
+				Columns:    []*schema.Column{ConsequenceConsequenceScopeColumns[0]},
+				RefColumns: []*schema.Column{ConsequencesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "consequence_consequence_scope_consequence_scope_id",
+				Columns:    []*schema.Column{ConsequenceConsequenceScopeColumns[1]},
+				RefColumns: []*schema.Column{ConsequenceScopesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// ConsequenceConsequenceImpactColumns holds the columns for the "consequence_consequence_impact" table.
+	ConsequenceConsequenceImpactColumns = []*schema.Column{
+		{Name: "consequence_id", Type: field.TypeUUID},
+		{Name: "consequence_impact_id", Type: field.TypeUUID},
+	}
+	// ConsequenceConsequenceImpactTable holds the schema information for the "consequence_consequence_impact" table.
+	ConsequenceConsequenceImpactTable = &schema.Table{
+		Name:       "consequence_consequence_impact",
+		Columns:    ConsequenceConsequenceImpactColumns,
+		PrimaryKey: []*schema.Column{ConsequenceConsequenceImpactColumns[0], ConsequenceConsequenceImpactColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "consequence_consequence_impact_consequence_id",
+				Columns:    []*schema.Column{ConsequenceConsequenceImpactColumns[0]},
+				RefColumns: []*schema.Column{ConsequencesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "consequence_consequence_impact_consequence_impact_id",
+				Columns:    []*schema.Column{ConsequenceConsequenceImpactColumns[1]},
+				RefColumns: []*schema.Column{ConsequenceImpactsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
+	// ReachableCodeReachableCodeArtifactColumns holds the columns for the "reachable_code_reachable_code_artifact" table.
+	ReachableCodeReachableCodeArtifactColumns = []*schema.Column{
+		{Name: "reachable_code_id", Type: field.TypeUUID},
+		{Name: "reachable_code_artifact_id", Type: field.TypeUUID},
+	}
+	// ReachableCodeReachableCodeArtifactTable holds the schema information for the "reachable_code_reachable_code_artifact" table.
+	ReachableCodeReachableCodeArtifactTable = &schema.Table{
+		Name:       "reachable_code_reachable_code_artifact",
+		Columns:    ReachableCodeReachableCodeArtifactColumns,
+		PrimaryKey: []*schema.Column{ReachableCodeReachableCodeArtifactColumns[0], ReachableCodeReachableCodeArtifactColumns[1]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "reachable_code_reachable_code_artifact_reachable_code_id",
+				Columns:    []*schema.Column{ReachableCodeReachableCodeArtifactColumns[0]},
+				RefColumns: []*schema.Column{ReachableCodesColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+			{
+				Symbol:     "reachable_code_reachable_code_artifact_reachable_code_artifact_id",
+				Columns:    []*schema.Column{ReachableCodeReachableCodeArtifactColumns[1]},
+				RefColumns: []*schema.Column{ReachableCodeArtifactsColumns[0]},
+				OnDelete:   schema.Cascade,
+			},
+		},
+	}
 	// SlsaAttestationBuiltFromColumns holds the columns for the "slsa_attestation_built_from" table.
 	SlsaAttestationBuiltFromColumns = []*schema.Column{
 		{Name: "slsa_attestation_id", Type: field.TypeUUID},
@@ -1252,12 +1646,20 @@ var (
 		ArtifactsTable,
 		BillOfMaterialsTable,
 		BuildersTable,
+		CvsSsTable,
+		CwEsTable,
 		CertificationsTable,
 		CertifyLegalsTable,
 		CertifyScorecardsTable,
 		CertifyVexesTable,
 		CertifyVulnsTable,
+		ConsequencesTable,
+		ConsequenceImpactsTable,
+		ConsequenceScopesTable,
+		DemonstrativeExamplesTable,
 		DependenciesTable,
+		DetectionMethodsTable,
+		ExploitsTable,
 		HasMetadataTable,
 		HasSourceAtsTable,
 		HashEqualsTable,
@@ -1267,6 +1669,9 @@ var (
 		PackageVersionsTable,
 		PkgEqualsTable,
 		PointOfContactsTable,
+		PotentialMitigationsTable,
+		ReachableCodesTable,
+		ReachableCodeArtifactsTable,
 		SlsaAttestationsTable,
 		SourceNamesTable,
 		VulnEqualsTable,
@@ -1276,8 +1681,18 @@ var (
 		BillOfMaterialsIncludedSoftwareArtifactsTable,
 		BillOfMaterialsIncludedDependenciesTable,
 		BillOfMaterialsIncludedOccurrencesTable,
+		CweConsequenceTable,
+		CweDemonstrativeExampleTable,
+		CweDetectionMethodTable,
+		CwePotentialMitigationTable,
 		CertifyLegalDeclaredLicensesTable,
 		CertifyLegalDiscoveredLicensesTable,
+		CertifyVexCweTable,
+		CertifyVexExploitTable,
+		CertifyVexReachableCodeTable,
+		ConsequenceConsequenceScopeTable,
+		ConsequenceConsequenceImpactTable,
+		ReachableCodeReachableCodeArtifactTable,
 		SlsaAttestationBuiltFromTable,
 	}
 )
@@ -1295,6 +1710,7 @@ func init() {
 	CertifyVexesTable.ForeignKeys[0].RefTable = PackageVersionsTable
 	CertifyVexesTable.ForeignKeys[1].RefTable = ArtifactsTable
 	CertifyVexesTable.ForeignKeys[2].RefTable = VulnerabilityIdsTable
+	CertifyVexesTable.ForeignKeys[3].RefTable = CvsSsTable
 	CertifyVulnsTable.ForeignKeys[0].RefTable = VulnerabilityIdsTable
 	CertifyVulnsTable.ForeignKeys[1].RefTable = PackageVersionsTable
 	DependenciesTable.ForeignKeys[0].RefTable = PackageVersionsTable
@@ -1338,10 +1754,30 @@ func init() {
 	BillOfMaterialsIncludedOccurrencesTable.ForeignKeys[0].RefTable = BillOfMaterialsTable
 	BillOfMaterialsIncludedOccurrencesTable.ForeignKeys[1].RefTable = OccurrencesTable
 	BillOfMaterialsIncludedOccurrencesTable.Annotation = &entsql.Annotation{}
+	CweConsequenceTable.ForeignKeys[0].RefTable = CwEsTable
+	CweConsequenceTable.ForeignKeys[1].RefTable = ConsequencesTable
+	CweDemonstrativeExampleTable.ForeignKeys[0].RefTable = CwEsTable
+	CweDemonstrativeExampleTable.ForeignKeys[1].RefTable = DemonstrativeExamplesTable
+	CweDetectionMethodTable.ForeignKeys[0].RefTable = CwEsTable
+	CweDetectionMethodTable.ForeignKeys[1].RefTable = DetectionMethodsTable
+	CwePotentialMitigationTable.ForeignKeys[0].RefTable = CwEsTable
+	CwePotentialMitigationTable.ForeignKeys[1].RefTable = PotentialMitigationsTable
 	CertifyLegalDeclaredLicensesTable.ForeignKeys[0].RefTable = CertifyLegalsTable
 	CertifyLegalDeclaredLicensesTable.ForeignKeys[1].RefTable = LicensesTable
 	CertifyLegalDiscoveredLicensesTable.ForeignKeys[0].RefTable = CertifyLegalsTable
 	CertifyLegalDiscoveredLicensesTable.ForeignKeys[1].RefTable = LicensesTable
+	CertifyVexCweTable.ForeignKeys[0].RefTable = CertifyVexesTable
+	CertifyVexCweTable.ForeignKeys[1].RefTable = CwEsTable
+	CertifyVexExploitTable.ForeignKeys[0].RefTable = CertifyVexesTable
+	CertifyVexExploitTable.ForeignKeys[1].RefTable = ExploitsTable
+	CertifyVexReachableCodeTable.ForeignKeys[0].RefTable = CertifyVexesTable
+	CertifyVexReachableCodeTable.ForeignKeys[1].RefTable = ReachableCodesTable
+	ConsequenceConsequenceScopeTable.ForeignKeys[0].RefTable = ConsequencesTable
+	ConsequenceConsequenceScopeTable.ForeignKeys[1].RefTable = ConsequenceScopesTable
+	ConsequenceConsequenceImpactTable.ForeignKeys[0].RefTable = ConsequencesTable
+	ConsequenceConsequenceImpactTable.ForeignKeys[1].RefTable = ConsequenceImpactsTable
+	ReachableCodeReachableCodeArtifactTable.ForeignKeys[0].RefTable = ReachableCodesTable
+	ReachableCodeReachableCodeArtifactTable.ForeignKeys[1].RefTable = ReachableCodeArtifactsTable
 	SlsaAttestationBuiltFromTable.ForeignKeys[0].RefTable = SlsaAttestationsTable
 	SlsaAttestationBuiltFromTable.ForeignKeys[1].RefTable = ArtifactsTable
 	SlsaAttestationBuiltFromTable.Annotation = &entsql.Annotation{}

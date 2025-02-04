@@ -15,6 +15,12 @@ type BillOfMaterials func(*sql.Selector)
 // Builder is the predicate function for builder builders.
 type Builder func(*sql.Selector)
 
+// CVSS is the predicate function for cvss builders.
+type CVSS func(*sql.Selector)
+
+// CWE is the predicate function for cwe builders.
+type CWE func(*sql.Selector)
+
 // Certification is the predicate function for certification builders.
 type Certification func(*sql.Selector)
 
@@ -30,8 +36,26 @@ type CertifyVex func(*sql.Selector)
 // CertifyVuln is the predicate function for certifyvuln builders.
 type CertifyVuln func(*sql.Selector)
 
+// Consequence is the predicate function for consequence builders.
+type Consequence func(*sql.Selector)
+
+// Consequence_Impact is the predicate function for consequence_impact builders.
+type Consequence_Impact func(*sql.Selector)
+
+// Consequence_Scope is the predicate function for consequence_scope builders.
+type Consequence_Scope func(*sql.Selector)
+
+// DemonstrativeExample is the predicate function for demonstrativeexample builders.
+type DemonstrativeExample func(*sql.Selector)
+
 // Dependency is the predicate function for dependency builders.
 type Dependency func(*sql.Selector)
+
+// DetectionMethod is the predicate function for detectionmethod builders.
+type DetectionMethod func(*sql.Selector)
+
+// Exploit is the predicate function for exploit builders.
+type Exploit func(*sql.Selector)
 
 // HasMetadata is the predicate function for hasmetadata builders.
 type HasMetadata func(*sql.Selector)
@@ -59,6 +83,15 @@ type PkgEqual func(*sql.Selector)
 
 // PointOfContact is the predicate function for pointofcontact builders.
 type PointOfContact func(*sql.Selector)
+
+// PotentialMitigation is the predicate function for potentialmitigation builders.
+type PotentialMitigation func(*sql.Selector)
+
+// ReachableCode is the predicate function for reachablecode builders.
+type ReachableCode func(*sql.Selector)
+
+// ReachableCodeArtifact is the predicate function for reachablecodeartifact builders.
+type ReachableCodeArtifact func(*sql.Selector)
 
 // SLSAAttestation is the predicate function for slsaattestation builders.
 type SLSAAttestation func(*sql.Selector)

@@ -16,6 +16,7 @@
 package backend
 
 import (
+	"strconv"
 	"strings"
 
 	"github.com/guacsec/guac/internal/testing/ptrfrom"
@@ -139,6 +140,131 @@ func toModelPackageVersion(v *ent.PackageVersion) *model.PackageVersion {
 		Version:    v.Version,
 		Qualifiers: toPtrSlice(v.Qualifiers),
 		Subpath:    v.Subpath,
+	}
+}
+
+func toModelCvss(cvss *ent.CVSS) *model.Cvss {
+	if cvss == nil {
+		return nil
+	}
+	return &model.Cvss{
+		VulnImpact:   ptrfrom.Float64(cvss.VulnImpact),
+		Version:      &cvss.Version,
+		AttackString: &cvss.AttackVector,
+	}
+}
+
+func toModelPotentialMitigation(pm *ent.PotentialMitigation) *model.PotentialMitigations {
+	return &model.PotentialMitigations{
+		Phase:              pm.Phase,
+		Description:        pm.Description,
+		Effectiveness:      pm.Effectiveness,
+		EffectivenessNotes: pm.EffectivenessNotes,
+	}
+}
+
+func toModelDetectionMethod(pm *ent.DetectionMethod) *model.DetectionMethods {
+	return &model.DetectionMethods{
+		ID:            ptrfrom.String(pm.ID.String()),
+		Method:        pm.Method,
+		Description:   pm.Description,
+		Effectiveness: pm.Effectiveness,
+	}
+}
+
+func toModelConsequence(pm *ent.Consequence) *model.Consequences {
+	return &model.Consequences{
+		Scope: collect(pm.Edges.ConsequenceScope, func(cs *ent.Consequence_Scope) *string {
+			return &cs.Scope
+		}),
+		Impact: collect(pm.Edges.ConsequenceImpact, func(ci *ent.Consequence_Impact) *string {
+			return &ci.Impact
+		}),
+		Notes:      pm.Notes,
+		Likelihood: pm.Likelihood,
+	}
+}
+
+func toModelCwes(cwe []*ent.CWE) []*model.Cwe {
+	var result []*model.Cwe
+	for _, c := range cwe {
+		result = append(result, toModelCwe(c))
+	}
+	return result
+}
+
+func toModelCwe(cwe *ent.CWE) *model.Cwe {
+	if cwe == nil {
+		return nil
+	}
+
+	return &model.Cwe{
+		ID:                   cwe.VexID,
+		Name:                 cwe.Name,
+		Abstraction:          cwe.Description,
+		BackgroundDetail:     cwe.BackgroundDetail,
+		PotentialMitigations: collect(cwe.Edges.PotentialMitigation, toModelPotentialMitigation),
+		Consequences:         collect(cwe.Edges.Consequence, toModelConsequence),
+		DemonstrativeExamples: collect(cwe.Edges.DemonstrativeExample, func(ci *ent.DemonstrativeExample) *string {
+			return ci.Description
+		}),
+		DetectionMethods: collect(cwe.Edges.DetectionMethod, toModelDetectionMethod),
+	}
+}
+
+func toModelExploits(exploit []*ent.Exploit) []*model.Exploits {
+	var result []*model.Exploits
+	for _, e := range exploit {
+		result = append(result, toModelExploit(e))
+	}
+	return result
+}
+
+func toModelExploit(exploit *ent.Exploit) *model.Exploits {
+	if exploit == nil {
+		return nil
+	}
+
+	return &model.Exploits{
+		ID:          ptrfrom.String(*exploit.ExploitID),
+		Description: exploit.Description,
+		Payload:     exploit.Payload,
+	}
+}
+
+func toModelReachableCodes(rc []*ent.ReachableCode) []*model.ReachableCode {
+	var result []*model.ReachableCode
+	for _, r := range rc {
+		result = append(result, toModelReachableCode(r))
+	}
+	return result
+}
+
+func toModelReachableCode(rc *ent.ReachableCode) *model.ReachableCode {
+	if rc == nil {
+		return nil
+	}
+
+	return &model.ReachableCode{
+		PathToFile: rc.PathToFile,
+		UsedArtifacts: collect(rc.Edges.ReachableCodeArtifact, func(ua *ent.ReachableCodeArtifact) *model.UsedArtifact {
+			// convert 1,2,3 : string to [1,2,3] : []int
+
+			// split the string into an array of strings
+			usedInLines := strings.Split(*ua.UsedInLines, ",")
+
+			// convert the array of strings back to an array of ints
+			usedInLinesInt := make([]*int, len(usedInLines))
+			for i, line := range usedInLines {
+				value, _ := strconv.Atoi(line)
+				usedInLinesInt[i] = ptrfrom.Int(value)
+			}
+
+			return &model.UsedArtifact{
+				Name:        ua.ArtifactName,
+				UsedInLines: usedInLinesInt,
+			}
+		}),
 	}
 }
 

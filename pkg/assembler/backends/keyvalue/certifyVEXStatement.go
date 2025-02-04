@@ -18,6 +18,7 @@ package keyvalue
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
@@ -47,8 +48,10 @@ type vexLink struct {
 	DocumentRef     string
 	Description     string
 	Exploits        []model.Exploits
+	ReachableCode   []model.ReachableCode
 	Cvss            model.CVSSInput
 	Cwe             []model.CWEInput
+	Priority        float64
 }
 
 func convertCweInputs(inputs []*model.CWEInput) []model.CWEInput {
@@ -85,6 +88,7 @@ func (n *vexLink) Key() string {
 		n.DocumentRef,
 		n.Description,
 		*n.Cvss.AttackString,
+		fmt.Sprintf("%f", n.Priority),
 	}, ":"))
 }
 
@@ -152,6 +156,8 @@ func (c *demoClient) ingestVEXStatement(ctx context.Context, subject model.Packa
 		Cvss:          *vexStatement.Cvss,
 		Cwe:           convertCweInputs(vexStatement.Cwe),
 		Exploits:      convertExploitsInputs(vexStatement.Exploits),
+		ReachableCode: convertReachableCodeInputs(vexStatement.ReachableCode),
+		Priority:      *vexStatement.Priority,
 	}
 
 	lock(&c.m, readOnly)
@@ -218,27 +224,6 @@ func (c *demoClient) ingestVEXStatement(ctx context.Context, subject model.Packa
 	}
 
 	return in.ThisID, nil
-}
-
-func convertExploitsInputs(exploitsInputSpec []*model.ExploitsInputSpec) []model.Exploits {
-	var result []model.Exploits
-	for _, input := range exploitsInputSpec {
-		result = append(result, model.Exploits{
-			ID:          input.ID,
-			Description: input.Description,
-			Payload:     input.Payload,
-		})
-	}
-	return result
-}
-
-func convertExploitToPointers(inputs []model.Exploits) []*model.Exploits {
-	var result []*model.Exploits
-	for _, input := range inputs {
-		inputCopy := input
-		result = append(result, &inputCopy)
-	}
-	return result
 }
 
 // Query CertifyVex
@@ -671,9 +656,64 @@ func (c *demoClient) buildCertifyVEXStatement(ctx context.Context, link *vexLink
 		DocumentRef:      link.DocumentRef,
 		Description:      &link.Description,
 		Exploits:         convertExploitToPointers(link.Exploits),
+		ReachableCode:    convertReachableCodeToPointers(link.ReachableCode),
 		Cvss:             (*model.Cvss)(&link.Cvss),
 		Cwe:              convertCwesInputToCwes(convertCweInputsToPointers(link.Cwe)),
+		Priority:         &link.Priority,
 	}, nil
+}
+
+func convertReachableCodeInputs(reachableCodeInputSpec []*model.ReachableCodeInputSpec) []model.ReachableCode {
+	var result []model.ReachableCode
+	for _, input := range reachableCodeInputSpec {
+		result = append(result, model.ReachableCode{
+			PathToFile:    input.PathToFile,
+			UsedArtifacts: convertUsedArtifactInputs(input.UsedArtifacts),
+		})
+	}
+	return result
+}
+
+func convertReachableCodeToPointers(inputs []model.ReachableCode) []*model.ReachableCode {
+	var result []*model.ReachableCode
+	for _, input := range inputs {
+		inputCopy := input
+		result = append(result, &inputCopy)
+	}
+	return result
+}
+
+func convertUsedArtifactInputs(usedArtifactInputSpec []*model.UsedArtifactInputSpec) []*model.UsedArtifact {
+	var result []*model.UsedArtifact
+	for _, input := range usedArtifactInputSpec {
+		artifact := model.UsedArtifact{
+			Name:        input.Name,
+			UsedInLines: input.UsedInLines,
+		}
+		result = append(result, &artifact)
+	}
+	return result
+}
+
+func convertExploitsInputs(exploitsInputSpec []*model.ExploitsInputSpec) []model.Exploits {
+	var result []model.Exploits
+	for _, input := range exploitsInputSpec {
+		result = append(result, model.Exploits{
+			ID:          input.ID,
+			Description: input.Description,
+			Payload:     input.Payload,
+		})
+	}
+	return result
+}
+
+func convertExploitToPointers(inputs []model.Exploits) []*model.Exploits {
+	var result []*model.Exploits
+	for _, input := range inputs {
+		inputCopy := input
+		result = append(result, &inputCopy)
+	}
+	return result
 }
 
 func convertCwesInputToCwes(input []*model.CWEInput) []*model.Cwe {
@@ -729,13 +769,13 @@ func convertCweInputToCwe(input model.CWEInput) model.Cwe {
 	}
 
 	return model.Cwe{
-		ID:                   input.ID,
-		Abstraction:          input.Abstraction,
-		Name:                 input.Name,
-		BackgroundDetail:     input.BackgroundDetail,
-		PotentialMitigations: potentialMitigations,
-		Consequences:         consequences,
-		DemostrativeExamples: input.DemostrativeExamples,
-		DetectionMethods:     detectionMethods,
+		ID:                    input.ID,
+		Abstraction:           input.Abstraction,
+		Name:                  input.Name,
+		BackgroundDetail:      input.BackgroundDetail,
+		PotentialMitigations:  potentialMitigations,
+		Consequences:          consequences,
+		DemonstrativeExamples: input.DemonstrativeExamples,
+		DetectionMethods:      detectionMethods,
 	}
 }

@@ -3115,7 +3115,7 @@ var (
 				VexJustification: generated.VexJustificationVulnerableCodeNotPresent,
 				Status:           generated.VexStatusAffected,
 				Statement:        "a short description",
-				Description:      "a short description",
+				Description:      ptrfrom.String("a short description"),
 				Cvss: &generated.CVSSInput{
 					VulnImpact:   ptrfrom.Float64(3.6),
 					Version:      ptrfrom.String("3.1"),
@@ -3123,8 +3123,10 @@ var (
 				},
 				Cwe: []*generated.CWEInput{
 					{
-						ID:   "https://cwe.mitre.org/data/definitions/1333.html",
-						Name: "1333",
+						ID:               "https://cwe.mitre.org/data/definitions/1333.html",
+						Name:             "1333",
+						Abstraction:      "Base",
+						BackgroundDetail: ptrfrom.String("Regular Expression Without Backtracking"),
 						PotentialMitigations: []*generated.PotentialMitigationsInput{
 							{
 								Phase:              ptrfrom.String("Architecture and Design"),
@@ -3137,12 +3139,47 @@ var (
 							{
 								Scope:      []*string{ptrfrom.String("Availability")},
 								Impact:     []*string{ptrfrom.String("DoS: Resource Consumption (CPU)")},
-								Notes:      ptrfrom.String(""),
+								Notes:      ptrfrom.String("This can cause the application to consume excessive resources, such as CPU cycles."),
 								Likelihood: ptrfrom.String("High"),
+							},
+						},
+						DemonstrativeExamples: []*string{
+							ptrfrom.String("This is a demonstrative example"),
+						},
+						DetectionMethods: []*generated.DetectionMethodsInput{
+							{
+								Id:            ptrfrom.String("09870987098"),
+								Method:        ptrfrom.String("Automated Static Analysis"),
+								Description:   ptrfrom.String("Use a regular expression that is known to be vulnerable to catastrophic backtracking."),
+								Effectiveness: ptrfrom.String("High"),
 							},
 						},
 					},
 				},
+				Exploits: []*generated.ExploitsInputSpec{
+					{
+						Id:          ptrfrom.String("https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-34104"),
+						Description: ptrfrom.String("This is a description of the exploit"),
+						Payload:     ptrfrom.String("This is the payload"),
+					},
+				},
+				ReachableCode: []*generated.ReachableCodeInputSpec{
+
+					&generated.ReachableCodeInputSpec{
+						PathToFile: ptrfrom.String("src/index.js"),
+						UsedArtifacts: []*generated.UsedArtifactInputSpec{
+							{
+								Name: ptrfrom.String("fast-xml-parser"),
+								UsedInLines: []*int{
+									ptrfrom.Int(1),
+									ptrfrom.Int(2),
+									ptrfrom.Int(3),
+								},
+							},
+						},
+					},
+				},
+				Priority: ptrfrom.Float64(3.52),
 			},
 		},
 	}

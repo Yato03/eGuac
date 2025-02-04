@@ -116,6 +116,11 @@ func Description(v string) predicate.CertifyVex {
 	return predicate.CertifyVex(sql.FieldEQ(FieldDescription, v))
 }
 
+// Priority applies equality check predicate on the "priority" field. It's identical to PriorityEQ.
+func Priority(v float64) predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldEQ(FieldPriority, v))
+}
+
 // PackageIDEQ applies the EQ predicate on the "package_id" field.
 func PackageIDEQ(v uuid.UUID) predicate.CertifyVex {
 	return predicate.CertifyVex(sql.FieldEQ(FieldPackageID, v))
@@ -766,6 +771,56 @@ func DescriptionContainsFold(v string) predicate.CertifyVex {
 	return predicate.CertifyVex(sql.FieldContainsFold(FieldDescription, v))
 }
 
+// PriorityEQ applies the EQ predicate on the "priority" field.
+func PriorityEQ(v float64) predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldEQ(FieldPriority, v))
+}
+
+// PriorityNEQ applies the NEQ predicate on the "priority" field.
+func PriorityNEQ(v float64) predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldNEQ(FieldPriority, v))
+}
+
+// PriorityIn applies the In predicate on the "priority" field.
+func PriorityIn(vs ...float64) predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldIn(FieldPriority, vs...))
+}
+
+// PriorityNotIn applies the NotIn predicate on the "priority" field.
+func PriorityNotIn(vs ...float64) predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldNotIn(FieldPriority, vs...))
+}
+
+// PriorityGT applies the GT predicate on the "priority" field.
+func PriorityGT(v float64) predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldGT(FieldPriority, v))
+}
+
+// PriorityGTE applies the GTE predicate on the "priority" field.
+func PriorityGTE(v float64) predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldGTE(FieldPriority, v))
+}
+
+// PriorityLT applies the LT predicate on the "priority" field.
+func PriorityLT(v float64) predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldLT(FieldPriority, v))
+}
+
+// PriorityLTE applies the LTE predicate on the "priority" field.
+func PriorityLTE(v float64) predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldLTE(FieldPriority, v))
+}
+
+// PriorityIsNil applies the IsNil predicate on the "priority" field.
+func PriorityIsNil() predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldIsNull(FieldPriority))
+}
+
+// PriorityNotNil applies the NotNil predicate on the "priority" field.
+func PriorityNotNil() predicate.CertifyVex {
+	return predicate.CertifyVex(sql.FieldNotNull(FieldPriority))
+}
+
 // HasPackage applies the HasEdge predicate on the "package" edge.
 func HasPackage() predicate.CertifyVex {
 	return predicate.CertifyVex(func(s *sql.Selector) {
@@ -827,6 +882,98 @@ func HasVulnerability() predicate.CertifyVex {
 func HasVulnerabilityWith(preds ...predicate.VulnerabilityID) predicate.CertifyVex {
 	return predicate.CertifyVex(func(s *sql.Selector) {
 		step := newVulnerabilityStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCvss applies the HasEdge predicate on the "cvss" edge.
+func HasCvss() predicate.CertifyVex {
+	return predicate.CertifyVex(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, CvssTable, CvssColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCvssWith applies the HasEdge predicate on the "cvss" edge with a given conditions (other predicates).
+func HasCvssWith(preds ...predicate.CVSS) predicate.CertifyVex {
+	return predicate.CertifyVex(func(s *sql.Selector) {
+		step := newCvssStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasCwe applies the HasEdge predicate on the "cwe" edge.
+func HasCwe() predicate.CertifyVex {
+	return predicate.CertifyVex(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, CweTable, CwePrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasCweWith applies the HasEdge predicate on the "cwe" edge with a given conditions (other predicates).
+func HasCweWith(preds ...predicate.CWE) predicate.CertifyVex {
+	return predicate.CertifyVex(func(s *sql.Selector) {
+		step := newCweStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasExploit applies the HasEdge predicate on the "exploit" edge.
+func HasExploit() predicate.CertifyVex {
+	return predicate.CertifyVex(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, ExploitTable, ExploitPrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasExploitWith applies the HasEdge predicate on the "exploit" edge with a given conditions (other predicates).
+func HasExploitWith(preds ...predicate.Exploit) predicate.CertifyVex {
+	return predicate.CertifyVex(func(s *sql.Selector) {
+		step := newExploitStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasReachableCode applies the HasEdge predicate on the "reachable_code" edge.
+func HasReachableCode() predicate.CertifyVex {
+	return predicate.CertifyVex(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, ReachableCodeTable, ReachableCodePrimaryKey...),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasReachableCodeWith applies the HasEdge predicate on the "reachable_code" edge with a given conditions (other predicates).
+func HasReachableCodeWith(preds ...predicate.ReachableCode) predicate.CertifyVex {
+	return predicate.CertifyVex(func(s *sql.Selector) {
+		step := newReachableCodeStep()
 		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
 			for _, p := range preds {
 				p(s)

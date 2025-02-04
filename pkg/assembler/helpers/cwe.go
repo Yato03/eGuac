@@ -22,8 +22,8 @@ func CreateConsequences(cwe evex.CWE) []*generated.ConsequencesInput {
 	var consequences []*generated.ConsequencesInput
 	for _, consequence := range cwe.Consequences {
 		consequences = append(consequences, &generated.ConsequencesInput{
-			Scope:      *ConvertToPointerSlice(consequence.Scope),
-			Impact:     *ConvertToPointerSlice(consequence.Impact),
+			Scope:      *ConvertToPointerSliceString(consequence.Scope),
+			Impact:     *ConvertToPointerSliceString(consequence.Impact),
 			Notes:      &consequence.Note,
 			Likelihood: &consequence.Likelihood,
 		})
@@ -44,8 +44,27 @@ func CreateDetectionMethods(cwe evex.CWE) []*generated.DetectionMethodsInput {
 	return detectionMethods
 }
 
-func ConvertToPointerSlice(slice []string) *[]*string {
+func CreateUsedArtifacts(artifacts []evex.Artifact) []*generated.UsedArtifactInputSpec {
+	var usedArtifacts []*generated.UsedArtifactInputSpec
+	for _, artifact := range artifacts {
+		usedArtifacts = append(usedArtifacts, &generated.UsedArtifactInputSpec{
+			Name:        &artifact.ArtifactName,
+			UsedInLines: *ConvertToPointerSliceInt(artifact.UsedInLines),
+		})
+	}
+	return usedArtifacts
+}
+
+func ConvertToPointerSliceString(slice []string) *[]*string {
 	result := make([]*string, len(slice))
+	for i, v := range slice {
+		result[i] = &v
+	}
+	return &result
+}
+
+func ConvertToPointerSliceInt(slice []int) *[]*int {
+	result := make([]*int, len(slice))
 	for i, v := range slice {
 		result[i] = &v
 	}

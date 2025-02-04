@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/artifact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cvss"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnerabilityid"
 )
@@ -45,10 +46,13 @@ type CertifyVex struct {
 	DocumentRef string `json:"document_ref,omitempty"`
 	// Description holds the value of the "description" field.
 	Description *string `json:"description,omitempty"`
+	// Priority holds the value of the "priority" field.
+	Priority *float64 `json:"priority,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the CertifyVexQuery when eager-loading is set.
-	Edges        CertifyVexEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges            CertifyVexEdges `json:"edges"`
+	certify_vex_cvss *uuid.UUID
+	selectValues     sql.SelectValues
 }
 
 // CertifyVexEdges holds the relations/edges for other nodes in the graph.
@@ -59,11 +63,23 @@ type CertifyVexEdges struct {
 	Artifact *Artifact `json:"artifact,omitempty"`
 	// Vulnerability holds the value of the vulnerability edge.
 	Vulnerability *VulnerabilityID `json:"vulnerability,omitempty"`
+	// Cvss holds the value of the cvss edge.
+	Cvss *CVSS `json:"cvss,omitempty"`
+	// Cwe holds the value of the cwe edge.
+	Cwe []*CWE `json:"cwe,omitempty"`
+	// Exploit holds the value of the exploit edge.
+	Exploit []*Exploit `json:"exploit,omitempty"`
+	// ReachableCode holds the value of the reachable_code edge.
+	ReachableCode []*ReachableCode `json:"reachable_code,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [3]bool
+	loadedTypes [7]bool
 	// totalCount holds the count of the edges above.
-	totalCount [3]map[string]int
+	totalCount [7]map[string]int
+
+	namedCwe           map[string][]*CWE
+	namedExploit       map[string][]*Exploit
+	namedReachableCode map[string][]*ReachableCode
 }
 
 // PackageOrErr returns the Package value or an error if the edge
@@ -99,6 +115,44 @@ func (e CertifyVexEdges) VulnerabilityOrErr() (*VulnerabilityID, error) {
 	return nil, &NotLoadedError{edge: "vulnerability"}
 }
 
+// CvssOrErr returns the Cvss value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e CertifyVexEdges) CvssOrErr() (*CVSS, error) {
+	if e.Cvss != nil {
+		return e.Cvss, nil
+	} else if e.loadedTypes[3] {
+		return nil, &NotFoundError{label: cvss.Label}
+	}
+	return nil, &NotLoadedError{edge: "cvss"}
+}
+
+// CweOrErr returns the Cwe value or an error if the edge
+// was not loaded in eager-loading.
+func (e CertifyVexEdges) CweOrErr() ([]*CWE, error) {
+	if e.loadedTypes[4] {
+		return e.Cwe, nil
+	}
+	return nil, &NotLoadedError{edge: "cwe"}
+}
+
+// ExploitOrErr returns the Exploit value or an error if the edge
+// was not loaded in eager-loading.
+func (e CertifyVexEdges) ExploitOrErr() ([]*Exploit, error) {
+	if e.loadedTypes[5] {
+		return e.Exploit, nil
+	}
+	return nil, &NotLoadedError{edge: "exploit"}
+}
+
+// ReachableCodeOrErr returns the ReachableCode value or an error if the edge
+// was not loaded in eager-loading.
+func (e CertifyVexEdges) ReachableCodeOrErr() ([]*ReachableCode, error) {
+	if e.loadedTypes[6] {
+		return e.ReachableCode, nil
+	}
+	return nil, &NotLoadedError{edge: "reachable_code"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*CertifyVex) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -106,12 +160,16 @@ func (*CertifyVex) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case certifyvex.FieldPackageID, certifyvex.FieldArtifactID:
 			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
+		case certifyvex.FieldPriority:
+			values[i] = new(sql.NullFloat64)
 		case certifyvex.FieldStatus, certifyvex.FieldStatement, certifyvex.FieldStatusNotes, certifyvex.FieldJustification, certifyvex.FieldOrigin, certifyvex.FieldCollector, certifyvex.FieldDocumentRef, certifyvex.FieldDescription:
 			values[i] = new(sql.NullString)
 		case certifyvex.FieldKnownSince:
 			values[i] = new(sql.NullTime)
 		case certifyvex.FieldID, certifyvex.FieldVulnerabilityID:
 			values[i] = new(uuid.UUID)
+		case certifyvex.ForeignKeys[0]: // certify_vex_cvss
+			values[i] = &sql.NullScanner{S: new(uuid.UUID)}
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -208,6 +266,20 @@ func (cv *CertifyVex) assignValues(columns []string, values []any) error {
 				cv.Description = new(string)
 				*cv.Description = value.String
 			}
+		case certifyvex.FieldPriority:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field priority", values[i])
+			} else if value.Valid {
+				cv.Priority = new(float64)
+				*cv.Priority = value.Float64
+			}
+		case certifyvex.ForeignKeys[0]:
+			if value, ok := values[i].(*sql.NullScanner); !ok {
+				return fmt.Errorf("unexpected type %T for field certify_vex_cvss", values[i])
+			} else if value.Valid {
+				cv.certify_vex_cvss = new(uuid.UUID)
+				*cv.certify_vex_cvss = *value.S.(*uuid.UUID)
+			}
 		default:
 			cv.selectValues.Set(columns[i], values[i])
 		}
@@ -234,6 +306,26 @@ func (cv *CertifyVex) QueryArtifact() *ArtifactQuery {
 // QueryVulnerability queries the "vulnerability" edge of the CertifyVex entity.
 func (cv *CertifyVex) QueryVulnerability() *VulnerabilityIDQuery {
 	return NewCertifyVexClient(cv.config).QueryVulnerability(cv)
+}
+
+// QueryCvss queries the "cvss" edge of the CertifyVex entity.
+func (cv *CertifyVex) QueryCvss() *CVSSQuery {
+	return NewCertifyVexClient(cv.config).QueryCvss(cv)
+}
+
+// QueryCwe queries the "cwe" edge of the CertifyVex entity.
+func (cv *CertifyVex) QueryCwe() *CWEQuery {
+	return NewCertifyVexClient(cv.config).QueryCwe(cv)
+}
+
+// QueryExploit queries the "exploit" edge of the CertifyVex entity.
+func (cv *CertifyVex) QueryExploit() *ExploitQuery {
+	return NewCertifyVexClient(cv.config).QueryExploit(cv)
+}
+
+// QueryReachableCode queries the "reachable_code" edge of the CertifyVex entity.
+func (cv *CertifyVex) QueryReachableCode() *ReachableCodeQuery {
+	return NewCertifyVexClient(cv.config).QueryReachableCode(cv)
 }
 
 // Update returns a builder for updating this CertifyVex.
@@ -300,8 +392,85 @@ func (cv *CertifyVex) String() string {
 		builder.WriteString("description=")
 		builder.WriteString(*v)
 	}
+	builder.WriteString(", ")
+	if v := cv.Priority; v != nil {
+		builder.WriteString("priority=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteByte(')')
 	return builder.String()
+}
+
+// NamedCwe returns the Cwe named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (cv *CertifyVex) NamedCwe(name string) ([]*CWE, error) {
+	if cv.Edges.namedCwe == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := cv.Edges.namedCwe[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (cv *CertifyVex) appendNamedCwe(name string, edges ...*CWE) {
+	if cv.Edges.namedCwe == nil {
+		cv.Edges.namedCwe = make(map[string][]*CWE)
+	}
+	if len(edges) == 0 {
+		cv.Edges.namedCwe[name] = []*CWE{}
+	} else {
+		cv.Edges.namedCwe[name] = append(cv.Edges.namedCwe[name], edges...)
+	}
+}
+
+// NamedExploit returns the Exploit named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (cv *CertifyVex) NamedExploit(name string) ([]*Exploit, error) {
+	if cv.Edges.namedExploit == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := cv.Edges.namedExploit[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (cv *CertifyVex) appendNamedExploit(name string, edges ...*Exploit) {
+	if cv.Edges.namedExploit == nil {
+		cv.Edges.namedExploit = make(map[string][]*Exploit)
+	}
+	if len(edges) == 0 {
+		cv.Edges.namedExploit[name] = []*Exploit{}
+	} else {
+		cv.Edges.namedExploit[name] = append(cv.Edges.namedExploit[name], edges...)
+	}
+}
+
+// NamedReachableCode returns the ReachableCode named value or an error if the edge was not
+// loaded in eager-loading with this name.
+func (cv *CertifyVex) NamedReachableCode(name string) ([]*ReachableCode, error) {
+	if cv.Edges.namedReachableCode == nil {
+		return nil, &NotLoadedError{edge: name}
+	}
+	nodes, ok := cv.Edges.namedReachableCode[name]
+	if !ok {
+		return nil, &NotLoadedError{edge: name}
+	}
+	return nodes, nil
+}
+
+func (cv *CertifyVex) appendNamedReachableCode(name string, edges ...*ReachableCode) {
+	if cv.Edges.namedReachableCode == nil {
+		cv.Edges.namedReachableCode = make(map[string][]*ReachableCode)
+	}
+	if len(edges) == 0 {
+		cv.Edges.namedReachableCode[name] = []*ReachableCode{}
+	} else {
+		cv.Edges.namedReachableCode[name] = append(cv.Edges.namedReachableCode[name], edges...)
+	}
 }
 
 // CertifyVexes is a parsable slice of CertifyVex.

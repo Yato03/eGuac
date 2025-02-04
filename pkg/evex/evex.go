@@ -24,14 +24,14 @@ type CVSS struct {
 
 // CWE define the details of the Common Weakness Enumeration.
 type CWE struct {
-	ID                   string            `json:"@id"`
-	Name                 string            `json:"name"`
-	Description          string            `json:"description"`
-	BackgroundDetail     string            `json:"background_detail,omitempty"`
-	Consequences         []Consequence     `json:"consequences,omitempty"`
-	DetectionMethods     []DetectionMethod `json:"detection_methods,omitempty"`
-	PotentialMitigations []Mitigation      `json:"potential_mitigations,omitempty"`
-	DemostrativeExamples []string          `json:"demostrative_examples,omitempty"`
+	ID                    string            `json:"@id"`
+	Name                  string            `json:"name"`
+	Abstraction           string            `json:"abstraction"`
+	BackgroundDetail      string            `json:"background_detail,omitempty"`
+	Consequences          []Consequence     `json:"consequences,omitempty"`
+	DetectionMethods      []DetectionMethod `json:"detection_methods,omitempty"`
+	PotentialMitigations  []Mitigation      `json:"potential_mitigations,omitempty"`
+	DemonstrativeExamples []string          `json:"demonstrative_examples,omitempty"`
 }
 
 // Consequences enum the scope and impact of the weakness.
@@ -83,7 +83,7 @@ type ExtendedStatement struct {
 	AffectedComponentVersion string            `json:"affected_component_version"`
 	AffectedComponentManager string            `json:"affected_component_manager"`
 	Vulnerability            Vulnerability     `json:"vulnerability"`
-	ReachableCode            []ReachableCode   `json:"recheable_code,omitempty"`
+	ReachableCode            []ReachableCode   `json:"reachable_code,omitempty"`
 	Exploits                 []Exploit         `json:"exploits,omitempty"`
 	Priority                 float64           `json:"priority"`
 	Timestamp                *time.Time        `json:"timestamp"`

@@ -36,7 +36,7 @@ func TestExtendedVEXProcessor_ValidateSchema(t *testing.T) {
 			name: "default Extended VEX document",
 			args: args{
 				d: &processor.Document{
-					Blob:   testdata.ExtendedVexExample,
+					Blob:   testdata.ExtendedVexSmallExample,
 					Type:   processor.DocumentExtendedVEX,
 					Format: processor.FormatJSON,
 				},
@@ -47,7 +47,7 @@ func TestExtendedVEXProcessor_ValidateSchema(t *testing.T) {
 			name: "incorrect type",
 			args: args{
 				d: &processor.Document{
-					Blob:   testdata.ExtendedVexExample,
+					Blob:   testdata.ExtendedVexSmallExample,
 					Type:   processor.DocumentUnknown,
 					Format: processor.FormatJSON,
 				},
@@ -69,7 +69,7 @@ func TestExtendedVEXProcessor_ValidateSchema(t *testing.T) {
 			name: "invalid Extended VEX document format",
 			args: args{
 				d: &processor.Document{
-					Blob:   testdata.ExtendedVexExample,
+					Blob:   testdata.ExtendedVexSmallExample,
 					Type:   processor.DocumentExtendedVEX,
 					Format: processor.FormatUnknown,
 				},

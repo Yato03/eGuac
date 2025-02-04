@@ -115,7 +115,7 @@ type CWE {
   "Consequences of the CWE"
   Consequences: [Consequences]
   "Demonstrative examples of the CWE"
-  DemostrativeExamples: [String]
+  DemonstrativeExamples: [String]
   "Detection methods of the CWE"
   DetectionMethods: [DetectionMethods]
 }
@@ -127,7 +127,7 @@ input CWEInput {
   BackgroundDetail: String
   PotentialMitigations: [PotentialMitigationsInput]
   Consequences: [ConsequencesInput]
-  DemostrativeExamples: [String]
+  DemonstrativeExamples: [String]
   DetectionMethods: [DetectionMethodsInput]
 }
 
@@ -138,7 +138,7 @@ input CWEInputSpec {
   BackgroundDetail: String
   PotentialMitigations: [PotentialMitigationsInputSpec]
   Consequences: [ConsequencesInputSpec]
-  DemostrativeExamples: [String]
+  DemonstrativeExamples: [String]
   DetectionMethods: [DetectionMethodsInputSpec]
 }
 
@@ -241,18 +241,38 @@ type CertifyVEXStatement {
   reachableCode: [ReachableCode]
   "Exploits"
   exploits: [Exploits]
+  "Priority of the VEX statement"
+  priority: Float
 }
 
 type ReachableCode {
   PathToFile: String
+  UsedArtifacts: [UsedArtifact]
 }
 
 input ReachableCodeInput {
   PathToFile: String
+  UsedArtifacts: [UsedArtifactInput]
 }
 
 input ReachableCodeInputSpec {
   PathToFile: String
+  UsedArtifacts: [UsedArtifactInputSpec]
+}
+
+type UsedArtifact {
+  Name: String
+  UsedInLines: [Int]
+}
+
+input UsedArtifactInput {
+  Name: String
+  UsedInLines: [Int]
+}
+
+input UsedArtifactInputSpec {
+  Name: String
+  UsedInLines: [Int]
 }
 
 type Exploits {
@@ -299,6 +319,7 @@ input CertifyVEXStatementSpec {
   cwe: [CWEInputSpec]
   reachableCode: [ReachableCodeInputSpec]
   exploits: [ExploitsInputSpec]
+  priority: Float
 }
 
 
@@ -317,6 +338,7 @@ input VexStatementInputSpec {
   cwe: [CWEInput]
   reachableCode: [ReachableCodeInputSpec]
   exploits: [ExploitsInputSpec]
+  priority: Float
 }
 
 """

@@ -15,7 +15,11 @@ import (
 	"github.com/google/uuid"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/artifact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cvss"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cwe"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/exploit"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecode"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnerabilityid"
 )
 
@@ -123,6 +127,20 @@ func (cvc *CertifyVexCreate) SetNillableDescription(s *string) *CertifyVexCreate
 	return cvc
 }
 
+// SetPriority sets the "priority" field.
+func (cvc *CertifyVexCreate) SetPriority(f float64) *CertifyVexCreate {
+	cvc.mutation.SetPriority(f)
+	return cvc
+}
+
+// SetNillablePriority sets the "priority" field if the given value is not nil.
+func (cvc *CertifyVexCreate) SetNillablePriority(f *float64) *CertifyVexCreate {
+	if f != nil {
+		cvc.SetPriority(*f)
+	}
+	return cvc
+}
+
 // SetID sets the "id" field.
 func (cvc *CertifyVexCreate) SetID(u uuid.UUID) *CertifyVexCreate {
 	cvc.mutation.SetID(u)
@@ -150,6 +168,70 @@ func (cvc *CertifyVexCreate) SetArtifact(a *Artifact) *CertifyVexCreate {
 // SetVulnerability sets the "vulnerability" edge to the VulnerabilityID entity.
 func (cvc *CertifyVexCreate) SetVulnerability(v *VulnerabilityID) *CertifyVexCreate {
 	return cvc.SetVulnerabilityID(v.ID)
+}
+
+// SetCvssID sets the "cvss" edge to the CVSS entity by ID.
+func (cvc *CertifyVexCreate) SetCvssID(id uuid.UUID) *CertifyVexCreate {
+	cvc.mutation.SetCvssID(id)
+	return cvc
+}
+
+// SetNillableCvssID sets the "cvss" edge to the CVSS entity by ID if the given value is not nil.
+func (cvc *CertifyVexCreate) SetNillableCvssID(id *uuid.UUID) *CertifyVexCreate {
+	if id != nil {
+		cvc = cvc.SetCvssID(*id)
+	}
+	return cvc
+}
+
+// SetCvss sets the "cvss" edge to the CVSS entity.
+func (cvc *CertifyVexCreate) SetCvss(c *CVSS) *CertifyVexCreate {
+	return cvc.SetCvssID(c.ID)
+}
+
+// AddCweIDs adds the "cwe" edge to the CWE entity by IDs.
+func (cvc *CertifyVexCreate) AddCweIDs(ids ...uuid.UUID) *CertifyVexCreate {
+	cvc.mutation.AddCweIDs(ids...)
+	return cvc
+}
+
+// AddCwe adds the "cwe" edges to the CWE entity.
+func (cvc *CertifyVexCreate) AddCwe(c ...*CWE) *CertifyVexCreate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cvc.AddCweIDs(ids...)
+}
+
+// AddExploitIDs adds the "exploit" edge to the Exploit entity by IDs.
+func (cvc *CertifyVexCreate) AddExploitIDs(ids ...uuid.UUID) *CertifyVexCreate {
+	cvc.mutation.AddExploitIDs(ids...)
+	return cvc
+}
+
+// AddExploit adds the "exploit" edges to the Exploit entity.
+func (cvc *CertifyVexCreate) AddExploit(e ...*Exploit) *CertifyVexCreate {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return cvc.AddExploitIDs(ids...)
+}
+
+// AddReachableCodeIDs adds the "reachable_code" edge to the ReachableCode entity by IDs.
+func (cvc *CertifyVexCreate) AddReachableCodeIDs(ids ...uuid.UUID) *CertifyVexCreate {
+	cvc.mutation.AddReachableCodeIDs(ids...)
+	return cvc
+}
+
+// AddReachableCode adds the "reachable_code" edges to the ReachableCode entity.
+func (cvc *CertifyVexCreate) AddReachableCode(r ...*ReachableCode) *CertifyVexCreate {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return cvc.AddReachableCodeIDs(ids...)
 }
 
 // Mutation returns the CertifyVexMutation object of the builder.
@@ -297,6 +379,10 @@ func (cvc *CertifyVexCreate) createSpec() (*CertifyVex, *sqlgraph.CreateSpec) {
 		_spec.SetField(certifyvex.FieldDescription, field.TypeString, value)
 		_node.Description = &value
 	}
+	if value, ok := cvc.mutation.Priority(); ok {
+		_spec.SetField(certifyvex.FieldPriority, field.TypeFloat64, value)
+		_node.Priority = &value
+	}
 	if nodes := cvc.mutation.PackageIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -346,6 +432,71 @@ func (cvc *CertifyVexCreate) createSpec() (*CertifyVex, *sqlgraph.CreateSpec) {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.VulnerabilityID = nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cvc.mutation.CvssIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   certifyvex.CvssTable,
+			Columns: []string{certifyvex.CvssColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cvss.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.certify_vex_cvss = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cvc.mutation.CweIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.CweTable,
+			Columns: certifyvex.CwePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cwe.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cvc.mutation.ExploitIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ExploitTable,
+			Columns: certifyvex.ExploitPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(exploit.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := cvc.mutation.ReachableCodeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ReachableCodeTable,
+			Columns: certifyvex.ReachableCodePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(reachablecode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
@@ -559,6 +710,30 @@ func (u *CertifyVexUpsert) UpdateDescription() *CertifyVexUpsert {
 // ClearDescription clears the value of the "description" field.
 func (u *CertifyVexUpsert) ClearDescription() *CertifyVexUpsert {
 	u.SetNull(certifyvex.FieldDescription)
+	return u
+}
+
+// SetPriority sets the "priority" field.
+func (u *CertifyVexUpsert) SetPriority(v float64) *CertifyVexUpsert {
+	u.Set(certifyvex.FieldPriority, v)
+	return u
+}
+
+// UpdatePriority sets the "priority" field to the value that was provided on create.
+func (u *CertifyVexUpsert) UpdatePriority() *CertifyVexUpsert {
+	u.SetExcluded(certifyvex.FieldPriority)
+	return u
+}
+
+// AddPriority adds v to the "priority" field.
+func (u *CertifyVexUpsert) AddPriority(v float64) *CertifyVexUpsert {
+	u.Add(certifyvex.FieldPriority, v)
+	return u
+}
+
+// ClearPriority clears the value of the "priority" field.
+func (u *CertifyVexUpsert) ClearPriority() *CertifyVexUpsert {
+	u.SetNull(certifyvex.FieldPriority)
 	return u
 }
 
@@ -796,6 +971,34 @@ func (u *CertifyVexUpsertOne) UpdateDescription() *CertifyVexUpsertOne {
 func (u *CertifyVexUpsertOne) ClearDescription() *CertifyVexUpsertOne {
 	return u.Update(func(s *CertifyVexUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetPriority sets the "priority" field.
+func (u *CertifyVexUpsertOne) SetPriority(v float64) *CertifyVexUpsertOne {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.SetPriority(v)
+	})
+}
+
+// AddPriority adds v to the "priority" field.
+func (u *CertifyVexUpsertOne) AddPriority(v float64) *CertifyVexUpsertOne {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.AddPriority(v)
+	})
+}
+
+// UpdatePriority sets the "priority" field to the value that was provided on create.
+func (u *CertifyVexUpsertOne) UpdatePriority() *CertifyVexUpsertOne {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.UpdatePriority()
+	})
+}
+
+// ClearPriority clears the value of the "priority" field.
+func (u *CertifyVexUpsertOne) ClearPriority() *CertifyVexUpsertOne {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.ClearPriority()
 	})
 }
 
@@ -1200,6 +1403,34 @@ func (u *CertifyVexUpsertBulk) UpdateDescription() *CertifyVexUpsertBulk {
 func (u *CertifyVexUpsertBulk) ClearDescription() *CertifyVexUpsertBulk {
 	return u.Update(func(s *CertifyVexUpsert) {
 		s.ClearDescription()
+	})
+}
+
+// SetPriority sets the "priority" field.
+func (u *CertifyVexUpsertBulk) SetPriority(v float64) *CertifyVexUpsertBulk {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.SetPriority(v)
+	})
+}
+
+// AddPriority adds v to the "priority" field.
+func (u *CertifyVexUpsertBulk) AddPriority(v float64) *CertifyVexUpsertBulk {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.AddPriority(v)
+	})
+}
+
+// UpdatePriority sets the "priority" field to the value that was provided on create.
+func (u *CertifyVexUpsertBulk) UpdatePriority() *CertifyVexUpsertBulk {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.UpdatePriority()
+	})
+}
+
+// ClearPriority clears the value of the "priority" field.
+func (u *CertifyVexUpsertBulk) ClearPriority() *CertifyVexUpsertBulk {
+	return u.Update(func(s *CertifyVexUpsert) {
+		s.ClearPriority()
 	})
 }
 

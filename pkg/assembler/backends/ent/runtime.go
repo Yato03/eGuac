@@ -14,7 +14,15 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyscorecard"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvuln"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_impact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_scope"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cvss"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cwe"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/demonstrativeexample"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/dependency"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/detectionmethod"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/exploit"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hashequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hasmetadata"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hassourceat"
@@ -24,6 +32,9 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pkgequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pointofcontact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/potentialmitigation"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecode"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecodeartifact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/schema"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/slsaattestation"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/sourcename"
@@ -54,6 +65,18 @@ func init() {
 	builderDescID := builderFields[0].Descriptor()
 	// builder.DefaultID holds the default value on creation for the id field.
 	builder.DefaultID = builderDescID.Default.(func() uuid.UUID)
+	cvssFields := schema.CVSS{}.Fields()
+	_ = cvssFields
+	// cvssDescID is the schema descriptor for id field.
+	cvssDescID := cvssFields[0].Descriptor()
+	// cvss.DefaultID holds the default value on creation for the id field.
+	cvss.DefaultID = cvssDescID.Default.(func() uuid.UUID)
+	cweFields := schema.CWE{}.Fields()
+	_ = cweFields
+	// cweDescID is the schema descriptor for id field.
+	cweDescID := cweFields[0].Descriptor()
+	// cwe.DefaultID holds the default value on creation for the id field.
+	cwe.DefaultID = cweDescID.Default.(func() uuid.UUID)
 	certificationFields := schema.Certification{}.Fields()
 	_ = certificationFields
 	// certificationDescID is the schema descriptor for id field.
@@ -92,12 +115,48 @@ func init() {
 	certifyvulnDescID := certifyvulnFields[0].Descriptor()
 	// certifyvuln.DefaultID holds the default value on creation for the id field.
 	certifyvuln.DefaultID = certifyvulnDescID.Default.(func() uuid.UUID)
+	consequenceFields := schema.Consequence{}.Fields()
+	_ = consequenceFields
+	// consequenceDescID is the schema descriptor for id field.
+	consequenceDescID := consequenceFields[0].Descriptor()
+	// consequence.DefaultID holds the default value on creation for the id field.
+	consequence.DefaultID = consequenceDescID.Default.(func() uuid.UUID)
+	consequence_impactFields := schema.Consequence_Impact{}.Fields()
+	_ = consequence_impactFields
+	// consequence_impactDescID is the schema descriptor for id field.
+	consequence_impactDescID := consequence_impactFields[0].Descriptor()
+	// consequence_impact.DefaultID holds the default value on creation for the id field.
+	consequence_impact.DefaultID = consequence_impactDescID.Default.(func() uuid.UUID)
+	consequence_scopeFields := schema.Consequence_Scope{}.Fields()
+	_ = consequence_scopeFields
+	// consequence_scopeDescID is the schema descriptor for id field.
+	consequence_scopeDescID := consequence_scopeFields[0].Descriptor()
+	// consequence_scope.DefaultID holds the default value on creation for the id field.
+	consequence_scope.DefaultID = consequence_scopeDescID.Default.(func() uuid.UUID)
+	demonstrativeexampleFields := schema.DemonstrativeExample{}.Fields()
+	_ = demonstrativeexampleFields
+	// demonstrativeexampleDescID is the schema descriptor for id field.
+	demonstrativeexampleDescID := demonstrativeexampleFields[0].Descriptor()
+	// demonstrativeexample.DefaultID holds the default value on creation for the id field.
+	demonstrativeexample.DefaultID = demonstrativeexampleDescID.Default.(func() uuid.UUID)
 	dependencyFields := schema.Dependency{}.Fields()
 	_ = dependencyFields
 	// dependencyDescID is the schema descriptor for id field.
 	dependencyDescID := dependencyFields[0].Descriptor()
 	// dependency.DefaultID holds the default value on creation for the id field.
 	dependency.DefaultID = dependencyDescID.Default.(func() uuid.UUID)
+	detectionmethodFields := schema.DetectionMethod{}.Fields()
+	_ = detectionmethodFields
+	// detectionmethodDescID is the schema descriptor for id field.
+	detectionmethodDescID := detectionmethodFields[0].Descriptor()
+	// detectionmethod.DefaultID holds the default value on creation for the id field.
+	detectionmethod.DefaultID = detectionmethodDescID.Default.(func() uuid.UUID)
+	exploitFields := schema.Exploit{}.Fields()
+	_ = exploitFields
+	// exploitDescID is the schema descriptor for id field.
+	exploitDescID := exploitFields[0].Descriptor()
+	// exploit.DefaultID holds the default value on creation for the id field.
+	exploit.DefaultID = exploitDescID.Default.(func() uuid.UUID)
 	hasmetadataFields := schema.HasMetadata{}.Fields()
 	_ = hasmetadataFields
 	// hasmetadataDescID is the schema descriptor for id field.
@@ -172,6 +231,24 @@ func init() {
 	pointofcontactDescID := pointofcontactFields[0].Descriptor()
 	// pointofcontact.DefaultID holds the default value on creation for the id field.
 	pointofcontact.DefaultID = pointofcontactDescID.Default.(func() uuid.UUID)
+	potentialmitigationFields := schema.PotentialMitigation{}.Fields()
+	_ = potentialmitigationFields
+	// potentialmitigationDescID is the schema descriptor for id field.
+	potentialmitigationDescID := potentialmitigationFields[0].Descriptor()
+	// potentialmitigation.DefaultID holds the default value on creation for the id field.
+	potentialmitigation.DefaultID = potentialmitigationDescID.Default.(func() uuid.UUID)
+	reachablecodeFields := schema.ReachableCode{}.Fields()
+	_ = reachablecodeFields
+	// reachablecodeDescID is the schema descriptor for id field.
+	reachablecodeDescID := reachablecodeFields[0].Descriptor()
+	// reachablecode.DefaultID holds the default value on creation for the id field.
+	reachablecode.DefaultID = reachablecodeDescID.Default.(func() uuid.UUID)
+	reachablecodeartifactFields := schema.ReachableCodeArtifact{}.Fields()
+	_ = reachablecodeartifactFields
+	// reachablecodeartifactDescID is the schema descriptor for id field.
+	reachablecodeartifactDescID := reachablecodeartifactFields[0].Descriptor()
+	// reachablecodeartifact.DefaultID holds the default value on creation for the id field.
+	reachablecodeartifact.DefaultID = reachablecodeartifactDescID.Default.(func() uuid.UUID)
 	slsaattestationFields := schema.SLSAAttestation{}.Fields()
 	_ = slsaattestationFields
 	// slsaattestationDescID is the schema descriptor for id field.

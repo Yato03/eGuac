@@ -14,7 +14,15 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyscorecard"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvuln"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_impact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_scope"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cvss"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cwe"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/demonstrativeexample"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/dependency"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/detectionmethod"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/exploit"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hashequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hasmetadata"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hassourceat"
@@ -24,6 +32,9 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pkgequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pointofcontact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/potentialmitigation"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecode"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecodeartifact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/slsaattestation"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/sourcename"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnequal"
@@ -513,6 +524,237 @@ type builderPaginateArgs struct {
 
 func newBuilderPaginateArgs(rv map[string]any) *builderPaginateArgs {
 	args := &builderPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (c *CVSSQuery) CollectFields(ctx context.Context, satisfies ...string) (*CVSSQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return c, nil
+	}
+	if err := c.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (c *CVSSQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(cvss.Columns))
+		selectedFields = []string{cvss.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "certifyVex":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CertifyVexClient{config: c.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, certifyvexImplementors)...); err != nil {
+				return err
+			}
+			c.WithNamedCertifyVex(alias, func(wq *CertifyVexQuery) {
+				*wq = *query
+			})
+		case "vulnImpact":
+			if _, ok := fieldSeen[cvss.FieldVulnImpact]; !ok {
+				selectedFields = append(selectedFields, cvss.FieldVulnImpact)
+				fieldSeen[cvss.FieldVulnImpact] = struct{}{}
+			}
+		case "version":
+			if _, ok := fieldSeen[cvss.FieldVersion]; !ok {
+				selectedFields = append(selectedFields, cvss.FieldVersion)
+				fieldSeen[cvss.FieldVersion] = struct{}{}
+			}
+		case "attackVector":
+			if _, ok := fieldSeen[cvss.FieldAttackVector]; !ok {
+				selectedFields = append(selectedFields, cvss.FieldAttackVector)
+				fieldSeen[cvss.FieldAttackVector] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		c.Select(selectedFields...)
+	}
+	return nil
+}
+
+type cvssPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CVSSPaginateOption
+}
+
+func newCVSSPaginateArgs(rv map[string]any) *cvssPaginateArgs {
+	args := &cvssPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (c *CWEQuery) CollectFields(ctx context.Context, satisfies ...string) (*CWEQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return c, nil
+	}
+	if err := c.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (c *CWEQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(cwe.Columns))
+		selectedFields = []string{cwe.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "certifyVex":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CertifyVexClient{config: c.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, certifyvexImplementors)...); err != nil {
+				return err
+			}
+			c.WithNamedCertifyVex(alias, func(wq *CertifyVexQuery) {
+				*wq = *query
+			})
+
+		case "consequence":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ConsequenceClient{config: c.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, consequenceImplementors)...); err != nil {
+				return err
+			}
+			c.WithNamedConsequence(alias, func(wq *ConsequenceQuery) {
+				*wq = *query
+			})
+
+		case "demonstrativeExample":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&DemonstrativeExampleClient{config: c.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, demonstrativeexampleImplementors)...); err != nil {
+				return err
+			}
+			c.WithNamedDemonstrativeExample(alias, func(wq *DemonstrativeExampleQuery) {
+				*wq = *query
+			})
+
+		case "detectionMethod":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&DetectionMethodClient{config: c.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, detectionmethodImplementors)...); err != nil {
+				return err
+			}
+			c.WithNamedDetectionMethod(alias, func(wq *DetectionMethodQuery) {
+				*wq = *query
+			})
+
+		case "potentialMitigation":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&PotentialMitigationClient{config: c.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, potentialmitigationImplementors)...); err != nil {
+				return err
+			}
+			c.WithNamedPotentialMitigation(alias, func(wq *PotentialMitigationQuery) {
+				*wq = *query
+			})
+		case "vexID":
+			if _, ok := fieldSeen[cwe.FieldVexID]; !ok {
+				selectedFields = append(selectedFields, cwe.FieldVexID)
+				fieldSeen[cwe.FieldVexID] = struct{}{}
+			}
+		case "name":
+			if _, ok := fieldSeen[cwe.FieldName]; !ok {
+				selectedFields = append(selectedFields, cwe.FieldName)
+				fieldSeen[cwe.FieldName] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[cwe.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, cwe.FieldDescription)
+				fieldSeen[cwe.FieldDescription] = struct{}{}
+			}
+		case "backgroundDetail":
+			if _, ok := fieldSeen[cwe.FieldBackgroundDetail]; !ok {
+				selectedFields = append(selectedFields, cwe.FieldBackgroundDetail)
+				fieldSeen[cwe.FieldBackgroundDetail] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		c.Select(selectedFields...)
+	}
+	return nil
+}
+
+type cwePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []CWEPaginateOption
+}
+
+func newCWEPaginateArgs(rv map[string]any) *cwePaginateArgs {
+	args := &cwePaginateArgs{}
 	if rv == nil {
 		return args
 	}
@@ -1065,6 +1307,56 @@ func (cv *CertifyVexQuery) collectField(ctx context.Context, oneNode bool, opCtx
 				selectedFields = append(selectedFields, certifyvex.FieldVulnerabilityID)
 				fieldSeen[certifyvex.FieldVulnerabilityID] = struct{}{}
 			}
+
+		case "cvss":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CVSSClient{config: cv.config}).Query()
+			)
+			if err := query.collectField(ctx, oneNode, opCtx, field, path, mayAddCondition(satisfies, cvssImplementors)...); err != nil {
+				return err
+			}
+			cv.withCvss = query
+
+		case "cwe":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CWEClient{config: cv.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, cweImplementors)...); err != nil {
+				return err
+			}
+			cv.WithNamedCwe(alias, func(wq *CWEQuery) {
+				*wq = *query
+			})
+
+		case "exploit":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ExploitClient{config: cv.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, exploitImplementors)...); err != nil {
+				return err
+			}
+			cv.WithNamedExploit(alias, func(wq *ExploitQuery) {
+				*wq = *query
+			})
+
+		case "reachableCode":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ReachableCodeClient{config: cv.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, reachablecodeImplementors)...); err != nil {
+				return err
+			}
+			cv.WithNamedReachableCode(alias, func(wq *ReachableCodeQuery) {
+				*wq = *query
+			})
 		case "packageID":
 			if _, ok := fieldSeen[certifyvex.FieldPackageID]; !ok {
 				selectedFields = append(selectedFields, certifyvex.FieldPackageID)
@@ -1124,6 +1416,11 @@ func (cv *CertifyVexQuery) collectField(ctx context.Context, oneNode bool, opCtx
 			if _, ok := fieldSeen[certifyvex.FieldDescription]; !ok {
 				selectedFields = append(selectedFields, certifyvex.FieldDescription)
 				fieldSeen[certifyvex.FieldDescription] = struct{}{}
+			}
+		case "priority":
+			if _, ok := fieldSeen[certifyvex.FieldPriority]; !ok {
+				selectedFields = append(selectedFields, certifyvex.FieldPriority)
+				fieldSeen[certifyvex.FieldPriority] = struct{}{}
 			}
 		case "id":
 		case "__typename":
@@ -1303,6 +1600,345 @@ func newCertifyVulnPaginateArgs(rv map[string]any) *certifyvulnPaginateArgs {
 }
 
 // CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (c *ConsequenceQuery) CollectFields(ctx context.Context, satisfies ...string) (*ConsequenceQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return c, nil
+	}
+	if err := c.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return c, nil
+}
+
+func (c *ConsequenceQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(consequence.Columns))
+		selectedFields = []string{consequence.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "cwe":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CWEClient{config: c.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, cweImplementors)...); err != nil {
+				return err
+			}
+			c.WithNamedCwe(alias, func(wq *CWEQuery) {
+				*wq = *query
+			})
+
+		case "consequenceScope":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ConsequenceScopeClient{config: c.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, consequence_scopeImplementors)...); err != nil {
+				return err
+			}
+			c.WithNamedConsequenceScope(alias, func(wq *ConsequenceScopeQuery) {
+				*wq = *query
+			})
+
+		case "consequenceImpact":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ConsequenceImpactClient{config: c.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, consequence_impactImplementors)...); err != nil {
+				return err
+			}
+			c.WithNamedConsequenceImpact(alias, func(wq *ConsequenceImpactQuery) {
+				*wq = *query
+			})
+		case "notes":
+			if _, ok := fieldSeen[consequence.FieldNotes]; !ok {
+				selectedFields = append(selectedFields, consequence.FieldNotes)
+				fieldSeen[consequence.FieldNotes] = struct{}{}
+			}
+		case "likelihood":
+			if _, ok := fieldSeen[consequence.FieldLikelihood]; !ok {
+				selectedFields = append(selectedFields, consequence.FieldLikelihood)
+				fieldSeen[consequence.FieldLikelihood] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		c.Select(selectedFields...)
+	}
+	return nil
+}
+
+type consequencePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []ConsequencePaginateOption
+}
+
+func newConsequencePaginateArgs(rv map[string]any) *consequencePaginateArgs {
+	args := &consequencePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (ci *ConsequenceImpactQuery) CollectFields(ctx context.Context, satisfies ...string) (*ConsequenceImpactQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return ci, nil
+	}
+	if err := ci.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return ci, nil
+}
+
+func (ci *ConsequenceImpactQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(consequence_impact.Columns))
+		selectedFields = []string{consequence_impact.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "consequence":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ConsequenceClient{config: ci.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, consequenceImplementors)...); err != nil {
+				return err
+			}
+			ci.WithNamedConsequence(alias, func(wq *ConsequenceQuery) {
+				*wq = *query
+			})
+		case "impact":
+			if _, ok := fieldSeen[consequence_impact.FieldImpact]; !ok {
+				selectedFields = append(selectedFields, consequence_impact.FieldImpact)
+				fieldSeen[consequence_impact.FieldImpact] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		ci.Select(selectedFields...)
+	}
+	return nil
+}
+
+type consequenceImpactPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []Consequence_ImpactPaginateOption
+}
+
+func newConsequence_ImpactPaginateArgs(rv map[string]any) *consequenceImpactPaginateArgs {
+	args := &consequenceImpactPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (cs *ConsequenceScopeQuery) CollectFields(ctx context.Context, satisfies ...string) (*ConsequenceScopeQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return cs, nil
+	}
+	if err := cs.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return cs, nil
+}
+
+func (cs *ConsequenceScopeQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(consequence_scope.Columns))
+		selectedFields = []string{consequence_scope.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "consequence":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ConsequenceClient{config: cs.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, consequenceImplementors)...); err != nil {
+				return err
+			}
+			cs.WithNamedConsequence(alias, func(wq *ConsequenceQuery) {
+				*wq = *query
+			})
+		case "scope":
+			if _, ok := fieldSeen[consequence_scope.FieldScope]; !ok {
+				selectedFields = append(selectedFields, consequence_scope.FieldScope)
+				fieldSeen[consequence_scope.FieldScope] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		cs.Select(selectedFields...)
+	}
+	return nil
+}
+
+type consequenceScopePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []Consequence_ScopePaginateOption
+}
+
+func newConsequence_ScopePaginateArgs(rv map[string]any) *consequenceScopePaginateArgs {
+	args := &consequenceScopePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (de *DemonstrativeExampleQuery) CollectFields(ctx context.Context, satisfies ...string) (*DemonstrativeExampleQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return de, nil
+	}
+	if err := de.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return de, nil
+}
+
+func (de *DemonstrativeExampleQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(demonstrativeexample.Columns))
+		selectedFields = []string{demonstrativeexample.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "cwe":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CWEClient{config: de.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, cweImplementors)...); err != nil {
+				return err
+			}
+			de.WithNamedCwe(alias, func(wq *CWEQuery) {
+				*wq = *query
+			})
+		case "description":
+			if _, ok := fieldSeen[demonstrativeexample.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, demonstrativeexample.FieldDescription)
+				fieldSeen[demonstrativeexample.FieldDescription] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		de.Select(selectedFields...)
+	}
+	return nil
+}
+
+type demonstrativeexamplePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []DemonstrativeExamplePaginateOption
+}
+
+func newDemonstrativeExamplePaginateArgs(rv map[string]any) *demonstrativeexamplePaginateArgs {
+	args := &demonstrativeexamplePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
 func (d *DependencyQuery) CollectFields(ctx context.Context, satisfies ...string) (*DependencyQuery, error) {
 	fc := graphql.GetFieldContext(ctx)
 	if fc == nil {
@@ -1421,6 +2057,185 @@ type dependencyPaginateArgs struct {
 
 func newDependencyPaginateArgs(rv map[string]any) *dependencyPaginateArgs {
 	args := &dependencyPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (dm *DetectionMethodQuery) CollectFields(ctx context.Context, satisfies ...string) (*DetectionMethodQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return dm, nil
+	}
+	if err := dm.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return dm, nil
+}
+
+func (dm *DetectionMethodQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(detectionmethod.Columns))
+		selectedFields = []string{detectionmethod.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "cwe":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CWEClient{config: dm.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, cweImplementors)...); err != nil {
+				return err
+			}
+			dm.WithNamedCwe(alias, func(wq *CWEQuery) {
+				*wq = *query
+			})
+		case "detectionID":
+			if _, ok := fieldSeen[detectionmethod.FieldDetectionID]; !ok {
+				selectedFields = append(selectedFields, detectionmethod.FieldDetectionID)
+				fieldSeen[detectionmethod.FieldDetectionID] = struct{}{}
+			}
+		case "method":
+			if _, ok := fieldSeen[detectionmethod.FieldMethod]; !ok {
+				selectedFields = append(selectedFields, detectionmethod.FieldMethod)
+				fieldSeen[detectionmethod.FieldMethod] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[detectionmethod.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, detectionmethod.FieldDescription)
+				fieldSeen[detectionmethod.FieldDescription] = struct{}{}
+			}
+		case "effectiveness":
+			if _, ok := fieldSeen[detectionmethod.FieldEffectiveness]; !ok {
+				selectedFields = append(selectedFields, detectionmethod.FieldEffectiveness)
+				fieldSeen[detectionmethod.FieldEffectiveness] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		dm.Select(selectedFields...)
+	}
+	return nil
+}
+
+type detectionmethodPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []DetectionMethodPaginateOption
+}
+
+func newDetectionMethodPaginateArgs(rv map[string]any) *detectionmethodPaginateArgs {
+	args := &detectionmethodPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (e *ExploitQuery) CollectFields(ctx context.Context, satisfies ...string) (*ExploitQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return e, nil
+	}
+	if err := e.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return e, nil
+}
+
+func (e *ExploitQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(exploit.Columns))
+		selectedFields = []string{exploit.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "certifyVex":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CertifyVexClient{config: e.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, certifyvexImplementors)...); err != nil {
+				return err
+			}
+			e.WithNamedCertifyVex(alias, func(wq *CertifyVexQuery) {
+				*wq = *query
+			})
+		case "exploitID":
+			if _, ok := fieldSeen[exploit.FieldExploitID]; !ok {
+				selectedFields = append(selectedFields, exploit.FieldExploitID)
+				fieldSeen[exploit.FieldExploitID] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[exploit.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, exploit.FieldDescription)
+				fieldSeen[exploit.FieldDescription] = struct{}{}
+			}
+		case "payload":
+			if _, ok := fieldSeen[exploit.FieldPayload]; !ok {
+				selectedFields = append(selectedFields, exploit.FieldPayload)
+				fieldSeen[exploit.FieldPayload] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		e.Select(selectedFields...)
+	}
+	return nil
+}
+
+type exploitPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []ExploitPaginateOption
+}
+
+func newExploitPaginateArgs(rv map[string]any) *exploitPaginateArgs {
+	args := &exploitPaginateArgs{}
 	if rv == nil {
 		return args
 	}
@@ -2833,6 +3648,270 @@ type pointofcontactPaginateArgs struct {
 
 func newPointOfContactPaginateArgs(rv map[string]any) *pointofcontactPaginateArgs {
 	args := &pointofcontactPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (pm *PotentialMitigationQuery) CollectFields(ctx context.Context, satisfies ...string) (*PotentialMitigationQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return pm, nil
+	}
+	if err := pm.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return pm, nil
+}
+
+func (pm *PotentialMitigationQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(potentialmitigation.Columns))
+		selectedFields = []string{potentialmitigation.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "cwe":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CWEClient{config: pm.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, cweImplementors)...); err != nil {
+				return err
+			}
+			pm.WithNamedCwe(alias, func(wq *CWEQuery) {
+				*wq = *query
+			})
+		case "phase":
+			if _, ok := fieldSeen[potentialmitigation.FieldPhase]; !ok {
+				selectedFields = append(selectedFields, potentialmitigation.FieldPhase)
+				fieldSeen[potentialmitigation.FieldPhase] = struct{}{}
+			}
+		case "description":
+			if _, ok := fieldSeen[potentialmitigation.FieldDescription]; !ok {
+				selectedFields = append(selectedFields, potentialmitigation.FieldDescription)
+				fieldSeen[potentialmitigation.FieldDescription] = struct{}{}
+			}
+		case "effectiveness":
+			if _, ok := fieldSeen[potentialmitigation.FieldEffectiveness]; !ok {
+				selectedFields = append(selectedFields, potentialmitigation.FieldEffectiveness)
+				fieldSeen[potentialmitigation.FieldEffectiveness] = struct{}{}
+			}
+		case "effectivenessNotes":
+			if _, ok := fieldSeen[potentialmitigation.FieldEffectivenessNotes]; !ok {
+				selectedFields = append(selectedFields, potentialmitigation.FieldEffectivenessNotes)
+				fieldSeen[potentialmitigation.FieldEffectivenessNotes] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		pm.Select(selectedFields...)
+	}
+	return nil
+}
+
+type potentialmitigationPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []PotentialMitigationPaginateOption
+}
+
+func newPotentialMitigationPaginateArgs(rv map[string]any) *potentialmitigationPaginateArgs {
+	args := &potentialmitigationPaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (rc *ReachableCodeQuery) CollectFields(ctx context.Context, satisfies ...string) (*ReachableCodeQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return rc, nil
+	}
+	if err := rc.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return rc, nil
+}
+
+func (rc *ReachableCodeQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(reachablecode.Columns))
+		selectedFields = []string{reachablecode.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "certifyVex":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&CertifyVexClient{config: rc.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, certifyvexImplementors)...); err != nil {
+				return err
+			}
+			rc.WithNamedCertifyVex(alias, func(wq *CertifyVexQuery) {
+				*wq = *query
+			})
+
+		case "reachableCodeArtifact":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ReachableCodeArtifactClient{config: rc.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, reachablecodeartifactImplementors)...); err != nil {
+				return err
+			}
+			rc.WithNamedReachableCodeArtifact(alias, func(wq *ReachableCodeArtifactQuery) {
+				*wq = *query
+			})
+		case "pathToFile":
+			if _, ok := fieldSeen[reachablecode.FieldPathToFile]; !ok {
+				selectedFields = append(selectedFields, reachablecode.FieldPathToFile)
+				fieldSeen[reachablecode.FieldPathToFile] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		rc.Select(selectedFields...)
+	}
+	return nil
+}
+
+type reachablecodePaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []ReachableCodePaginateOption
+}
+
+func newReachableCodePaginateArgs(rv map[string]any) *reachablecodePaginateArgs {
+	args := &reachablecodePaginateArgs{}
+	if rv == nil {
+		return args
+	}
+	if v := rv[firstField]; v != nil {
+		args.first = v.(*int)
+	}
+	if v := rv[lastField]; v != nil {
+		args.last = v.(*int)
+	}
+	if v := rv[afterField]; v != nil {
+		args.after = v.(*Cursor)
+	}
+	if v := rv[beforeField]; v != nil {
+		args.before = v.(*Cursor)
+	}
+	return args
+}
+
+// CollectFields tells the query-builder to eagerly load connected nodes by resolver context.
+func (rca *ReachableCodeArtifactQuery) CollectFields(ctx context.Context, satisfies ...string) (*ReachableCodeArtifactQuery, error) {
+	fc := graphql.GetFieldContext(ctx)
+	if fc == nil {
+		return rca, nil
+	}
+	if err := rca.collectField(ctx, false, graphql.GetOperationContext(ctx), fc.Field, nil, satisfies...); err != nil {
+		return nil, err
+	}
+	return rca, nil
+}
+
+func (rca *ReachableCodeArtifactQuery) collectField(ctx context.Context, oneNode bool, opCtx *graphql.OperationContext, collected graphql.CollectedField, path []string, satisfies ...string) error {
+	path = append([]string(nil), path...)
+	var (
+		unknownSeen    bool
+		fieldSeen      = make(map[string]struct{}, len(reachablecodeartifact.Columns))
+		selectedFields = []string{reachablecodeartifact.FieldID}
+	)
+	for _, field := range graphql.CollectFields(opCtx, collected.Selections, satisfies) {
+		switch field.Name {
+
+		case "reachableCode":
+			var (
+				alias = field.Alias
+				path  = append(path, alias)
+				query = (&ReachableCodeClient{config: rca.config}).Query()
+			)
+			if err := query.collectField(ctx, false, opCtx, field, path, mayAddCondition(satisfies, reachablecodeImplementors)...); err != nil {
+				return err
+			}
+			rca.WithNamedReachableCode(alias, func(wq *ReachableCodeQuery) {
+				*wq = *query
+			})
+		case "artifactName":
+			if _, ok := fieldSeen[reachablecodeartifact.FieldArtifactName]; !ok {
+				selectedFields = append(selectedFields, reachablecodeartifact.FieldArtifactName)
+				fieldSeen[reachablecodeartifact.FieldArtifactName] = struct{}{}
+			}
+		case "usedInLines":
+			if _, ok := fieldSeen[reachablecodeartifact.FieldUsedInLines]; !ok {
+				selectedFields = append(selectedFields, reachablecodeartifact.FieldUsedInLines)
+				fieldSeen[reachablecodeartifact.FieldUsedInLines] = struct{}{}
+			}
+		case "id":
+		case "__typename":
+		default:
+			unknownSeen = true
+		}
+	}
+	if !unknownSeen {
+		rca.Select(selectedFields...)
+	}
+	return nil
+}
+
+type reachablecodeartifactPaginateArgs struct {
+	first, last   *int
+	after, before *Cursor
+	opts          []ReachableCodeArtifactPaginateOption
+}
+
+func newReachableCodeArtifactPaginateArgs(rv map[string]any) *reachablecodeartifactPaginateArgs {
+	args := &reachablecodeartifactPaginateArgs{}
 	if rv == nil {
 		return args
 	}

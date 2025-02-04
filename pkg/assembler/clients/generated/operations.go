@@ -7418,14 +7418,14 @@ func (v *CVSSSpec) GetVersion() *string { return v.Version }
 func (v *CVSSSpec) GetAttackString() *string { return v.AttackString }
 
 type CWEInput struct {
-	ID                   string                       `json:"ID"`
-	Abstraction          string                       `json:"Abstraction"`
-	Name                 string                       `json:"Name"`
-	BackgroundDetail     *string                      `json:"BackgroundDetail"`
-	PotentialMitigations []*PotentialMitigationsInput `json:"PotentialMitigations"`
-	Consequences         []*ConsequencesInput         `json:"Consequences"`
-	DemostrativeExamples []*string                    `json:"DemostrativeExamples"`
-	DetectionMethods     []*DetectionMethodsInput     `json:"DetectionMethods"`
+	ID                    string                       `json:"ID"`
+	Abstraction           string                       `json:"Abstraction"`
+	Name                  string                       `json:"Name"`
+	BackgroundDetail      *string                      `json:"BackgroundDetail"`
+	PotentialMitigations  []*PotentialMitigationsInput `json:"PotentialMitigations"`
+	Consequences          []*ConsequencesInput         `json:"Consequences"`
+	DemonstrativeExamples []*string                    `json:"DemonstrativeExamples"`
+	DetectionMethods      []*DetectionMethodsInput     `json:"DetectionMethods"`
 }
 
 // GetID returns CWEInput.ID, and is useful for accessing the field via an interface.
@@ -7448,21 +7448,21 @@ func (v *CWEInput) GetPotentialMitigations() []*PotentialMitigationsInput {
 // GetConsequences returns CWEInput.Consequences, and is useful for accessing the field via an interface.
 func (v *CWEInput) GetConsequences() []*ConsequencesInput { return v.Consequences }
 
-// GetDemostrativeExamples returns CWEInput.DemostrativeExamples, and is useful for accessing the field via an interface.
-func (v *CWEInput) GetDemostrativeExamples() []*string { return v.DemostrativeExamples }
+// GetDemonstrativeExamples returns CWEInput.DemonstrativeExamples, and is useful for accessing the field via an interface.
+func (v *CWEInput) GetDemonstrativeExamples() []*string { return v.DemonstrativeExamples }
 
 // GetDetectionMethods returns CWEInput.DetectionMethods, and is useful for accessing the field via an interface.
 func (v *CWEInput) GetDetectionMethods() []*DetectionMethodsInput { return v.DetectionMethods }
 
 type CWEInputSpec struct {
-	ID                   *string                          `json:"ID"`
-	Abstraction          *string                          `json:"Abstraction"`
-	Name                 *string                          `json:"Name"`
-	BackgroundDetail     *string                          `json:"BackgroundDetail"`
-	PotentialMitigations []*PotentialMitigationsInputSpec `json:"PotentialMitigations"`
-	Consequences         []*ConsequencesInputSpec         `json:"Consequences"`
-	DemostrativeExamples []*string                        `json:"DemostrativeExamples"`
-	DetectionMethods     []*DetectionMethodsInputSpec     `json:"DetectionMethods"`
+	ID                    *string                          `json:"ID"`
+	Abstraction           *string                          `json:"Abstraction"`
+	Name                  *string                          `json:"Name"`
+	BackgroundDetail      *string                          `json:"BackgroundDetail"`
+	PotentialMitigations  []*PotentialMitigationsInputSpec `json:"PotentialMitigations"`
+	Consequences          []*ConsequencesInputSpec         `json:"Consequences"`
+	DemonstrativeExamples []*string                        `json:"DemonstrativeExamples"`
+	DetectionMethods      []*DetectionMethodsInputSpec     `json:"DetectionMethods"`
 }
 
 // GetID returns CWEInputSpec.ID, and is useful for accessing the field via an interface.
@@ -7485,8 +7485,8 @@ func (v *CWEInputSpec) GetPotentialMitigations() []*PotentialMitigationsInputSpe
 // GetConsequences returns CWEInputSpec.Consequences, and is useful for accessing the field via an interface.
 func (v *CWEInputSpec) GetConsequences() []*ConsequencesInputSpec { return v.Consequences }
 
-// GetDemostrativeExamples returns CWEInputSpec.DemostrativeExamples, and is useful for accessing the field via an interface.
-func (v *CWEInputSpec) GetDemostrativeExamples() []*string { return v.DemostrativeExamples }
+// GetDemonstrativeExamples returns CWEInputSpec.DemonstrativeExamples, and is useful for accessing the field via an interface.
+func (v *CWEInputSpec) GetDemonstrativeExamples() []*string { return v.DemonstrativeExamples }
 
 // GetDetectionMethods returns CWEInputSpec.DetectionMethods, and is useful for accessing the field via an interface.
 func (v *CWEInputSpec) GetDetectionMethods() []*DetectionMethodsInputSpec { return v.DetectionMethods }
@@ -8871,6 +8871,7 @@ type CertifyVEXStatementSpec struct {
 	Cwe              []*CWEInputSpec           `json:"cwe"`
 	ReachableCode    []*ReachableCodeInputSpec `json:"reachableCode"`
 	Exploits         []*ExploitsInputSpec      `json:"exploits"`
+	Priority         *float64                  `json:"priority"`
 }
 
 // GetId returns CertifyVEXStatementSpec.Id, and is useful for accessing the field via an interface.
@@ -8922,6 +8923,9 @@ func (v *CertifyVEXStatementSpec) GetReachableCode() []*ReachableCodeInputSpec {
 
 // GetExploits returns CertifyVEXStatementSpec.Exploits, and is useful for accessing the field via an interface.
 func (v *CertifyVEXStatementSpec) GetExploits() []*ExploitsInputSpec { return v.Exploits }
+
+// GetPriority returns CertifyVEXStatementSpec.Priority, and is useful for accessing the field via an interface.
+func (v *CertifyVEXStatementSpec) GetPriority() *float64 { return v.Priority }
 
 // CertifyVulnCertifyVuln includes the requested fields of the GraphQL type CertifyVuln.
 // The GraphQL type's documentation follows.
@@ -27731,11 +27735,15 @@ const (
 )
 
 type ReachableCodeInputSpec struct {
-	PathToFile *string `json:"PathToFile"`
+	PathToFile    *string                  `json:"PathToFile"`
+	UsedArtifacts []*UsedArtifactInputSpec `json:"UsedArtifacts"`
 }
 
 // GetPathToFile returns ReachableCodeInputSpec.PathToFile, and is useful for accessing the field via an interface.
 func (v *ReachableCodeInputSpec) GetPathToFile() *string { return v.PathToFile }
+
+// GetUsedArtifacts returns ReachableCodeInputSpec.UsedArtifacts, and is useful for accessing the field via an interface.
+func (v *ReachableCodeInputSpec) GetUsedArtifacts() []*UsedArtifactInputSpec { return v.UsedArtifacts }
 
 // SLSAInputSpec is the same as SLSA but for mutation input.
 type SLSAInputSpec struct {
@@ -28476,6 +28484,17 @@ func (v *SourcesSourcesSource) __premarshalJSON() (*__premarshalSourcesSourcesSo
 	return &retval, nil
 }
 
+type UsedArtifactInputSpec struct {
+	Name        *string `json:"Name"`
+	UsedInLines []*int  `json:"UsedInLines"`
+}
+
+// GetName returns UsedArtifactInputSpec.Name, and is useful for accessing the field via an interface.
+func (v *UsedArtifactInputSpec) GetName() *string { return v.Name }
+
+// GetUsedInLines returns UsedArtifactInputSpec.UsedInLines, and is useful for accessing the field via an interface.
+func (v *UsedArtifactInputSpec) GetUsedInLines() []*int { return v.UsedInLines }
+
 // VEXStatementListCertifyVEXStatementListVEXConnection includes the requested fields of the GraphQL type VEXConnection.
 // The GraphQL type's documentation follows.
 //
@@ -28890,6 +28909,7 @@ type VexStatementInputSpec struct {
 	Cwe              []*CWEInput               `json:"cwe"`
 	ReachableCode    []*ReachableCodeInputSpec `json:"reachableCode"`
 	Exploits         []*ExploitsInputSpec      `json:"exploits"`
+	Priority         *float64                  `json:"priority"`
 }
 
 // GetStatus returns VexStatementInputSpec.Status, and is useful for accessing the field via an interface.
@@ -28930,6 +28950,9 @@ func (v *VexStatementInputSpec) GetReachableCode() []*ReachableCodeInputSpec { r
 
 // GetExploits returns VexStatementInputSpec.Exploits, and is useful for accessing the field via an interface.
 func (v *VexStatementInputSpec) GetExploits() []*ExploitsInputSpec { return v.Exploits }
+
+// GetPriority returns VexStatementInputSpec.Priority, and is useful for accessing the field via an interface.
+func (v *VexStatementInputSpec) GetPriority() *float64 { return v.Priority }
 
 // Records the status of a VEX statement subject.
 type VexStatus string

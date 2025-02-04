@@ -216,6 +216,78 @@ func (b *Builder) SlsaAttestations(ctx context.Context) (result []*SLSAAttestati
 	return result, err
 }
 
+func (c *CVSS) CertifyVex(ctx context.Context) (result []*CertifyVex, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = c.NamedCertifyVex(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = c.Edges.CertifyVexOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = c.QueryCertifyVex().All(ctx)
+	}
+	return result, err
+}
+
+func (c *CWE) CertifyVex(ctx context.Context) (result []*CertifyVex, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = c.NamedCertifyVex(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = c.Edges.CertifyVexOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = c.QueryCertifyVex().All(ctx)
+	}
+	return result, err
+}
+
+func (c *CWE) Consequence(ctx context.Context) (result []*Consequence, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = c.NamedConsequence(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = c.Edges.ConsequenceOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = c.QueryConsequence().All(ctx)
+	}
+	return result, err
+}
+
+func (c *CWE) DemonstrativeExample(ctx context.Context) (result []*DemonstrativeExample, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = c.NamedDemonstrativeExample(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = c.Edges.DemonstrativeExampleOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = c.QueryDemonstrativeExample().All(ctx)
+	}
+	return result, err
+}
+
+func (c *CWE) DetectionMethod(ctx context.Context) (result []*DetectionMethod, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = c.NamedDetectionMethod(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = c.Edges.DetectionMethodOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = c.QueryDetectionMethod().All(ctx)
+	}
+	return result, err
+}
+
+func (c *CWE) PotentialMitigation(ctx context.Context) (result []*PotentialMitigation, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = c.NamedPotentialMitigation(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = c.Edges.PotentialMitigationOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = c.QueryPotentialMitigation().All(ctx)
+	}
+	return result, err
+}
+
 func (c *Certification) Source(ctx context.Context) (*SourceName, error) {
 	result, err := c.Edges.SourceOrErr()
 	if IsNotLoaded(err) {
@@ -320,6 +392,50 @@ func (cv *CertifyVex) Vulnerability(ctx context.Context) (*VulnerabilityID, erro
 	return result, err
 }
 
+func (cv *CertifyVex) Cvss(ctx context.Context) (*CVSS, error) {
+	result, err := cv.Edges.CvssOrErr()
+	if IsNotLoaded(err) {
+		result, err = cv.QueryCvss().Only(ctx)
+	}
+	return result, MaskNotFound(err)
+}
+
+func (cv *CertifyVex) Cwe(ctx context.Context) (result []*CWE, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = cv.NamedCwe(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = cv.Edges.CweOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = cv.QueryCwe().All(ctx)
+	}
+	return result, err
+}
+
+func (cv *CertifyVex) Exploit(ctx context.Context) (result []*Exploit, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = cv.NamedExploit(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = cv.Edges.ExploitOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = cv.QueryExploit().All(ctx)
+	}
+	return result, err
+}
+
+func (cv *CertifyVex) ReachableCode(ctx context.Context) (result []*ReachableCode, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = cv.NamedReachableCode(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = cv.Edges.ReachableCodeOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = cv.QueryReachableCode().All(ctx)
+	}
+	return result, err
+}
+
 func (cv *CertifyVuln) Vulnerability(ctx context.Context) (*VulnerabilityID, error) {
 	result, err := cv.Edges.VulnerabilityOrErr()
 	if IsNotLoaded(err) {
@@ -332,6 +448,78 @@ func (cv *CertifyVuln) Package(ctx context.Context) (*PackageVersion, error) {
 	result, err := cv.Edges.PackageOrErr()
 	if IsNotLoaded(err) {
 		result, err = cv.QueryPackage().Only(ctx)
+	}
+	return result, err
+}
+
+func (c *Consequence) Cwe(ctx context.Context) (result []*CWE, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = c.NamedCwe(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = c.Edges.CweOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = c.QueryCwe().All(ctx)
+	}
+	return result, err
+}
+
+func (c *Consequence) ConsequenceScope(ctx context.Context) (result []*Consequence_Scope, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = c.NamedConsequenceScope(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = c.Edges.ConsequenceScopeOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = c.QueryConsequenceScope().All(ctx)
+	}
+	return result, err
+}
+
+func (c *Consequence) ConsequenceImpact(ctx context.Context) (result []*Consequence_Impact, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = c.NamedConsequenceImpact(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = c.Edges.ConsequenceImpactOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = c.QueryConsequenceImpact().All(ctx)
+	}
+	return result, err
+}
+
+func (ci *Consequence_Impact) Consequence(ctx context.Context) (result []*Consequence, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = ci.NamedConsequence(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = ci.Edges.ConsequenceOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = ci.QueryConsequence().All(ctx)
+	}
+	return result, err
+}
+
+func (cs *Consequence_Scope) Consequence(ctx context.Context) (result []*Consequence, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = cs.NamedConsequence(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = cs.Edges.ConsequenceOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = cs.QueryConsequence().All(ctx)
+	}
+	return result, err
+}
+
+func (de *DemonstrativeExample) Cwe(ctx context.Context) (result []*CWE, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = de.NamedCwe(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = de.Edges.CweOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = de.QueryCwe().All(ctx)
 	}
 	return result, err
 }
@@ -360,6 +548,30 @@ func (d *Dependency) IncludedInSboms(ctx context.Context) (result []*BillOfMater
 	}
 	if IsNotLoaded(err) {
 		result, err = d.QueryIncludedInSboms().All(ctx)
+	}
+	return result, err
+}
+
+func (dm *DetectionMethod) Cwe(ctx context.Context) (result []*CWE, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = dm.NamedCwe(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = dm.Edges.CweOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = dm.QueryCwe().All(ctx)
+	}
+	return result, err
+}
+
+func (e *Exploit) CertifyVex(ctx context.Context) (result []*CertifyVex, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = e.NamedCertifyVex(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = e.Edges.CertifyVexOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = e.QueryCertifyVex().All(ctx)
 	}
 	return result, err
 }
@@ -778,6 +990,54 @@ func (poc *PointOfContact) Artifact(ctx context.Context) (*Artifact, error) {
 		result, err = poc.QueryArtifact().Only(ctx)
 	}
 	return result, MaskNotFound(err)
+}
+
+func (pm *PotentialMitigation) Cwe(ctx context.Context) (result []*CWE, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = pm.NamedCwe(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = pm.Edges.CweOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = pm.QueryCwe().All(ctx)
+	}
+	return result, err
+}
+
+func (rc *ReachableCode) CertifyVex(ctx context.Context) (result []*CertifyVex, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = rc.NamedCertifyVex(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = rc.Edges.CertifyVexOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = rc.QueryCertifyVex().All(ctx)
+	}
+	return result, err
+}
+
+func (rc *ReachableCode) ReachableCodeArtifact(ctx context.Context) (result []*ReachableCodeArtifact, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = rc.NamedReachableCodeArtifact(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = rc.Edges.ReachableCodeArtifactOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = rc.QueryReachableCodeArtifact().All(ctx)
+	}
+	return result, err
+}
+
+func (rca *ReachableCodeArtifact) ReachableCode(ctx context.Context) (result []*ReachableCode, err error) {
+	if fc := graphql.GetFieldContext(ctx); fc != nil && fc.Field.Alias != "" {
+		result, err = rca.NamedReachableCode(graphql.GetFieldContext(ctx).Field.Alias)
+	} else {
+		result, err = rca.Edges.ReachableCodeOrErr()
+	}
+	if IsNotLoaded(err) {
+		result, err = rca.QueryReachableCode().All(ctx)
+	}
+	return result, err
 }
 
 func (sa *SLSAAttestation) BuiltFrom(ctx context.Context) (result []*Artifact, err error) {

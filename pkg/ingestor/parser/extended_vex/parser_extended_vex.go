@@ -139,17 +139,6 @@ func (c *ExtendedVEXParser) generateVexIngest(vulnInput *generated.Vulnerability
 			vd.VexJustification = generated.VexJustificationNotProvided
 		}
 
-		for _, rc := range p.ReachableCode {
-			vd.ReachableCode = append(vd.ReachableCode, &generated.ReachableCodeInputSpec{
-				PathToFile: &rc.PathToFile,
-			})
-		}
-		for _, exploit := range p.Exploits {
-			vd.Exploits = append(vd.Exploits, &generated.ExploitsInputSpec{
-				Description: &exploit.Description,
-				Payload:     &exploit.Payload,
-			})
-		}
 		vd.Description = &p.Vulnerability.Description
 
 		vd.Cvss = &generated.CVSSInput{
@@ -160,15 +149,33 @@ func (c *ExtendedVEXParser) generateVexIngest(vulnInput *generated.Vulnerability
 
 		for _, cwe := range p.Vulnerability.CWEs {
 			vd.Cwe = append(vd.Cwe, &generated.CWEInput{
-				ID:                   cwe.ID,
-				Abstraction:          cwe.Description,
-				Name:                 cwe.Name,
-				PotentialMitigations: helpers.CreatePotentialMitigations(cwe),
-				Consequences:         helpers.CreateConsequences(cwe),
-				DemostrativeExamples: *helpers.ConvertToPointerSlice(cwe.DemostrativeExamples),
-				DetectionMethods:     helpers.CreateDetectionMethods(cwe),
+				ID:                    cwe.ID,
+				Abstraction:           cwe.Abstraction,
+				BackgroundDetail:      &cwe.BackgroundDetail,
+				Name:                  cwe.Name,
+				PotentialMitigations:  helpers.CreatePotentialMitigations(cwe),
+				Consequences:          helpers.CreateConsequences(cwe),
+				DemonstrativeExamples: *helpers.ConvertToPointerSliceString(cwe.DemonstrativeExamples),
+				DetectionMethods:      helpers.CreateDetectionMethods(cwe),
 			})
 		}
+
+		for _, reachableCode := range p.ReachableCode {
+			vd.ReachableCode = append(vd.ReachableCode, &generated.ReachableCodeInputSpec{
+				PathToFile:    &reachableCode.PathToFile,
+				UsedArtifacts: helpers.CreateUsedArtifacts(reachableCode.UsedArtifacts),
+			})
+		}
+
+		for _, exploit := range p.Exploits {
+			vd.Exploits = append(vd.Exploits, &generated.ExploitsInputSpec{
+				Id:          &exploit.ID,
+				Description: &exploit.Description,
+				Payload:     &exploit.Payload,
+			})
+		}
+
+		vd.Priority = &p.Priority
 
 		ingest.VexData = &vd
 		ingest.Vulnerability = vulnInput

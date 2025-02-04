@@ -20,7 +20,15 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyscorecard"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvuln"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_impact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_scope"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cvss"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cwe"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/demonstrativeexample"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/dependency"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/detectionmethod"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/exploit"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hashequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hasmetadata"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hassourceat"
@@ -30,7 +38,10 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pkgequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pointofcontact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/potentialmitigation"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/predicate"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecode"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecodeartifact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/slsaattestation"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/sourcename"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnequal"
@@ -51,12 +62,20 @@ const (
 	TypeArtifact              = "Artifact"
 	TypeBillOfMaterials       = "BillOfMaterials"
 	TypeBuilder               = "Builder"
+	TypeCVSS                  = "CVSS"
+	TypeCWE                   = "CWE"
 	TypeCertification         = "Certification"
 	TypeCertifyLegal          = "CertifyLegal"
 	TypeCertifyScorecard      = "CertifyScorecard"
 	TypeCertifyVex            = "CertifyVex"
 	TypeCertifyVuln           = "CertifyVuln"
+	TypeConsequence           = "Consequence"
+	TypeConsequenceImpact     = "Consequence_Impact"
+	TypeConsequenceScope      = "Consequence_Scope"
+	TypeDemonstrativeExample  = "DemonstrativeExample"
 	TypeDependency            = "Dependency"
+	TypeDetectionMethod       = "DetectionMethod"
+	TypeExploit               = "Exploit"
 	TypeHasMetadata           = "HasMetadata"
 	TypeHasSourceAt           = "HasSourceAt"
 	TypeHashEqual             = "HashEqual"
@@ -66,6 +85,9 @@ const (
 	TypePackageVersion        = "PackageVersion"
 	TypePkgEqual              = "PkgEqual"
 	TypePointOfContact        = "PointOfContact"
+	TypePotentialMitigation   = "PotentialMitigation"
+	TypeReachableCode         = "ReachableCode"
+	TypeReachableCodeArtifact = "ReachableCodeArtifact"
 	TypeSLSAAttestation       = "SLSAAttestation"
 	TypeSourceName            = "SourceName"
 	TypeVulnEqual             = "VulnEqual"
@@ -3314,6 +3336,1516 @@ func (m *BuilderMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Builder edge %s", name)
+}
+
+// CVSSMutation represents an operation that mutates the CVSS nodes in the graph.
+type CVSSMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	vuln_impact        *float64
+	addvuln_impact     *float64
+	version            *string
+	attack_vector      *string
+	clearedFields      map[string]struct{}
+	certify_vex        map[uuid.UUID]struct{}
+	removedcertify_vex map[uuid.UUID]struct{}
+	clearedcertify_vex bool
+	done               bool
+	oldValue           func(context.Context) (*CVSS, error)
+	predicates         []predicate.CVSS
+}
+
+var _ ent.Mutation = (*CVSSMutation)(nil)
+
+// cvssOption allows management of the mutation configuration using functional options.
+type cvssOption func(*CVSSMutation)
+
+// newCVSSMutation creates new mutation for the CVSS entity.
+func newCVSSMutation(c config, op Op, opts ...cvssOption) *CVSSMutation {
+	m := &CVSSMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCVSS,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCVSSID sets the ID field of the mutation.
+func withCVSSID(id uuid.UUID) cvssOption {
+	return func(m *CVSSMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CVSS
+		)
+		m.oldValue = func(ctx context.Context) (*CVSS, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CVSS.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCVSS sets the old CVSS of the mutation.
+func withCVSS(node *CVSS) cvssOption {
+	return func(m *CVSSMutation) {
+		m.oldValue = func(context.Context) (*CVSS, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CVSSMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CVSSMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CVSS entities.
+func (m *CVSSMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CVSSMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CVSSMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CVSS.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetVulnImpact sets the "vuln_impact" field.
+func (m *CVSSMutation) SetVulnImpact(f float64) {
+	m.vuln_impact = &f
+	m.addvuln_impact = nil
+}
+
+// VulnImpact returns the value of the "vuln_impact" field in the mutation.
+func (m *CVSSMutation) VulnImpact() (r float64, exists bool) {
+	v := m.vuln_impact
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVulnImpact returns the old "vuln_impact" field's value of the CVSS entity.
+// If the CVSS object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CVSSMutation) OldVulnImpact(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVulnImpact is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVulnImpact requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVulnImpact: %w", err)
+	}
+	return oldValue.VulnImpact, nil
+}
+
+// AddVulnImpact adds f to the "vuln_impact" field.
+func (m *CVSSMutation) AddVulnImpact(f float64) {
+	if m.addvuln_impact != nil {
+		*m.addvuln_impact += f
+	} else {
+		m.addvuln_impact = &f
+	}
+}
+
+// AddedVulnImpact returns the value that was added to the "vuln_impact" field in this mutation.
+func (m *CVSSMutation) AddedVulnImpact() (r float64, exists bool) {
+	v := m.addvuln_impact
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetVulnImpact resets all changes to the "vuln_impact" field.
+func (m *CVSSMutation) ResetVulnImpact() {
+	m.vuln_impact = nil
+	m.addvuln_impact = nil
+}
+
+// SetVersion sets the "version" field.
+func (m *CVSSMutation) SetVersion(s string) {
+	m.version = &s
+}
+
+// Version returns the value of the "version" field in the mutation.
+func (m *CVSSMutation) Version() (r string, exists bool) {
+	v := m.version
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVersion returns the old "version" field's value of the CVSS entity.
+// If the CVSS object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CVSSMutation) OldVersion(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVersion is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVersion requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVersion: %w", err)
+	}
+	return oldValue.Version, nil
+}
+
+// ResetVersion resets all changes to the "version" field.
+func (m *CVSSMutation) ResetVersion() {
+	m.version = nil
+}
+
+// SetAttackVector sets the "attack_vector" field.
+func (m *CVSSMutation) SetAttackVector(s string) {
+	m.attack_vector = &s
+}
+
+// AttackVector returns the value of the "attack_vector" field in the mutation.
+func (m *CVSSMutation) AttackVector() (r string, exists bool) {
+	v := m.attack_vector
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAttackVector returns the old "attack_vector" field's value of the CVSS entity.
+// If the CVSS object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CVSSMutation) OldAttackVector(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAttackVector is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAttackVector requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAttackVector: %w", err)
+	}
+	return oldValue.AttackVector, nil
+}
+
+// ResetAttackVector resets all changes to the "attack_vector" field.
+func (m *CVSSMutation) ResetAttackVector() {
+	m.attack_vector = nil
+}
+
+// AddCertifyVexIDs adds the "certify_vex" edge to the CertifyVex entity by ids.
+func (m *CVSSMutation) AddCertifyVexIDs(ids ...uuid.UUID) {
+	if m.certify_vex == nil {
+		m.certify_vex = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.certify_vex[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCertifyVex clears the "certify_vex" edge to the CertifyVex entity.
+func (m *CVSSMutation) ClearCertifyVex() {
+	m.clearedcertify_vex = true
+}
+
+// CertifyVexCleared reports if the "certify_vex" edge to the CertifyVex entity was cleared.
+func (m *CVSSMutation) CertifyVexCleared() bool {
+	return m.clearedcertify_vex
+}
+
+// RemoveCertifyVexIDs removes the "certify_vex" edge to the CertifyVex entity by IDs.
+func (m *CVSSMutation) RemoveCertifyVexIDs(ids ...uuid.UUID) {
+	if m.removedcertify_vex == nil {
+		m.removedcertify_vex = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.certify_vex, ids[i])
+		m.removedcertify_vex[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCertifyVex returns the removed IDs of the "certify_vex" edge to the CertifyVex entity.
+func (m *CVSSMutation) RemovedCertifyVexIDs() (ids []uuid.UUID) {
+	for id := range m.removedcertify_vex {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CertifyVexIDs returns the "certify_vex" edge IDs in the mutation.
+func (m *CVSSMutation) CertifyVexIDs() (ids []uuid.UUID) {
+	for id := range m.certify_vex {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCertifyVex resets all changes to the "certify_vex" edge.
+func (m *CVSSMutation) ResetCertifyVex() {
+	m.certify_vex = nil
+	m.clearedcertify_vex = false
+	m.removedcertify_vex = nil
+}
+
+// Where appends a list predicates to the CVSSMutation builder.
+func (m *CVSSMutation) Where(ps ...predicate.CVSS) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CVSSMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CVSSMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CVSS, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CVSSMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CVSSMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CVSS).
+func (m *CVSSMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CVSSMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.vuln_impact != nil {
+		fields = append(fields, cvss.FieldVulnImpact)
+	}
+	if m.version != nil {
+		fields = append(fields, cvss.FieldVersion)
+	}
+	if m.attack_vector != nil {
+		fields = append(fields, cvss.FieldAttackVector)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CVSSMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case cvss.FieldVulnImpact:
+		return m.VulnImpact()
+	case cvss.FieldVersion:
+		return m.Version()
+	case cvss.FieldAttackVector:
+		return m.AttackVector()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CVSSMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case cvss.FieldVulnImpact:
+		return m.OldVulnImpact(ctx)
+	case cvss.FieldVersion:
+		return m.OldVersion(ctx)
+	case cvss.FieldAttackVector:
+		return m.OldAttackVector(ctx)
+	}
+	return nil, fmt.Errorf("unknown CVSS field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CVSSMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case cvss.FieldVulnImpact:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVulnImpact(v)
+		return nil
+	case cvss.FieldVersion:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVersion(v)
+		return nil
+	case cvss.FieldAttackVector:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAttackVector(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CVSS field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CVSSMutation) AddedFields() []string {
+	var fields []string
+	if m.addvuln_impact != nil {
+		fields = append(fields, cvss.FieldVulnImpact)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CVSSMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case cvss.FieldVulnImpact:
+		return m.AddedVulnImpact()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CVSSMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case cvss.FieldVulnImpact:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddVulnImpact(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CVSS numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CVSSMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CVSSMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CVSSMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown CVSS nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CVSSMutation) ResetField(name string) error {
+	switch name {
+	case cvss.FieldVulnImpact:
+		m.ResetVulnImpact()
+		return nil
+	case cvss.FieldVersion:
+		m.ResetVersion()
+		return nil
+	case cvss.FieldAttackVector:
+		m.ResetAttackVector()
+		return nil
+	}
+	return fmt.Errorf("unknown CVSS field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CVSSMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.certify_vex != nil {
+		edges = append(edges, cvss.EdgeCertifyVex)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CVSSMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case cvss.EdgeCertifyVex:
+		ids := make([]ent.Value, 0, len(m.certify_vex))
+		for id := range m.certify_vex {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CVSSMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedcertify_vex != nil {
+		edges = append(edges, cvss.EdgeCertifyVex)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CVSSMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case cvss.EdgeCertifyVex:
+		ids := make([]ent.Value, 0, len(m.removedcertify_vex))
+		for id := range m.removedcertify_vex {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CVSSMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedcertify_vex {
+		edges = append(edges, cvss.EdgeCertifyVex)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CVSSMutation) EdgeCleared(name string) bool {
+	switch name {
+	case cvss.EdgeCertifyVex:
+		return m.clearedcertify_vex
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CVSSMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CVSS unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CVSSMutation) ResetEdge(name string) error {
+	switch name {
+	case cvss.EdgeCertifyVex:
+		m.ResetCertifyVex()
+		return nil
+	}
+	return fmt.Errorf("unknown CVSS edge %s", name)
+}
+
+// CWEMutation represents an operation that mutates the CWE nodes in the graph.
+type CWEMutation struct {
+	config
+	op                           Op
+	typ                          string
+	id                           *uuid.UUID
+	vex_id                       *string
+	name                         *string
+	description                  *string
+	background_detail            *string
+	clearedFields                map[string]struct{}
+	certify_vex                  map[uuid.UUID]struct{}
+	removedcertify_vex           map[uuid.UUID]struct{}
+	clearedcertify_vex           bool
+	consequence                  map[uuid.UUID]struct{}
+	removedconsequence           map[uuid.UUID]struct{}
+	clearedconsequence           bool
+	demonstrative_example        map[uuid.UUID]struct{}
+	removeddemonstrative_example map[uuid.UUID]struct{}
+	cleareddemonstrative_example bool
+	detection_method             map[uuid.UUID]struct{}
+	removeddetection_method      map[uuid.UUID]struct{}
+	cleareddetection_method      bool
+	potential_mitigation         map[uuid.UUID]struct{}
+	removedpotential_mitigation  map[uuid.UUID]struct{}
+	clearedpotential_mitigation  bool
+	done                         bool
+	oldValue                     func(context.Context) (*CWE, error)
+	predicates                   []predicate.CWE
+}
+
+var _ ent.Mutation = (*CWEMutation)(nil)
+
+// cweOption allows management of the mutation configuration using functional options.
+type cweOption func(*CWEMutation)
+
+// newCWEMutation creates new mutation for the CWE entity.
+func newCWEMutation(c config, op Op, opts ...cweOption) *CWEMutation {
+	m := &CWEMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeCWE,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withCWEID sets the ID field of the mutation.
+func withCWEID(id uuid.UUID) cweOption {
+	return func(m *CWEMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *CWE
+		)
+		m.oldValue = func(ctx context.Context) (*CWE, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().CWE.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withCWE sets the old CWE of the mutation.
+func withCWE(node *CWE) cweOption {
+	return func(m *CWEMutation) {
+		m.oldValue = func(context.Context) (*CWE, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m CWEMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m CWEMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of CWE entities.
+func (m *CWEMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *CWEMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *CWEMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().CWE.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetVexID sets the "vex_id" field.
+func (m *CWEMutation) SetVexID(s string) {
+	m.vex_id = &s
+}
+
+// VexID returns the value of the "vex_id" field in the mutation.
+func (m *CWEMutation) VexID() (r string, exists bool) {
+	v := m.vex_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldVexID returns the old "vex_id" field's value of the CWE entity.
+// If the CWE object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CWEMutation) OldVexID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldVexID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldVexID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldVexID: %w", err)
+	}
+	return oldValue.VexID, nil
+}
+
+// ResetVexID resets all changes to the "vex_id" field.
+func (m *CWEMutation) ResetVexID() {
+	m.vex_id = nil
+}
+
+// SetName sets the "name" field.
+func (m *CWEMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *CWEMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the CWE entity.
+// If the CWE object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CWEMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *CWEMutation) ResetName() {
+	m.name = nil
+}
+
+// SetDescription sets the "description" field.
+func (m *CWEMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *CWEMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the CWE entity.
+// If the CWE object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CWEMutation) OldDescription(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *CWEMutation) ResetDescription() {
+	m.description = nil
+}
+
+// SetBackgroundDetail sets the "background_detail" field.
+func (m *CWEMutation) SetBackgroundDetail(s string) {
+	m.background_detail = &s
+}
+
+// BackgroundDetail returns the value of the "background_detail" field in the mutation.
+func (m *CWEMutation) BackgroundDetail() (r string, exists bool) {
+	v := m.background_detail
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBackgroundDetail returns the old "background_detail" field's value of the CWE entity.
+// If the CWE object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CWEMutation) OldBackgroundDetail(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBackgroundDetail is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBackgroundDetail requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBackgroundDetail: %w", err)
+	}
+	return oldValue.BackgroundDetail, nil
+}
+
+// ClearBackgroundDetail clears the value of the "background_detail" field.
+func (m *CWEMutation) ClearBackgroundDetail() {
+	m.background_detail = nil
+	m.clearedFields[cwe.FieldBackgroundDetail] = struct{}{}
+}
+
+// BackgroundDetailCleared returns if the "background_detail" field was cleared in this mutation.
+func (m *CWEMutation) BackgroundDetailCleared() bool {
+	_, ok := m.clearedFields[cwe.FieldBackgroundDetail]
+	return ok
+}
+
+// ResetBackgroundDetail resets all changes to the "background_detail" field.
+func (m *CWEMutation) ResetBackgroundDetail() {
+	m.background_detail = nil
+	delete(m.clearedFields, cwe.FieldBackgroundDetail)
+}
+
+// AddCertifyVexIDs adds the "certify_vex" edge to the CertifyVex entity by ids.
+func (m *CWEMutation) AddCertifyVexIDs(ids ...uuid.UUID) {
+	if m.certify_vex == nil {
+		m.certify_vex = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.certify_vex[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCertifyVex clears the "certify_vex" edge to the CertifyVex entity.
+func (m *CWEMutation) ClearCertifyVex() {
+	m.clearedcertify_vex = true
+}
+
+// CertifyVexCleared reports if the "certify_vex" edge to the CertifyVex entity was cleared.
+func (m *CWEMutation) CertifyVexCleared() bool {
+	return m.clearedcertify_vex
+}
+
+// RemoveCertifyVexIDs removes the "certify_vex" edge to the CertifyVex entity by IDs.
+func (m *CWEMutation) RemoveCertifyVexIDs(ids ...uuid.UUID) {
+	if m.removedcertify_vex == nil {
+		m.removedcertify_vex = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.certify_vex, ids[i])
+		m.removedcertify_vex[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCertifyVex returns the removed IDs of the "certify_vex" edge to the CertifyVex entity.
+func (m *CWEMutation) RemovedCertifyVexIDs() (ids []uuid.UUID) {
+	for id := range m.removedcertify_vex {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CertifyVexIDs returns the "certify_vex" edge IDs in the mutation.
+func (m *CWEMutation) CertifyVexIDs() (ids []uuid.UUID) {
+	for id := range m.certify_vex {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCertifyVex resets all changes to the "certify_vex" edge.
+func (m *CWEMutation) ResetCertifyVex() {
+	m.certify_vex = nil
+	m.clearedcertify_vex = false
+	m.removedcertify_vex = nil
+}
+
+// AddConsequenceIDs adds the "consequence" edge to the Consequence entity by ids.
+func (m *CWEMutation) AddConsequenceIDs(ids ...uuid.UUID) {
+	if m.consequence == nil {
+		m.consequence = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.consequence[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConsequence clears the "consequence" edge to the Consequence entity.
+func (m *CWEMutation) ClearConsequence() {
+	m.clearedconsequence = true
+}
+
+// ConsequenceCleared reports if the "consequence" edge to the Consequence entity was cleared.
+func (m *CWEMutation) ConsequenceCleared() bool {
+	return m.clearedconsequence
+}
+
+// RemoveConsequenceIDs removes the "consequence" edge to the Consequence entity by IDs.
+func (m *CWEMutation) RemoveConsequenceIDs(ids ...uuid.UUID) {
+	if m.removedconsequence == nil {
+		m.removedconsequence = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.consequence, ids[i])
+		m.removedconsequence[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConsequence returns the removed IDs of the "consequence" edge to the Consequence entity.
+func (m *CWEMutation) RemovedConsequenceIDs() (ids []uuid.UUID) {
+	for id := range m.removedconsequence {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConsequenceIDs returns the "consequence" edge IDs in the mutation.
+func (m *CWEMutation) ConsequenceIDs() (ids []uuid.UUID) {
+	for id := range m.consequence {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConsequence resets all changes to the "consequence" edge.
+func (m *CWEMutation) ResetConsequence() {
+	m.consequence = nil
+	m.clearedconsequence = false
+	m.removedconsequence = nil
+}
+
+// AddDemonstrativeExampleIDs adds the "demonstrative_example" edge to the DemonstrativeExample entity by ids.
+func (m *CWEMutation) AddDemonstrativeExampleIDs(ids ...uuid.UUID) {
+	if m.demonstrative_example == nil {
+		m.demonstrative_example = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.demonstrative_example[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDemonstrativeExample clears the "demonstrative_example" edge to the DemonstrativeExample entity.
+func (m *CWEMutation) ClearDemonstrativeExample() {
+	m.cleareddemonstrative_example = true
+}
+
+// DemonstrativeExampleCleared reports if the "demonstrative_example" edge to the DemonstrativeExample entity was cleared.
+func (m *CWEMutation) DemonstrativeExampleCleared() bool {
+	return m.cleareddemonstrative_example
+}
+
+// RemoveDemonstrativeExampleIDs removes the "demonstrative_example" edge to the DemonstrativeExample entity by IDs.
+func (m *CWEMutation) RemoveDemonstrativeExampleIDs(ids ...uuid.UUID) {
+	if m.removeddemonstrative_example == nil {
+		m.removeddemonstrative_example = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.demonstrative_example, ids[i])
+		m.removeddemonstrative_example[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDemonstrativeExample returns the removed IDs of the "demonstrative_example" edge to the DemonstrativeExample entity.
+func (m *CWEMutation) RemovedDemonstrativeExampleIDs() (ids []uuid.UUID) {
+	for id := range m.removeddemonstrative_example {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DemonstrativeExampleIDs returns the "demonstrative_example" edge IDs in the mutation.
+func (m *CWEMutation) DemonstrativeExampleIDs() (ids []uuid.UUID) {
+	for id := range m.demonstrative_example {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDemonstrativeExample resets all changes to the "demonstrative_example" edge.
+func (m *CWEMutation) ResetDemonstrativeExample() {
+	m.demonstrative_example = nil
+	m.cleareddemonstrative_example = false
+	m.removeddemonstrative_example = nil
+}
+
+// AddDetectionMethodIDs adds the "detection_method" edge to the DetectionMethod entity by ids.
+func (m *CWEMutation) AddDetectionMethodIDs(ids ...uuid.UUID) {
+	if m.detection_method == nil {
+		m.detection_method = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.detection_method[ids[i]] = struct{}{}
+	}
+}
+
+// ClearDetectionMethod clears the "detection_method" edge to the DetectionMethod entity.
+func (m *CWEMutation) ClearDetectionMethod() {
+	m.cleareddetection_method = true
+}
+
+// DetectionMethodCleared reports if the "detection_method" edge to the DetectionMethod entity was cleared.
+func (m *CWEMutation) DetectionMethodCleared() bool {
+	return m.cleareddetection_method
+}
+
+// RemoveDetectionMethodIDs removes the "detection_method" edge to the DetectionMethod entity by IDs.
+func (m *CWEMutation) RemoveDetectionMethodIDs(ids ...uuid.UUID) {
+	if m.removeddetection_method == nil {
+		m.removeddetection_method = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.detection_method, ids[i])
+		m.removeddetection_method[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedDetectionMethod returns the removed IDs of the "detection_method" edge to the DetectionMethod entity.
+func (m *CWEMutation) RemovedDetectionMethodIDs() (ids []uuid.UUID) {
+	for id := range m.removeddetection_method {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// DetectionMethodIDs returns the "detection_method" edge IDs in the mutation.
+func (m *CWEMutation) DetectionMethodIDs() (ids []uuid.UUID) {
+	for id := range m.detection_method {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetDetectionMethod resets all changes to the "detection_method" edge.
+func (m *CWEMutation) ResetDetectionMethod() {
+	m.detection_method = nil
+	m.cleareddetection_method = false
+	m.removeddetection_method = nil
+}
+
+// AddPotentialMitigationIDs adds the "potential_mitigation" edge to the PotentialMitigation entity by ids.
+func (m *CWEMutation) AddPotentialMitigationIDs(ids ...uuid.UUID) {
+	if m.potential_mitigation == nil {
+		m.potential_mitigation = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.potential_mitigation[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPotentialMitigation clears the "potential_mitigation" edge to the PotentialMitigation entity.
+func (m *CWEMutation) ClearPotentialMitigation() {
+	m.clearedpotential_mitigation = true
+}
+
+// PotentialMitigationCleared reports if the "potential_mitigation" edge to the PotentialMitigation entity was cleared.
+func (m *CWEMutation) PotentialMitigationCleared() bool {
+	return m.clearedpotential_mitigation
+}
+
+// RemovePotentialMitigationIDs removes the "potential_mitigation" edge to the PotentialMitigation entity by IDs.
+func (m *CWEMutation) RemovePotentialMitigationIDs(ids ...uuid.UUID) {
+	if m.removedpotential_mitigation == nil {
+		m.removedpotential_mitigation = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.potential_mitigation, ids[i])
+		m.removedpotential_mitigation[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPotentialMitigation returns the removed IDs of the "potential_mitigation" edge to the PotentialMitigation entity.
+func (m *CWEMutation) RemovedPotentialMitigationIDs() (ids []uuid.UUID) {
+	for id := range m.removedpotential_mitigation {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PotentialMitigationIDs returns the "potential_mitigation" edge IDs in the mutation.
+func (m *CWEMutation) PotentialMitigationIDs() (ids []uuid.UUID) {
+	for id := range m.potential_mitigation {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPotentialMitigation resets all changes to the "potential_mitigation" edge.
+func (m *CWEMutation) ResetPotentialMitigation() {
+	m.potential_mitigation = nil
+	m.clearedpotential_mitigation = false
+	m.removedpotential_mitigation = nil
+}
+
+// Where appends a list predicates to the CWEMutation builder.
+func (m *CWEMutation) Where(ps ...predicate.CWE) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the CWEMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *CWEMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.CWE, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *CWEMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *CWEMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (CWE).
+func (m *CWEMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *CWEMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.vex_id != nil {
+		fields = append(fields, cwe.FieldVexID)
+	}
+	if m.name != nil {
+		fields = append(fields, cwe.FieldName)
+	}
+	if m.description != nil {
+		fields = append(fields, cwe.FieldDescription)
+	}
+	if m.background_detail != nil {
+		fields = append(fields, cwe.FieldBackgroundDetail)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *CWEMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case cwe.FieldVexID:
+		return m.VexID()
+	case cwe.FieldName:
+		return m.Name()
+	case cwe.FieldDescription:
+		return m.Description()
+	case cwe.FieldBackgroundDetail:
+		return m.BackgroundDetail()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *CWEMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case cwe.FieldVexID:
+		return m.OldVexID(ctx)
+	case cwe.FieldName:
+		return m.OldName(ctx)
+	case cwe.FieldDescription:
+		return m.OldDescription(ctx)
+	case cwe.FieldBackgroundDetail:
+		return m.OldBackgroundDetail(ctx)
+	}
+	return nil, fmt.Errorf("unknown CWE field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CWEMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case cwe.FieldVexID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetVexID(v)
+		return nil
+	case cwe.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case cwe.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case cwe.FieldBackgroundDetail:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBackgroundDetail(v)
+		return nil
+	}
+	return fmt.Errorf("unknown CWE field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *CWEMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *CWEMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *CWEMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CWE numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *CWEMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(cwe.FieldBackgroundDetail) {
+		fields = append(fields, cwe.FieldBackgroundDetail)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *CWEMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *CWEMutation) ClearField(name string) error {
+	switch name {
+	case cwe.FieldBackgroundDetail:
+		m.ClearBackgroundDetail()
+		return nil
+	}
+	return fmt.Errorf("unknown CWE nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *CWEMutation) ResetField(name string) error {
+	switch name {
+	case cwe.FieldVexID:
+		m.ResetVexID()
+		return nil
+	case cwe.FieldName:
+		m.ResetName()
+		return nil
+	case cwe.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case cwe.FieldBackgroundDetail:
+		m.ResetBackgroundDetail()
+		return nil
+	}
+	return fmt.Errorf("unknown CWE field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *CWEMutation) AddedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.certify_vex != nil {
+		edges = append(edges, cwe.EdgeCertifyVex)
+	}
+	if m.consequence != nil {
+		edges = append(edges, cwe.EdgeConsequence)
+	}
+	if m.demonstrative_example != nil {
+		edges = append(edges, cwe.EdgeDemonstrativeExample)
+	}
+	if m.detection_method != nil {
+		edges = append(edges, cwe.EdgeDetectionMethod)
+	}
+	if m.potential_mitigation != nil {
+		edges = append(edges, cwe.EdgePotentialMitigation)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *CWEMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case cwe.EdgeCertifyVex:
+		ids := make([]ent.Value, 0, len(m.certify_vex))
+		for id := range m.certify_vex {
+			ids = append(ids, id)
+		}
+		return ids
+	case cwe.EdgeConsequence:
+		ids := make([]ent.Value, 0, len(m.consequence))
+		for id := range m.consequence {
+			ids = append(ids, id)
+		}
+		return ids
+	case cwe.EdgeDemonstrativeExample:
+		ids := make([]ent.Value, 0, len(m.demonstrative_example))
+		for id := range m.demonstrative_example {
+			ids = append(ids, id)
+		}
+		return ids
+	case cwe.EdgeDetectionMethod:
+		ids := make([]ent.Value, 0, len(m.detection_method))
+		for id := range m.detection_method {
+			ids = append(ids, id)
+		}
+		return ids
+	case cwe.EdgePotentialMitigation:
+		ids := make([]ent.Value, 0, len(m.potential_mitigation))
+		for id := range m.potential_mitigation {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *CWEMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.removedcertify_vex != nil {
+		edges = append(edges, cwe.EdgeCertifyVex)
+	}
+	if m.removedconsequence != nil {
+		edges = append(edges, cwe.EdgeConsequence)
+	}
+	if m.removeddemonstrative_example != nil {
+		edges = append(edges, cwe.EdgeDemonstrativeExample)
+	}
+	if m.removeddetection_method != nil {
+		edges = append(edges, cwe.EdgeDetectionMethod)
+	}
+	if m.removedpotential_mitigation != nil {
+		edges = append(edges, cwe.EdgePotentialMitigation)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *CWEMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case cwe.EdgeCertifyVex:
+		ids := make([]ent.Value, 0, len(m.removedcertify_vex))
+		for id := range m.removedcertify_vex {
+			ids = append(ids, id)
+		}
+		return ids
+	case cwe.EdgeConsequence:
+		ids := make([]ent.Value, 0, len(m.removedconsequence))
+		for id := range m.removedconsequence {
+			ids = append(ids, id)
+		}
+		return ids
+	case cwe.EdgeDemonstrativeExample:
+		ids := make([]ent.Value, 0, len(m.removeddemonstrative_example))
+		for id := range m.removeddemonstrative_example {
+			ids = append(ids, id)
+		}
+		return ids
+	case cwe.EdgeDetectionMethod:
+		ids := make([]ent.Value, 0, len(m.removeddetection_method))
+		for id := range m.removeddetection_method {
+			ids = append(ids, id)
+		}
+		return ids
+	case cwe.EdgePotentialMitigation:
+		ids := make([]ent.Value, 0, len(m.removedpotential_mitigation))
+		for id := range m.removedpotential_mitigation {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *CWEMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 5)
+	if m.clearedcertify_vex {
+		edges = append(edges, cwe.EdgeCertifyVex)
+	}
+	if m.clearedconsequence {
+		edges = append(edges, cwe.EdgeConsequence)
+	}
+	if m.cleareddemonstrative_example {
+		edges = append(edges, cwe.EdgeDemonstrativeExample)
+	}
+	if m.cleareddetection_method {
+		edges = append(edges, cwe.EdgeDetectionMethod)
+	}
+	if m.clearedpotential_mitigation {
+		edges = append(edges, cwe.EdgePotentialMitigation)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *CWEMutation) EdgeCleared(name string) bool {
+	switch name {
+	case cwe.EdgeCertifyVex:
+		return m.clearedcertify_vex
+	case cwe.EdgeConsequence:
+		return m.clearedconsequence
+	case cwe.EdgeDemonstrativeExample:
+		return m.cleareddemonstrative_example
+	case cwe.EdgeDetectionMethod:
+		return m.cleareddetection_method
+	case cwe.EdgePotentialMitigation:
+		return m.clearedpotential_mitigation
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *CWEMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown CWE unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *CWEMutation) ResetEdge(name string) error {
+	switch name {
+	case cwe.EdgeCertifyVex:
+		m.ResetCertifyVex()
+		return nil
+	case cwe.EdgeConsequence:
+		m.ResetConsequence()
+		return nil
+	case cwe.EdgeDemonstrativeExample:
+		m.ResetDemonstrativeExample()
+		return nil
+	case cwe.EdgeDetectionMethod:
+		m.ResetDetectionMethod()
+		return nil
+	case cwe.EdgePotentialMitigation:
+		m.ResetPotentialMitigation()
+		return nil
+	}
+	return fmt.Errorf("unknown CWE edge %s", name)
 }
 
 // CertificationMutation represents an operation that mutates the Certification nodes in the graph.
@@ -6580,28 +8112,41 @@ func (m *CertifyScorecardMutation) ResetEdge(name string) error {
 // CertifyVexMutation represents an operation that mutates the CertifyVex nodes in the graph.
 type CertifyVexMutation struct {
 	config
-	op                   Op
-	typ                  string
-	id                   *uuid.UUID
-	known_since          *time.Time
-	status               *string
-	statement            *string
-	status_notes         *string
-	justification        *string
-	origin               *string
-	collector            *string
-	document_ref         *string
-	description          *string
-	clearedFields        map[string]struct{}
-	_package             *uuid.UUID
-	cleared_package      bool
-	artifact             *uuid.UUID
-	clearedartifact      bool
-	vulnerability        *uuid.UUID
-	clearedvulnerability bool
-	done                 bool
-	oldValue             func(context.Context) (*CertifyVex, error)
-	predicates           []predicate.CertifyVex
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	known_since           *time.Time
+	status                *string
+	statement             *string
+	status_notes          *string
+	justification         *string
+	origin                *string
+	collector             *string
+	document_ref          *string
+	description           *string
+	priority              *float64
+	addpriority           *float64
+	clearedFields         map[string]struct{}
+	_package              *uuid.UUID
+	cleared_package       bool
+	artifact              *uuid.UUID
+	clearedartifact       bool
+	vulnerability         *uuid.UUID
+	clearedvulnerability  bool
+	cvss                  *uuid.UUID
+	clearedcvss           bool
+	cwe                   map[uuid.UUID]struct{}
+	removedcwe            map[uuid.UUID]struct{}
+	clearedcwe            bool
+	exploit               map[uuid.UUID]struct{}
+	removedexploit        map[uuid.UUID]struct{}
+	clearedexploit        bool
+	reachable_code        map[uuid.UUID]struct{}
+	removedreachable_code map[uuid.UUID]struct{}
+	clearedreachable_code bool
+	done                  bool
+	oldValue              func(context.Context) (*CertifyVex, error)
+	predicates            []predicate.CertifyVex
 }
 
 var _ ent.Mutation = (*CertifyVexMutation)(nil)
@@ -7179,6 +8724,76 @@ func (m *CertifyVexMutation) ResetDescription() {
 	delete(m.clearedFields, certifyvex.FieldDescription)
 }
 
+// SetPriority sets the "priority" field.
+func (m *CertifyVexMutation) SetPriority(f float64) {
+	m.priority = &f
+	m.addpriority = nil
+}
+
+// Priority returns the value of the "priority" field in the mutation.
+func (m *CertifyVexMutation) Priority() (r float64, exists bool) {
+	v := m.priority
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPriority returns the old "priority" field's value of the CertifyVex entity.
+// If the CertifyVex object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *CertifyVexMutation) OldPriority(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPriority is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPriority requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPriority: %w", err)
+	}
+	return oldValue.Priority, nil
+}
+
+// AddPriority adds f to the "priority" field.
+func (m *CertifyVexMutation) AddPriority(f float64) {
+	if m.addpriority != nil {
+		*m.addpriority += f
+	} else {
+		m.addpriority = &f
+	}
+}
+
+// AddedPriority returns the value that was added to the "priority" field in this mutation.
+func (m *CertifyVexMutation) AddedPriority() (r float64, exists bool) {
+	v := m.addpriority
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearPriority clears the value of the "priority" field.
+func (m *CertifyVexMutation) ClearPriority() {
+	m.priority = nil
+	m.addpriority = nil
+	m.clearedFields[certifyvex.FieldPriority] = struct{}{}
+}
+
+// PriorityCleared returns if the "priority" field was cleared in this mutation.
+func (m *CertifyVexMutation) PriorityCleared() bool {
+	_, ok := m.clearedFields[certifyvex.FieldPriority]
+	return ok
+}
+
+// ResetPriority resets all changes to the "priority" field.
+func (m *CertifyVexMutation) ResetPriority() {
+	m.priority = nil
+	m.addpriority = nil
+	delete(m.clearedFields, certifyvex.FieldPriority)
+}
+
 // ClearPackage clears the "package" edge to the PackageVersion entity.
 func (m *CertifyVexMutation) ClearPackage() {
 	m.cleared_package = true
@@ -7260,6 +8875,207 @@ func (m *CertifyVexMutation) ResetVulnerability() {
 	m.clearedvulnerability = false
 }
 
+// SetCvssID sets the "cvss" edge to the CVSS entity by id.
+func (m *CertifyVexMutation) SetCvssID(id uuid.UUID) {
+	m.cvss = &id
+}
+
+// ClearCvss clears the "cvss" edge to the CVSS entity.
+func (m *CertifyVexMutation) ClearCvss() {
+	m.clearedcvss = true
+}
+
+// CvssCleared reports if the "cvss" edge to the CVSS entity was cleared.
+func (m *CertifyVexMutation) CvssCleared() bool {
+	return m.clearedcvss
+}
+
+// CvssID returns the "cvss" edge ID in the mutation.
+func (m *CertifyVexMutation) CvssID() (id uuid.UUID, exists bool) {
+	if m.cvss != nil {
+		return *m.cvss, true
+	}
+	return
+}
+
+// CvssIDs returns the "cvss" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// CvssID instead. It exists only for internal usage by the builders.
+func (m *CertifyVexMutation) CvssIDs() (ids []uuid.UUID) {
+	if id := m.cvss; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetCvss resets all changes to the "cvss" edge.
+func (m *CertifyVexMutation) ResetCvss() {
+	m.cvss = nil
+	m.clearedcvss = false
+}
+
+// AddCweIDs adds the "cwe" edge to the CWE entity by ids.
+func (m *CertifyVexMutation) AddCweIDs(ids ...uuid.UUID) {
+	if m.cwe == nil {
+		m.cwe = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.cwe[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCwe clears the "cwe" edge to the CWE entity.
+func (m *CertifyVexMutation) ClearCwe() {
+	m.clearedcwe = true
+}
+
+// CweCleared reports if the "cwe" edge to the CWE entity was cleared.
+func (m *CertifyVexMutation) CweCleared() bool {
+	return m.clearedcwe
+}
+
+// RemoveCweIDs removes the "cwe" edge to the CWE entity by IDs.
+func (m *CertifyVexMutation) RemoveCweIDs(ids ...uuid.UUID) {
+	if m.removedcwe == nil {
+		m.removedcwe = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.cwe, ids[i])
+		m.removedcwe[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCwe returns the removed IDs of the "cwe" edge to the CWE entity.
+func (m *CertifyVexMutation) RemovedCweIDs() (ids []uuid.UUID) {
+	for id := range m.removedcwe {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CweIDs returns the "cwe" edge IDs in the mutation.
+func (m *CertifyVexMutation) CweIDs() (ids []uuid.UUID) {
+	for id := range m.cwe {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCwe resets all changes to the "cwe" edge.
+func (m *CertifyVexMutation) ResetCwe() {
+	m.cwe = nil
+	m.clearedcwe = false
+	m.removedcwe = nil
+}
+
+// AddExploitIDs adds the "exploit" edge to the Exploit entity by ids.
+func (m *CertifyVexMutation) AddExploitIDs(ids ...uuid.UUID) {
+	if m.exploit == nil {
+		m.exploit = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.exploit[ids[i]] = struct{}{}
+	}
+}
+
+// ClearExploit clears the "exploit" edge to the Exploit entity.
+func (m *CertifyVexMutation) ClearExploit() {
+	m.clearedexploit = true
+}
+
+// ExploitCleared reports if the "exploit" edge to the Exploit entity was cleared.
+func (m *CertifyVexMutation) ExploitCleared() bool {
+	return m.clearedexploit
+}
+
+// RemoveExploitIDs removes the "exploit" edge to the Exploit entity by IDs.
+func (m *CertifyVexMutation) RemoveExploitIDs(ids ...uuid.UUID) {
+	if m.removedexploit == nil {
+		m.removedexploit = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.exploit, ids[i])
+		m.removedexploit[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedExploit returns the removed IDs of the "exploit" edge to the Exploit entity.
+func (m *CertifyVexMutation) RemovedExploitIDs() (ids []uuid.UUID) {
+	for id := range m.removedexploit {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ExploitIDs returns the "exploit" edge IDs in the mutation.
+func (m *CertifyVexMutation) ExploitIDs() (ids []uuid.UUID) {
+	for id := range m.exploit {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetExploit resets all changes to the "exploit" edge.
+func (m *CertifyVexMutation) ResetExploit() {
+	m.exploit = nil
+	m.clearedexploit = false
+	m.removedexploit = nil
+}
+
+// AddReachableCodeIDs adds the "reachable_code" edge to the ReachableCode entity by ids.
+func (m *CertifyVexMutation) AddReachableCodeIDs(ids ...uuid.UUID) {
+	if m.reachable_code == nil {
+		m.reachable_code = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.reachable_code[ids[i]] = struct{}{}
+	}
+}
+
+// ClearReachableCode clears the "reachable_code" edge to the ReachableCode entity.
+func (m *CertifyVexMutation) ClearReachableCode() {
+	m.clearedreachable_code = true
+}
+
+// ReachableCodeCleared reports if the "reachable_code" edge to the ReachableCode entity was cleared.
+func (m *CertifyVexMutation) ReachableCodeCleared() bool {
+	return m.clearedreachable_code
+}
+
+// RemoveReachableCodeIDs removes the "reachable_code" edge to the ReachableCode entity by IDs.
+func (m *CertifyVexMutation) RemoveReachableCodeIDs(ids ...uuid.UUID) {
+	if m.removedreachable_code == nil {
+		m.removedreachable_code = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.reachable_code, ids[i])
+		m.removedreachable_code[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedReachableCode returns the removed IDs of the "reachable_code" edge to the ReachableCode entity.
+func (m *CertifyVexMutation) RemovedReachableCodeIDs() (ids []uuid.UUID) {
+	for id := range m.removedreachable_code {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ReachableCodeIDs returns the "reachable_code" edge IDs in the mutation.
+func (m *CertifyVexMutation) ReachableCodeIDs() (ids []uuid.UUID) {
+	for id := range m.reachable_code {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetReachableCode resets all changes to the "reachable_code" edge.
+func (m *CertifyVexMutation) ResetReachableCode() {
+	m.reachable_code = nil
+	m.clearedreachable_code = false
+	m.removedreachable_code = nil
+}
+
 // Where appends a list predicates to the CertifyVexMutation builder.
 func (m *CertifyVexMutation) Where(ps ...predicate.CertifyVex) {
 	m.predicates = append(m.predicates, ps...)
@@ -7294,7 +9110,7 @@ func (m *CertifyVexMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *CertifyVexMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 13)
 	if m._package != nil {
 		fields = append(fields, certifyvex.FieldPackageID)
 	}
@@ -7331,6 +9147,9 @@ func (m *CertifyVexMutation) Fields() []string {
 	if m.description != nil {
 		fields = append(fields, certifyvex.FieldDescription)
 	}
+	if m.priority != nil {
+		fields = append(fields, certifyvex.FieldPriority)
+	}
 	return fields
 }
 
@@ -7363,6 +9182,8 @@ func (m *CertifyVexMutation) Field(name string) (ent.Value, bool) {
 		return m.DocumentRef()
 	case certifyvex.FieldDescription:
 		return m.Description()
+	case certifyvex.FieldPriority:
+		return m.Priority()
 	}
 	return nil, false
 }
@@ -7396,6 +9217,8 @@ func (m *CertifyVexMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldDocumentRef(ctx)
 	case certifyvex.FieldDescription:
 		return m.OldDescription(ctx)
+	case certifyvex.FieldPriority:
+		return m.OldPriority(ctx)
 	}
 	return nil, fmt.Errorf("unknown CertifyVex field %s", name)
 }
@@ -7489,6 +9312,13 @@ func (m *CertifyVexMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetDescription(v)
 		return nil
+	case certifyvex.FieldPriority:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPriority(v)
+		return nil
 	}
 	return fmt.Errorf("unknown CertifyVex field %s", name)
 }
@@ -7496,13 +9326,21 @@ func (m *CertifyVexMutation) SetField(name string, value ent.Value) error {
 // AddedFields returns all numeric fields that were incremented/decremented during
 // this mutation.
 func (m *CertifyVexMutation) AddedFields() []string {
-	return nil
+	var fields []string
+	if m.addpriority != nil {
+		fields = append(fields, certifyvex.FieldPriority)
+	}
+	return fields
 }
 
 // AddedField returns the numeric value that was incremented/decremented on a field
 // with the given name. The second boolean return value indicates that this field
 // was not set, or was not defined in the schema.
 func (m *CertifyVexMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case certifyvex.FieldPriority:
+		return m.AddedPriority()
+	}
 	return nil, false
 }
 
@@ -7511,6 +9349,13 @@ func (m *CertifyVexMutation) AddedField(name string) (ent.Value, bool) {
 // type.
 func (m *CertifyVexMutation) AddField(name string, value ent.Value) error {
 	switch name {
+	case certifyvex.FieldPriority:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPriority(v)
+		return nil
 	}
 	return fmt.Errorf("unknown CertifyVex numeric field %s", name)
 }
@@ -7527,6 +9372,9 @@ func (m *CertifyVexMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(certifyvex.FieldDescription) {
 		fields = append(fields, certifyvex.FieldDescription)
+	}
+	if m.FieldCleared(certifyvex.FieldPriority) {
+		fields = append(fields, certifyvex.FieldPriority)
 	}
 	return fields
 }
@@ -7550,6 +9398,9 @@ func (m *CertifyVexMutation) ClearField(name string) error {
 		return nil
 	case certifyvex.FieldDescription:
 		m.ClearDescription()
+		return nil
+	case certifyvex.FieldPriority:
+		m.ClearPriority()
 		return nil
 	}
 	return fmt.Errorf("unknown CertifyVex nullable field %s", name)
@@ -7595,13 +9446,16 @@ func (m *CertifyVexMutation) ResetField(name string) error {
 	case certifyvex.FieldDescription:
 		m.ResetDescription()
 		return nil
+	case certifyvex.FieldPriority:
+		m.ResetPriority()
+		return nil
 	}
 	return fmt.Errorf("unknown CertifyVex field %s", name)
 }
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *CertifyVexMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 7)
 	if m._package != nil {
 		edges = append(edges, certifyvex.EdgePackage)
 	}
@@ -7610,6 +9464,18 @@ func (m *CertifyVexMutation) AddedEdges() []string {
 	}
 	if m.vulnerability != nil {
 		edges = append(edges, certifyvex.EdgeVulnerability)
+	}
+	if m.cvss != nil {
+		edges = append(edges, certifyvex.EdgeCvss)
+	}
+	if m.cwe != nil {
+		edges = append(edges, certifyvex.EdgeCwe)
+	}
+	if m.exploit != nil {
+		edges = append(edges, certifyvex.EdgeExploit)
+	}
+	if m.reachable_code != nil {
+		edges = append(edges, certifyvex.EdgeReachableCode)
 	}
 	return edges
 }
@@ -7630,25 +9496,76 @@ func (m *CertifyVexMutation) AddedIDs(name string) []ent.Value {
 		if id := m.vulnerability; id != nil {
 			return []ent.Value{*id}
 		}
+	case certifyvex.EdgeCvss:
+		if id := m.cvss; id != nil {
+			return []ent.Value{*id}
+		}
+	case certifyvex.EdgeCwe:
+		ids := make([]ent.Value, 0, len(m.cwe))
+		for id := range m.cwe {
+			ids = append(ids, id)
+		}
+		return ids
+	case certifyvex.EdgeExploit:
+		ids := make([]ent.Value, 0, len(m.exploit))
+		for id := range m.exploit {
+			ids = append(ids, id)
+		}
+		return ids
+	case certifyvex.EdgeReachableCode:
+		ids := make([]ent.Value, 0, len(m.reachable_code))
+		for id := range m.reachable_code {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *CertifyVexMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 7)
+	if m.removedcwe != nil {
+		edges = append(edges, certifyvex.EdgeCwe)
+	}
+	if m.removedexploit != nil {
+		edges = append(edges, certifyvex.EdgeExploit)
+	}
+	if m.removedreachable_code != nil {
+		edges = append(edges, certifyvex.EdgeReachableCode)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *CertifyVexMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case certifyvex.EdgeCwe:
+		ids := make([]ent.Value, 0, len(m.removedcwe))
+		for id := range m.removedcwe {
+			ids = append(ids, id)
+		}
+		return ids
+	case certifyvex.EdgeExploit:
+		ids := make([]ent.Value, 0, len(m.removedexploit))
+		for id := range m.removedexploit {
+			ids = append(ids, id)
+		}
+		return ids
+	case certifyvex.EdgeReachableCode:
+		ids := make([]ent.Value, 0, len(m.removedreachable_code))
+		for id := range m.removedreachable_code {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *CertifyVexMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 7)
 	if m.cleared_package {
 		edges = append(edges, certifyvex.EdgePackage)
 	}
@@ -7657,6 +9574,18 @@ func (m *CertifyVexMutation) ClearedEdges() []string {
 	}
 	if m.clearedvulnerability {
 		edges = append(edges, certifyvex.EdgeVulnerability)
+	}
+	if m.clearedcvss {
+		edges = append(edges, certifyvex.EdgeCvss)
+	}
+	if m.clearedcwe {
+		edges = append(edges, certifyvex.EdgeCwe)
+	}
+	if m.clearedexploit {
+		edges = append(edges, certifyvex.EdgeExploit)
+	}
+	if m.clearedreachable_code {
+		edges = append(edges, certifyvex.EdgeReachableCode)
 	}
 	return edges
 }
@@ -7671,6 +9600,14 @@ func (m *CertifyVexMutation) EdgeCleared(name string) bool {
 		return m.clearedartifact
 	case certifyvex.EdgeVulnerability:
 		return m.clearedvulnerability
+	case certifyvex.EdgeCvss:
+		return m.clearedcvss
+	case certifyvex.EdgeCwe:
+		return m.clearedcwe
+	case certifyvex.EdgeExploit:
+		return m.clearedexploit
+	case certifyvex.EdgeReachableCode:
+		return m.clearedreachable_code
 	}
 	return false
 }
@@ -7688,6 +9625,9 @@ func (m *CertifyVexMutation) ClearEdge(name string) error {
 	case certifyvex.EdgeVulnerability:
 		m.ClearVulnerability()
 		return nil
+	case certifyvex.EdgeCvss:
+		m.ClearCvss()
+		return nil
 	}
 	return fmt.Errorf("unknown CertifyVex unique edge %s", name)
 }
@@ -7704,6 +9644,18 @@ func (m *CertifyVexMutation) ResetEdge(name string) error {
 		return nil
 	case certifyvex.EdgeVulnerability:
 		m.ResetVulnerability()
+		return nil
+	case certifyvex.EdgeCvss:
+		m.ResetCvss()
+		return nil
+	case certifyvex.EdgeCwe:
+		m.ResetCwe()
+		return nil
+	case certifyvex.EdgeExploit:
+		m.ResetExploit()
+		return nil
+	case certifyvex.EdgeReachableCode:
+		m.ResetReachableCode()
 		return nil
 	}
 	return fmt.Errorf("unknown CertifyVex edge %s", name)
@@ -8627,6 +10579,1989 @@ func (m *CertifyVulnMutation) ResetEdge(name string) error {
 	return fmt.Errorf("unknown CertifyVuln edge %s", name)
 }
 
+// ConsequenceMutation represents an operation that mutates the Consequence nodes in the graph.
+type ConsequenceMutation struct {
+	config
+	op                        Op
+	typ                       string
+	id                        *uuid.UUID
+	notes                     *string
+	likelihood                *string
+	clearedFields             map[string]struct{}
+	cwe                       map[uuid.UUID]struct{}
+	removedcwe                map[uuid.UUID]struct{}
+	clearedcwe                bool
+	consequence_scope         map[uuid.UUID]struct{}
+	removedconsequence_scope  map[uuid.UUID]struct{}
+	clearedconsequence_scope  bool
+	consequence_impact        map[uuid.UUID]struct{}
+	removedconsequence_impact map[uuid.UUID]struct{}
+	clearedconsequence_impact bool
+	done                      bool
+	oldValue                  func(context.Context) (*Consequence, error)
+	predicates                []predicate.Consequence
+}
+
+var _ ent.Mutation = (*ConsequenceMutation)(nil)
+
+// consequenceOption allows management of the mutation configuration using functional options.
+type consequenceOption func(*ConsequenceMutation)
+
+// newConsequenceMutation creates new mutation for the Consequence entity.
+func newConsequenceMutation(c config, op Op, opts ...consequenceOption) *ConsequenceMutation {
+	m := &ConsequenceMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeConsequence,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withConsequenceID sets the ID field of the mutation.
+func withConsequenceID(id uuid.UUID) consequenceOption {
+	return func(m *ConsequenceMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Consequence
+		)
+		m.oldValue = func(ctx context.Context) (*Consequence, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Consequence.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withConsequence sets the old Consequence of the mutation.
+func withConsequence(node *Consequence) consequenceOption {
+	return func(m *ConsequenceMutation) {
+		m.oldValue = func(context.Context) (*Consequence, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ConsequenceMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ConsequenceMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Consequence entities.
+func (m *ConsequenceMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ConsequenceMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ConsequenceMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Consequence.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetNotes sets the "notes" field.
+func (m *ConsequenceMutation) SetNotes(s string) {
+	m.notes = &s
+}
+
+// Notes returns the value of the "notes" field in the mutation.
+func (m *ConsequenceMutation) Notes() (r string, exists bool) {
+	v := m.notes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNotes returns the old "notes" field's value of the Consequence entity.
+// If the Consequence object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsequenceMutation) OldNotes(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNotes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNotes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNotes: %w", err)
+	}
+	return oldValue.Notes, nil
+}
+
+// ClearNotes clears the value of the "notes" field.
+func (m *ConsequenceMutation) ClearNotes() {
+	m.notes = nil
+	m.clearedFields[consequence.FieldNotes] = struct{}{}
+}
+
+// NotesCleared returns if the "notes" field was cleared in this mutation.
+func (m *ConsequenceMutation) NotesCleared() bool {
+	_, ok := m.clearedFields[consequence.FieldNotes]
+	return ok
+}
+
+// ResetNotes resets all changes to the "notes" field.
+func (m *ConsequenceMutation) ResetNotes() {
+	m.notes = nil
+	delete(m.clearedFields, consequence.FieldNotes)
+}
+
+// SetLikelihood sets the "likelihood" field.
+func (m *ConsequenceMutation) SetLikelihood(s string) {
+	m.likelihood = &s
+}
+
+// Likelihood returns the value of the "likelihood" field in the mutation.
+func (m *ConsequenceMutation) Likelihood() (r string, exists bool) {
+	v := m.likelihood
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLikelihood returns the old "likelihood" field's value of the Consequence entity.
+// If the Consequence object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsequenceMutation) OldLikelihood(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLikelihood is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLikelihood requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLikelihood: %w", err)
+	}
+	return oldValue.Likelihood, nil
+}
+
+// ClearLikelihood clears the value of the "likelihood" field.
+func (m *ConsequenceMutation) ClearLikelihood() {
+	m.likelihood = nil
+	m.clearedFields[consequence.FieldLikelihood] = struct{}{}
+}
+
+// LikelihoodCleared returns if the "likelihood" field was cleared in this mutation.
+func (m *ConsequenceMutation) LikelihoodCleared() bool {
+	_, ok := m.clearedFields[consequence.FieldLikelihood]
+	return ok
+}
+
+// ResetLikelihood resets all changes to the "likelihood" field.
+func (m *ConsequenceMutation) ResetLikelihood() {
+	m.likelihood = nil
+	delete(m.clearedFields, consequence.FieldLikelihood)
+}
+
+// AddCweIDs adds the "cwe" edge to the CWE entity by ids.
+func (m *ConsequenceMutation) AddCweIDs(ids ...uuid.UUID) {
+	if m.cwe == nil {
+		m.cwe = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.cwe[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCwe clears the "cwe" edge to the CWE entity.
+func (m *ConsequenceMutation) ClearCwe() {
+	m.clearedcwe = true
+}
+
+// CweCleared reports if the "cwe" edge to the CWE entity was cleared.
+func (m *ConsequenceMutation) CweCleared() bool {
+	return m.clearedcwe
+}
+
+// RemoveCweIDs removes the "cwe" edge to the CWE entity by IDs.
+func (m *ConsequenceMutation) RemoveCweIDs(ids ...uuid.UUID) {
+	if m.removedcwe == nil {
+		m.removedcwe = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.cwe, ids[i])
+		m.removedcwe[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCwe returns the removed IDs of the "cwe" edge to the CWE entity.
+func (m *ConsequenceMutation) RemovedCweIDs() (ids []uuid.UUID) {
+	for id := range m.removedcwe {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CweIDs returns the "cwe" edge IDs in the mutation.
+func (m *ConsequenceMutation) CweIDs() (ids []uuid.UUID) {
+	for id := range m.cwe {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCwe resets all changes to the "cwe" edge.
+func (m *ConsequenceMutation) ResetCwe() {
+	m.cwe = nil
+	m.clearedcwe = false
+	m.removedcwe = nil
+}
+
+// AddConsequenceScopeIDs adds the "consequence_scope" edge to the Consequence_Scope entity by ids.
+func (m *ConsequenceMutation) AddConsequenceScopeIDs(ids ...uuid.UUID) {
+	if m.consequence_scope == nil {
+		m.consequence_scope = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.consequence_scope[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConsequenceScope clears the "consequence_scope" edge to the Consequence_Scope entity.
+func (m *ConsequenceMutation) ClearConsequenceScope() {
+	m.clearedconsequence_scope = true
+}
+
+// ConsequenceScopeCleared reports if the "consequence_scope" edge to the Consequence_Scope entity was cleared.
+func (m *ConsequenceMutation) ConsequenceScopeCleared() bool {
+	return m.clearedconsequence_scope
+}
+
+// RemoveConsequenceScopeIDs removes the "consequence_scope" edge to the Consequence_Scope entity by IDs.
+func (m *ConsequenceMutation) RemoveConsequenceScopeIDs(ids ...uuid.UUID) {
+	if m.removedconsequence_scope == nil {
+		m.removedconsequence_scope = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.consequence_scope, ids[i])
+		m.removedconsequence_scope[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConsequenceScope returns the removed IDs of the "consequence_scope" edge to the Consequence_Scope entity.
+func (m *ConsequenceMutation) RemovedConsequenceScopeIDs() (ids []uuid.UUID) {
+	for id := range m.removedconsequence_scope {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConsequenceScopeIDs returns the "consequence_scope" edge IDs in the mutation.
+func (m *ConsequenceMutation) ConsequenceScopeIDs() (ids []uuid.UUID) {
+	for id := range m.consequence_scope {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConsequenceScope resets all changes to the "consequence_scope" edge.
+func (m *ConsequenceMutation) ResetConsequenceScope() {
+	m.consequence_scope = nil
+	m.clearedconsequence_scope = false
+	m.removedconsequence_scope = nil
+}
+
+// AddConsequenceImpactIDs adds the "consequence_impact" edge to the Consequence_Impact entity by ids.
+func (m *ConsequenceMutation) AddConsequenceImpactIDs(ids ...uuid.UUID) {
+	if m.consequence_impact == nil {
+		m.consequence_impact = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.consequence_impact[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConsequenceImpact clears the "consequence_impact" edge to the Consequence_Impact entity.
+func (m *ConsequenceMutation) ClearConsequenceImpact() {
+	m.clearedconsequence_impact = true
+}
+
+// ConsequenceImpactCleared reports if the "consequence_impact" edge to the Consequence_Impact entity was cleared.
+func (m *ConsequenceMutation) ConsequenceImpactCleared() bool {
+	return m.clearedconsequence_impact
+}
+
+// RemoveConsequenceImpactIDs removes the "consequence_impact" edge to the Consequence_Impact entity by IDs.
+func (m *ConsequenceMutation) RemoveConsequenceImpactIDs(ids ...uuid.UUID) {
+	if m.removedconsequence_impact == nil {
+		m.removedconsequence_impact = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.consequence_impact, ids[i])
+		m.removedconsequence_impact[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConsequenceImpact returns the removed IDs of the "consequence_impact" edge to the Consequence_Impact entity.
+func (m *ConsequenceMutation) RemovedConsequenceImpactIDs() (ids []uuid.UUID) {
+	for id := range m.removedconsequence_impact {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConsequenceImpactIDs returns the "consequence_impact" edge IDs in the mutation.
+func (m *ConsequenceMutation) ConsequenceImpactIDs() (ids []uuid.UUID) {
+	for id := range m.consequence_impact {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConsequenceImpact resets all changes to the "consequence_impact" edge.
+func (m *ConsequenceMutation) ResetConsequenceImpact() {
+	m.consequence_impact = nil
+	m.clearedconsequence_impact = false
+	m.removedconsequence_impact = nil
+}
+
+// Where appends a list predicates to the ConsequenceMutation builder.
+func (m *ConsequenceMutation) Where(ps ...predicate.Consequence) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ConsequenceMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ConsequenceMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Consequence, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ConsequenceMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ConsequenceMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Consequence).
+func (m *ConsequenceMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ConsequenceMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.notes != nil {
+		fields = append(fields, consequence.FieldNotes)
+	}
+	if m.likelihood != nil {
+		fields = append(fields, consequence.FieldLikelihood)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ConsequenceMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case consequence.FieldNotes:
+		return m.Notes()
+	case consequence.FieldLikelihood:
+		return m.Likelihood()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ConsequenceMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case consequence.FieldNotes:
+		return m.OldNotes(ctx)
+	case consequence.FieldLikelihood:
+		return m.OldLikelihood(ctx)
+	}
+	return nil, fmt.Errorf("unknown Consequence field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConsequenceMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case consequence.FieldNotes:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNotes(v)
+		return nil
+	case consequence.FieldLikelihood:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLikelihood(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Consequence field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ConsequenceMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ConsequenceMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConsequenceMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Consequence numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ConsequenceMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(consequence.FieldNotes) {
+		fields = append(fields, consequence.FieldNotes)
+	}
+	if m.FieldCleared(consequence.FieldLikelihood) {
+		fields = append(fields, consequence.FieldLikelihood)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ConsequenceMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ConsequenceMutation) ClearField(name string) error {
+	switch name {
+	case consequence.FieldNotes:
+		m.ClearNotes()
+		return nil
+	case consequence.FieldLikelihood:
+		m.ClearLikelihood()
+		return nil
+	}
+	return fmt.Errorf("unknown Consequence nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ConsequenceMutation) ResetField(name string) error {
+	switch name {
+	case consequence.FieldNotes:
+		m.ResetNotes()
+		return nil
+	case consequence.FieldLikelihood:
+		m.ResetLikelihood()
+		return nil
+	}
+	return fmt.Errorf("unknown Consequence field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ConsequenceMutation) AddedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.cwe != nil {
+		edges = append(edges, consequence.EdgeCwe)
+	}
+	if m.consequence_scope != nil {
+		edges = append(edges, consequence.EdgeConsequenceScope)
+	}
+	if m.consequence_impact != nil {
+		edges = append(edges, consequence.EdgeConsequenceImpact)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ConsequenceMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case consequence.EdgeCwe:
+		ids := make([]ent.Value, 0, len(m.cwe))
+		for id := range m.cwe {
+			ids = append(ids, id)
+		}
+		return ids
+	case consequence.EdgeConsequenceScope:
+		ids := make([]ent.Value, 0, len(m.consequence_scope))
+		for id := range m.consequence_scope {
+			ids = append(ids, id)
+		}
+		return ids
+	case consequence.EdgeConsequenceImpact:
+		ids := make([]ent.Value, 0, len(m.consequence_impact))
+		for id := range m.consequence_impact {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ConsequenceMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.removedcwe != nil {
+		edges = append(edges, consequence.EdgeCwe)
+	}
+	if m.removedconsequence_scope != nil {
+		edges = append(edges, consequence.EdgeConsequenceScope)
+	}
+	if m.removedconsequence_impact != nil {
+		edges = append(edges, consequence.EdgeConsequenceImpact)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ConsequenceMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case consequence.EdgeCwe:
+		ids := make([]ent.Value, 0, len(m.removedcwe))
+		for id := range m.removedcwe {
+			ids = append(ids, id)
+		}
+		return ids
+	case consequence.EdgeConsequenceScope:
+		ids := make([]ent.Value, 0, len(m.removedconsequence_scope))
+		for id := range m.removedconsequence_scope {
+			ids = append(ids, id)
+		}
+		return ids
+	case consequence.EdgeConsequenceImpact:
+		ids := make([]ent.Value, 0, len(m.removedconsequence_impact))
+		for id := range m.removedconsequence_impact {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ConsequenceMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 3)
+	if m.clearedcwe {
+		edges = append(edges, consequence.EdgeCwe)
+	}
+	if m.clearedconsequence_scope {
+		edges = append(edges, consequence.EdgeConsequenceScope)
+	}
+	if m.clearedconsequence_impact {
+		edges = append(edges, consequence.EdgeConsequenceImpact)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ConsequenceMutation) EdgeCleared(name string) bool {
+	switch name {
+	case consequence.EdgeCwe:
+		return m.clearedcwe
+	case consequence.EdgeConsequenceScope:
+		return m.clearedconsequence_scope
+	case consequence.EdgeConsequenceImpact:
+		return m.clearedconsequence_impact
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ConsequenceMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Consequence unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ConsequenceMutation) ResetEdge(name string) error {
+	switch name {
+	case consequence.EdgeCwe:
+		m.ResetCwe()
+		return nil
+	case consequence.EdgeConsequenceScope:
+		m.ResetConsequenceScope()
+		return nil
+	case consequence.EdgeConsequenceImpact:
+		m.ResetConsequenceImpact()
+		return nil
+	}
+	return fmt.Errorf("unknown Consequence edge %s", name)
+}
+
+// ConsequenceImpactMutation represents an operation that mutates the Consequence_Impact nodes in the graph.
+type ConsequenceImpactMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	impact             *string
+	clearedFields      map[string]struct{}
+	consequence        map[uuid.UUID]struct{}
+	removedconsequence map[uuid.UUID]struct{}
+	clearedconsequence bool
+	done               bool
+	oldValue           func(context.Context) (*Consequence_Impact, error)
+	predicates         []predicate.Consequence_Impact
+}
+
+var _ ent.Mutation = (*ConsequenceImpactMutation)(nil)
+
+// consequenceImpactOption allows management of the mutation configuration using functional options.
+type consequenceImpactOption func(*ConsequenceImpactMutation)
+
+// newConsequenceImpactMutation creates new mutation for the Consequence_Impact entity.
+func newConsequenceImpactMutation(c config, op Op, opts ...consequenceImpactOption) *ConsequenceImpactMutation {
+	m := &ConsequenceImpactMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeConsequenceImpact,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withConsequence_ImpactID sets the ID field of the mutation.
+func withConsequence_ImpactID(id uuid.UUID) consequenceImpactOption {
+	return func(m *ConsequenceImpactMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Consequence_Impact
+		)
+		m.oldValue = func(ctx context.Context) (*Consequence_Impact, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Consequence_Impact.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withConsequence_Impact sets the old Consequence_Impact of the mutation.
+func withConsequence_Impact(node *Consequence_Impact) consequenceImpactOption {
+	return func(m *ConsequenceImpactMutation) {
+		m.oldValue = func(context.Context) (*Consequence_Impact, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ConsequenceImpactMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ConsequenceImpactMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Consequence_Impact entities.
+func (m *ConsequenceImpactMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ConsequenceImpactMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ConsequenceImpactMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Consequence_Impact.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetImpact sets the "impact" field.
+func (m *ConsequenceImpactMutation) SetImpact(s string) {
+	m.impact = &s
+}
+
+// Impact returns the value of the "impact" field in the mutation.
+func (m *ConsequenceImpactMutation) Impact() (r string, exists bool) {
+	v := m.impact
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldImpact returns the old "impact" field's value of the Consequence_Impact entity.
+// If the Consequence_Impact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsequenceImpactMutation) OldImpact(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldImpact is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldImpact requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldImpact: %w", err)
+	}
+	return oldValue.Impact, nil
+}
+
+// ResetImpact resets all changes to the "impact" field.
+func (m *ConsequenceImpactMutation) ResetImpact() {
+	m.impact = nil
+}
+
+// AddConsequenceIDs adds the "consequence" edge to the Consequence entity by ids.
+func (m *ConsequenceImpactMutation) AddConsequenceIDs(ids ...uuid.UUID) {
+	if m.consequence == nil {
+		m.consequence = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.consequence[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConsequence clears the "consequence" edge to the Consequence entity.
+func (m *ConsequenceImpactMutation) ClearConsequence() {
+	m.clearedconsequence = true
+}
+
+// ConsequenceCleared reports if the "consequence" edge to the Consequence entity was cleared.
+func (m *ConsequenceImpactMutation) ConsequenceCleared() bool {
+	return m.clearedconsequence
+}
+
+// RemoveConsequenceIDs removes the "consequence" edge to the Consequence entity by IDs.
+func (m *ConsequenceImpactMutation) RemoveConsequenceIDs(ids ...uuid.UUID) {
+	if m.removedconsequence == nil {
+		m.removedconsequence = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.consequence, ids[i])
+		m.removedconsequence[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConsequence returns the removed IDs of the "consequence" edge to the Consequence entity.
+func (m *ConsequenceImpactMutation) RemovedConsequenceIDs() (ids []uuid.UUID) {
+	for id := range m.removedconsequence {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConsequenceIDs returns the "consequence" edge IDs in the mutation.
+func (m *ConsequenceImpactMutation) ConsequenceIDs() (ids []uuid.UUID) {
+	for id := range m.consequence {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConsequence resets all changes to the "consequence" edge.
+func (m *ConsequenceImpactMutation) ResetConsequence() {
+	m.consequence = nil
+	m.clearedconsequence = false
+	m.removedconsequence = nil
+}
+
+// Where appends a list predicates to the ConsequenceImpactMutation builder.
+func (m *ConsequenceImpactMutation) Where(ps ...predicate.Consequence_Impact) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ConsequenceImpactMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ConsequenceImpactMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Consequence_Impact, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ConsequenceImpactMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ConsequenceImpactMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Consequence_Impact).
+func (m *ConsequenceImpactMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ConsequenceImpactMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.impact != nil {
+		fields = append(fields, consequence_impact.FieldImpact)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ConsequenceImpactMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case consequence_impact.FieldImpact:
+		return m.Impact()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ConsequenceImpactMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case consequence_impact.FieldImpact:
+		return m.OldImpact(ctx)
+	}
+	return nil, fmt.Errorf("unknown Consequence_Impact field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConsequenceImpactMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case consequence_impact.FieldImpact:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetImpact(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Consequence_Impact field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ConsequenceImpactMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ConsequenceImpactMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConsequenceImpactMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Consequence_Impact numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ConsequenceImpactMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ConsequenceImpactMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ConsequenceImpactMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Consequence_Impact nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ConsequenceImpactMutation) ResetField(name string) error {
+	switch name {
+	case consequence_impact.FieldImpact:
+		m.ResetImpact()
+		return nil
+	}
+	return fmt.Errorf("unknown Consequence_Impact field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ConsequenceImpactMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.consequence != nil {
+		edges = append(edges, consequence_impact.EdgeConsequence)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ConsequenceImpactMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case consequence_impact.EdgeConsequence:
+		ids := make([]ent.Value, 0, len(m.consequence))
+		for id := range m.consequence {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ConsequenceImpactMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedconsequence != nil {
+		edges = append(edges, consequence_impact.EdgeConsequence)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ConsequenceImpactMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case consequence_impact.EdgeConsequence:
+		ids := make([]ent.Value, 0, len(m.removedconsequence))
+		for id := range m.removedconsequence {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ConsequenceImpactMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedconsequence {
+		edges = append(edges, consequence_impact.EdgeConsequence)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ConsequenceImpactMutation) EdgeCleared(name string) bool {
+	switch name {
+	case consequence_impact.EdgeConsequence:
+		return m.clearedconsequence
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ConsequenceImpactMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Consequence_Impact unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ConsequenceImpactMutation) ResetEdge(name string) error {
+	switch name {
+	case consequence_impact.EdgeConsequence:
+		m.ResetConsequence()
+		return nil
+	}
+	return fmt.Errorf("unknown Consequence_Impact edge %s", name)
+}
+
+// ConsequenceScopeMutation represents an operation that mutates the Consequence_Scope nodes in the graph.
+type ConsequenceScopeMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	scope              *string
+	clearedFields      map[string]struct{}
+	consequence        map[uuid.UUID]struct{}
+	removedconsequence map[uuid.UUID]struct{}
+	clearedconsequence bool
+	done               bool
+	oldValue           func(context.Context) (*Consequence_Scope, error)
+	predicates         []predicate.Consequence_Scope
+}
+
+var _ ent.Mutation = (*ConsequenceScopeMutation)(nil)
+
+// consequenceScopeOption allows management of the mutation configuration using functional options.
+type consequenceScopeOption func(*ConsequenceScopeMutation)
+
+// newConsequenceScopeMutation creates new mutation for the Consequence_Scope entity.
+func newConsequenceScopeMutation(c config, op Op, opts ...consequenceScopeOption) *ConsequenceScopeMutation {
+	m := &ConsequenceScopeMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeConsequenceScope,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withConsequence_ScopeID sets the ID field of the mutation.
+func withConsequence_ScopeID(id uuid.UUID) consequenceScopeOption {
+	return func(m *ConsequenceScopeMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Consequence_Scope
+		)
+		m.oldValue = func(ctx context.Context) (*Consequence_Scope, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Consequence_Scope.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withConsequence_Scope sets the old Consequence_Scope of the mutation.
+func withConsequence_Scope(node *Consequence_Scope) consequenceScopeOption {
+	return func(m *ConsequenceScopeMutation) {
+		m.oldValue = func(context.Context) (*Consequence_Scope, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ConsequenceScopeMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ConsequenceScopeMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Consequence_Scope entities.
+func (m *ConsequenceScopeMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ConsequenceScopeMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ConsequenceScopeMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Consequence_Scope.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetScope sets the "scope" field.
+func (m *ConsequenceScopeMutation) SetScope(s string) {
+	m.scope = &s
+}
+
+// Scope returns the value of the "scope" field in the mutation.
+func (m *ConsequenceScopeMutation) Scope() (r string, exists bool) {
+	v := m.scope
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldScope returns the old "scope" field's value of the Consequence_Scope entity.
+// If the Consequence_Scope object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ConsequenceScopeMutation) OldScope(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldScope is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldScope requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldScope: %w", err)
+	}
+	return oldValue.Scope, nil
+}
+
+// ResetScope resets all changes to the "scope" field.
+func (m *ConsequenceScopeMutation) ResetScope() {
+	m.scope = nil
+}
+
+// AddConsequenceIDs adds the "consequence" edge to the Consequence entity by ids.
+func (m *ConsequenceScopeMutation) AddConsequenceIDs(ids ...uuid.UUID) {
+	if m.consequence == nil {
+		m.consequence = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.consequence[ids[i]] = struct{}{}
+	}
+}
+
+// ClearConsequence clears the "consequence" edge to the Consequence entity.
+func (m *ConsequenceScopeMutation) ClearConsequence() {
+	m.clearedconsequence = true
+}
+
+// ConsequenceCleared reports if the "consequence" edge to the Consequence entity was cleared.
+func (m *ConsequenceScopeMutation) ConsequenceCleared() bool {
+	return m.clearedconsequence
+}
+
+// RemoveConsequenceIDs removes the "consequence" edge to the Consequence entity by IDs.
+func (m *ConsequenceScopeMutation) RemoveConsequenceIDs(ids ...uuid.UUID) {
+	if m.removedconsequence == nil {
+		m.removedconsequence = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.consequence, ids[i])
+		m.removedconsequence[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedConsequence returns the removed IDs of the "consequence" edge to the Consequence entity.
+func (m *ConsequenceScopeMutation) RemovedConsequenceIDs() (ids []uuid.UUID) {
+	for id := range m.removedconsequence {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ConsequenceIDs returns the "consequence" edge IDs in the mutation.
+func (m *ConsequenceScopeMutation) ConsequenceIDs() (ids []uuid.UUID) {
+	for id := range m.consequence {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetConsequence resets all changes to the "consequence" edge.
+func (m *ConsequenceScopeMutation) ResetConsequence() {
+	m.consequence = nil
+	m.clearedconsequence = false
+	m.removedconsequence = nil
+}
+
+// Where appends a list predicates to the ConsequenceScopeMutation builder.
+func (m *ConsequenceScopeMutation) Where(ps ...predicate.Consequence_Scope) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ConsequenceScopeMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ConsequenceScopeMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Consequence_Scope, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ConsequenceScopeMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ConsequenceScopeMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Consequence_Scope).
+func (m *ConsequenceScopeMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ConsequenceScopeMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.scope != nil {
+		fields = append(fields, consequence_scope.FieldScope)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ConsequenceScopeMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case consequence_scope.FieldScope:
+		return m.Scope()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ConsequenceScopeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case consequence_scope.FieldScope:
+		return m.OldScope(ctx)
+	}
+	return nil, fmt.Errorf("unknown Consequence_Scope field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConsequenceScopeMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case consequence_scope.FieldScope:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetScope(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Consequence_Scope field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ConsequenceScopeMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ConsequenceScopeMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ConsequenceScopeMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Consequence_Scope numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ConsequenceScopeMutation) ClearedFields() []string {
+	return nil
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ConsequenceScopeMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ConsequenceScopeMutation) ClearField(name string) error {
+	return fmt.Errorf("unknown Consequence_Scope nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ConsequenceScopeMutation) ResetField(name string) error {
+	switch name {
+	case consequence_scope.FieldScope:
+		m.ResetScope()
+		return nil
+	}
+	return fmt.Errorf("unknown Consequence_Scope field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ConsequenceScopeMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.consequence != nil {
+		edges = append(edges, consequence_scope.EdgeConsequence)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ConsequenceScopeMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case consequence_scope.EdgeConsequence:
+		ids := make([]ent.Value, 0, len(m.consequence))
+		for id := range m.consequence {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ConsequenceScopeMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedconsequence != nil {
+		edges = append(edges, consequence_scope.EdgeConsequence)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ConsequenceScopeMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case consequence_scope.EdgeConsequence:
+		ids := make([]ent.Value, 0, len(m.removedconsequence))
+		for id := range m.removedconsequence {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ConsequenceScopeMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedconsequence {
+		edges = append(edges, consequence_scope.EdgeConsequence)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ConsequenceScopeMutation) EdgeCleared(name string) bool {
+	switch name {
+	case consequence_scope.EdgeConsequence:
+		return m.clearedconsequence
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ConsequenceScopeMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Consequence_Scope unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ConsequenceScopeMutation) ResetEdge(name string) error {
+	switch name {
+	case consequence_scope.EdgeConsequence:
+		m.ResetConsequence()
+		return nil
+	}
+	return fmt.Errorf("unknown Consequence_Scope edge %s", name)
+}
+
+// DemonstrativeExampleMutation represents an operation that mutates the DemonstrativeExample nodes in the graph.
+type DemonstrativeExampleMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	description   *string
+	clearedFields map[string]struct{}
+	cwe           map[uuid.UUID]struct{}
+	removedcwe    map[uuid.UUID]struct{}
+	clearedcwe    bool
+	done          bool
+	oldValue      func(context.Context) (*DemonstrativeExample, error)
+	predicates    []predicate.DemonstrativeExample
+}
+
+var _ ent.Mutation = (*DemonstrativeExampleMutation)(nil)
+
+// demonstrativeexampleOption allows management of the mutation configuration using functional options.
+type demonstrativeexampleOption func(*DemonstrativeExampleMutation)
+
+// newDemonstrativeExampleMutation creates new mutation for the DemonstrativeExample entity.
+func newDemonstrativeExampleMutation(c config, op Op, opts ...demonstrativeexampleOption) *DemonstrativeExampleMutation {
+	m := &DemonstrativeExampleMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDemonstrativeExample,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDemonstrativeExampleID sets the ID field of the mutation.
+func withDemonstrativeExampleID(id uuid.UUID) demonstrativeexampleOption {
+	return func(m *DemonstrativeExampleMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DemonstrativeExample
+		)
+		m.oldValue = func(ctx context.Context) (*DemonstrativeExample, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DemonstrativeExample.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDemonstrativeExample sets the old DemonstrativeExample of the mutation.
+func withDemonstrativeExample(node *DemonstrativeExample) demonstrativeexampleOption {
+	return func(m *DemonstrativeExampleMutation) {
+		m.oldValue = func(context.Context) (*DemonstrativeExample, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DemonstrativeExampleMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DemonstrativeExampleMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of DemonstrativeExample entities.
+func (m *DemonstrativeExampleMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DemonstrativeExampleMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DemonstrativeExampleMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DemonstrativeExample.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetDescription sets the "description" field.
+func (m *DemonstrativeExampleMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *DemonstrativeExampleMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the DemonstrativeExample entity.
+// If the DemonstrativeExample object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DemonstrativeExampleMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *DemonstrativeExampleMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[demonstrativeexample.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *DemonstrativeExampleMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[demonstrativeexample.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *DemonstrativeExampleMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, demonstrativeexample.FieldDescription)
+}
+
+// AddCweIDs adds the "cwe" edge to the CWE entity by ids.
+func (m *DemonstrativeExampleMutation) AddCweIDs(ids ...uuid.UUID) {
+	if m.cwe == nil {
+		m.cwe = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.cwe[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCwe clears the "cwe" edge to the CWE entity.
+func (m *DemonstrativeExampleMutation) ClearCwe() {
+	m.clearedcwe = true
+}
+
+// CweCleared reports if the "cwe" edge to the CWE entity was cleared.
+func (m *DemonstrativeExampleMutation) CweCleared() bool {
+	return m.clearedcwe
+}
+
+// RemoveCweIDs removes the "cwe" edge to the CWE entity by IDs.
+func (m *DemonstrativeExampleMutation) RemoveCweIDs(ids ...uuid.UUID) {
+	if m.removedcwe == nil {
+		m.removedcwe = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.cwe, ids[i])
+		m.removedcwe[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCwe returns the removed IDs of the "cwe" edge to the CWE entity.
+func (m *DemonstrativeExampleMutation) RemovedCweIDs() (ids []uuid.UUID) {
+	for id := range m.removedcwe {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CweIDs returns the "cwe" edge IDs in the mutation.
+func (m *DemonstrativeExampleMutation) CweIDs() (ids []uuid.UUID) {
+	for id := range m.cwe {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCwe resets all changes to the "cwe" edge.
+func (m *DemonstrativeExampleMutation) ResetCwe() {
+	m.cwe = nil
+	m.clearedcwe = false
+	m.removedcwe = nil
+}
+
+// Where appends a list predicates to the DemonstrativeExampleMutation builder.
+func (m *DemonstrativeExampleMutation) Where(ps ...predicate.DemonstrativeExample) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DemonstrativeExampleMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DemonstrativeExampleMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DemonstrativeExample, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DemonstrativeExampleMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DemonstrativeExampleMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DemonstrativeExample).
+func (m *DemonstrativeExampleMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DemonstrativeExampleMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.description != nil {
+		fields = append(fields, demonstrativeexample.FieldDescription)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DemonstrativeExampleMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case demonstrativeexample.FieldDescription:
+		return m.Description()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DemonstrativeExampleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case demonstrativeexample.FieldDescription:
+		return m.OldDescription(ctx)
+	}
+	return nil, fmt.Errorf("unknown DemonstrativeExample field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DemonstrativeExampleMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case demonstrativeexample.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DemonstrativeExample field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DemonstrativeExampleMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DemonstrativeExampleMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DemonstrativeExampleMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown DemonstrativeExample numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DemonstrativeExampleMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(demonstrativeexample.FieldDescription) {
+		fields = append(fields, demonstrativeexample.FieldDescription)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DemonstrativeExampleMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DemonstrativeExampleMutation) ClearField(name string) error {
+	switch name {
+	case demonstrativeexample.FieldDescription:
+		m.ClearDescription()
+		return nil
+	}
+	return fmt.Errorf("unknown DemonstrativeExample nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DemonstrativeExampleMutation) ResetField(name string) error {
+	switch name {
+	case demonstrativeexample.FieldDescription:
+		m.ResetDescription()
+		return nil
+	}
+	return fmt.Errorf("unknown DemonstrativeExample field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DemonstrativeExampleMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cwe != nil {
+		edges = append(edges, demonstrativeexample.EdgeCwe)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DemonstrativeExampleMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case demonstrativeexample.EdgeCwe:
+		ids := make([]ent.Value, 0, len(m.cwe))
+		for id := range m.cwe {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DemonstrativeExampleMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedcwe != nil {
+		edges = append(edges, demonstrativeexample.EdgeCwe)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DemonstrativeExampleMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case demonstrativeexample.EdgeCwe:
+		ids := make([]ent.Value, 0, len(m.removedcwe))
+		for id := range m.removedcwe {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DemonstrativeExampleMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedcwe {
+		edges = append(edges, demonstrativeexample.EdgeCwe)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DemonstrativeExampleMutation) EdgeCleared(name string) bool {
+	switch name {
+	case demonstrativeexample.EdgeCwe:
+		return m.clearedcwe
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DemonstrativeExampleMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown DemonstrativeExample unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DemonstrativeExampleMutation) ResetEdge(name string) error {
+	switch name {
+	case demonstrativeexample.EdgeCwe:
+		m.ResetCwe()
+		return nil
+	}
+	return fmt.Errorf("unknown DemonstrativeExample edge %s", name)
+}
+
 // DependencyMutation represents an operation that mutates the Dependency nodes in the graph.
 type DependencyMutation struct {
 	config
@@ -9466,6 +13401,1265 @@ func (m *DependencyMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Dependency edge %s", name)
+}
+
+// DetectionMethodMutation represents an operation that mutates the DetectionMethod nodes in the graph.
+type DetectionMethodMutation struct {
+	config
+	op            Op
+	typ           string
+	id            *uuid.UUID
+	detection_id  *string
+	method        *string
+	description   *string
+	effectiveness *string
+	clearedFields map[string]struct{}
+	cwe           map[uuid.UUID]struct{}
+	removedcwe    map[uuid.UUID]struct{}
+	clearedcwe    bool
+	done          bool
+	oldValue      func(context.Context) (*DetectionMethod, error)
+	predicates    []predicate.DetectionMethod
+}
+
+var _ ent.Mutation = (*DetectionMethodMutation)(nil)
+
+// detectionmethodOption allows management of the mutation configuration using functional options.
+type detectionmethodOption func(*DetectionMethodMutation)
+
+// newDetectionMethodMutation creates new mutation for the DetectionMethod entity.
+func newDetectionMethodMutation(c config, op Op, opts ...detectionmethodOption) *DetectionMethodMutation {
+	m := &DetectionMethodMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeDetectionMethod,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withDetectionMethodID sets the ID field of the mutation.
+func withDetectionMethodID(id uuid.UUID) detectionmethodOption {
+	return func(m *DetectionMethodMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *DetectionMethod
+		)
+		m.oldValue = func(ctx context.Context) (*DetectionMethod, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().DetectionMethod.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withDetectionMethod sets the old DetectionMethod of the mutation.
+func withDetectionMethod(node *DetectionMethod) detectionmethodOption {
+	return func(m *DetectionMethodMutation) {
+		m.oldValue = func(context.Context) (*DetectionMethod, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m DetectionMethodMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m DetectionMethodMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of DetectionMethod entities.
+func (m *DetectionMethodMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *DetectionMethodMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *DetectionMethodMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().DetectionMethod.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetDetectionID sets the "detection_id" field.
+func (m *DetectionMethodMutation) SetDetectionID(s string) {
+	m.detection_id = &s
+}
+
+// DetectionID returns the value of the "detection_id" field in the mutation.
+func (m *DetectionMethodMutation) DetectionID() (r string, exists bool) {
+	v := m.detection_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDetectionID returns the old "detection_id" field's value of the DetectionMethod entity.
+// If the DetectionMethod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DetectionMethodMutation) OldDetectionID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDetectionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDetectionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDetectionID: %w", err)
+	}
+	return oldValue.DetectionID, nil
+}
+
+// ClearDetectionID clears the value of the "detection_id" field.
+func (m *DetectionMethodMutation) ClearDetectionID() {
+	m.detection_id = nil
+	m.clearedFields[detectionmethod.FieldDetectionID] = struct{}{}
+}
+
+// DetectionIDCleared returns if the "detection_id" field was cleared in this mutation.
+func (m *DetectionMethodMutation) DetectionIDCleared() bool {
+	_, ok := m.clearedFields[detectionmethod.FieldDetectionID]
+	return ok
+}
+
+// ResetDetectionID resets all changes to the "detection_id" field.
+func (m *DetectionMethodMutation) ResetDetectionID() {
+	m.detection_id = nil
+	delete(m.clearedFields, detectionmethod.FieldDetectionID)
+}
+
+// SetMethod sets the "method" field.
+func (m *DetectionMethodMutation) SetMethod(s string) {
+	m.method = &s
+}
+
+// Method returns the value of the "method" field in the mutation.
+func (m *DetectionMethodMutation) Method() (r string, exists bool) {
+	v := m.method
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMethod returns the old "method" field's value of the DetectionMethod entity.
+// If the DetectionMethod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DetectionMethodMutation) OldMethod(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMethod is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMethod requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMethod: %w", err)
+	}
+	return oldValue.Method, nil
+}
+
+// ClearMethod clears the value of the "method" field.
+func (m *DetectionMethodMutation) ClearMethod() {
+	m.method = nil
+	m.clearedFields[detectionmethod.FieldMethod] = struct{}{}
+}
+
+// MethodCleared returns if the "method" field was cleared in this mutation.
+func (m *DetectionMethodMutation) MethodCleared() bool {
+	_, ok := m.clearedFields[detectionmethod.FieldMethod]
+	return ok
+}
+
+// ResetMethod resets all changes to the "method" field.
+func (m *DetectionMethodMutation) ResetMethod() {
+	m.method = nil
+	delete(m.clearedFields, detectionmethod.FieldMethod)
+}
+
+// SetDescription sets the "description" field.
+func (m *DetectionMethodMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *DetectionMethodMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the DetectionMethod entity.
+// If the DetectionMethod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DetectionMethodMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *DetectionMethodMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[detectionmethod.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *DetectionMethodMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[detectionmethod.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *DetectionMethodMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, detectionmethod.FieldDescription)
+}
+
+// SetEffectiveness sets the "effectiveness" field.
+func (m *DetectionMethodMutation) SetEffectiveness(s string) {
+	m.effectiveness = &s
+}
+
+// Effectiveness returns the value of the "effectiveness" field in the mutation.
+func (m *DetectionMethodMutation) Effectiveness() (r string, exists bool) {
+	v := m.effectiveness
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEffectiveness returns the old "effectiveness" field's value of the DetectionMethod entity.
+// If the DetectionMethod object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *DetectionMethodMutation) OldEffectiveness(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEffectiveness is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEffectiveness requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEffectiveness: %w", err)
+	}
+	return oldValue.Effectiveness, nil
+}
+
+// ClearEffectiveness clears the value of the "effectiveness" field.
+func (m *DetectionMethodMutation) ClearEffectiveness() {
+	m.effectiveness = nil
+	m.clearedFields[detectionmethod.FieldEffectiveness] = struct{}{}
+}
+
+// EffectivenessCleared returns if the "effectiveness" field was cleared in this mutation.
+func (m *DetectionMethodMutation) EffectivenessCleared() bool {
+	_, ok := m.clearedFields[detectionmethod.FieldEffectiveness]
+	return ok
+}
+
+// ResetEffectiveness resets all changes to the "effectiveness" field.
+func (m *DetectionMethodMutation) ResetEffectiveness() {
+	m.effectiveness = nil
+	delete(m.clearedFields, detectionmethod.FieldEffectiveness)
+}
+
+// AddCweIDs adds the "cwe" edge to the CWE entity by ids.
+func (m *DetectionMethodMutation) AddCweIDs(ids ...uuid.UUID) {
+	if m.cwe == nil {
+		m.cwe = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.cwe[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCwe clears the "cwe" edge to the CWE entity.
+func (m *DetectionMethodMutation) ClearCwe() {
+	m.clearedcwe = true
+}
+
+// CweCleared reports if the "cwe" edge to the CWE entity was cleared.
+func (m *DetectionMethodMutation) CweCleared() bool {
+	return m.clearedcwe
+}
+
+// RemoveCweIDs removes the "cwe" edge to the CWE entity by IDs.
+func (m *DetectionMethodMutation) RemoveCweIDs(ids ...uuid.UUID) {
+	if m.removedcwe == nil {
+		m.removedcwe = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.cwe, ids[i])
+		m.removedcwe[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCwe returns the removed IDs of the "cwe" edge to the CWE entity.
+func (m *DetectionMethodMutation) RemovedCweIDs() (ids []uuid.UUID) {
+	for id := range m.removedcwe {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CweIDs returns the "cwe" edge IDs in the mutation.
+func (m *DetectionMethodMutation) CweIDs() (ids []uuid.UUID) {
+	for id := range m.cwe {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCwe resets all changes to the "cwe" edge.
+func (m *DetectionMethodMutation) ResetCwe() {
+	m.cwe = nil
+	m.clearedcwe = false
+	m.removedcwe = nil
+}
+
+// Where appends a list predicates to the DetectionMethodMutation builder.
+func (m *DetectionMethodMutation) Where(ps ...predicate.DetectionMethod) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the DetectionMethodMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *DetectionMethodMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.DetectionMethod, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *DetectionMethodMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *DetectionMethodMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (DetectionMethod).
+func (m *DetectionMethodMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *DetectionMethodMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.detection_id != nil {
+		fields = append(fields, detectionmethod.FieldDetectionID)
+	}
+	if m.method != nil {
+		fields = append(fields, detectionmethod.FieldMethod)
+	}
+	if m.description != nil {
+		fields = append(fields, detectionmethod.FieldDescription)
+	}
+	if m.effectiveness != nil {
+		fields = append(fields, detectionmethod.FieldEffectiveness)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *DetectionMethodMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case detectionmethod.FieldDetectionID:
+		return m.DetectionID()
+	case detectionmethod.FieldMethod:
+		return m.Method()
+	case detectionmethod.FieldDescription:
+		return m.Description()
+	case detectionmethod.FieldEffectiveness:
+		return m.Effectiveness()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *DetectionMethodMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case detectionmethod.FieldDetectionID:
+		return m.OldDetectionID(ctx)
+	case detectionmethod.FieldMethod:
+		return m.OldMethod(ctx)
+	case detectionmethod.FieldDescription:
+		return m.OldDescription(ctx)
+	case detectionmethod.FieldEffectiveness:
+		return m.OldEffectiveness(ctx)
+	}
+	return nil, fmt.Errorf("unknown DetectionMethod field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DetectionMethodMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case detectionmethod.FieldDetectionID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDetectionID(v)
+		return nil
+	case detectionmethod.FieldMethod:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMethod(v)
+		return nil
+	case detectionmethod.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case detectionmethod.FieldEffectiveness:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEffectiveness(v)
+		return nil
+	}
+	return fmt.Errorf("unknown DetectionMethod field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *DetectionMethodMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *DetectionMethodMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *DetectionMethodMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown DetectionMethod numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *DetectionMethodMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(detectionmethod.FieldDetectionID) {
+		fields = append(fields, detectionmethod.FieldDetectionID)
+	}
+	if m.FieldCleared(detectionmethod.FieldMethod) {
+		fields = append(fields, detectionmethod.FieldMethod)
+	}
+	if m.FieldCleared(detectionmethod.FieldDescription) {
+		fields = append(fields, detectionmethod.FieldDescription)
+	}
+	if m.FieldCleared(detectionmethod.FieldEffectiveness) {
+		fields = append(fields, detectionmethod.FieldEffectiveness)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *DetectionMethodMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *DetectionMethodMutation) ClearField(name string) error {
+	switch name {
+	case detectionmethod.FieldDetectionID:
+		m.ClearDetectionID()
+		return nil
+	case detectionmethod.FieldMethod:
+		m.ClearMethod()
+		return nil
+	case detectionmethod.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case detectionmethod.FieldEffectiveness:
+		m.ClearEffectiveness()
+		return nil
+	}
+	return fmt.Errorf("unknown DetectionMethod nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *DetectionMethodMutation) ResetField(name string) error {
+	switch name {
+	case detectionmethod.FieldDetectionID:
+		m.ResetDetectionID()
+		return nil
+	case detectionmethod.FieldMethod:
+		m.ResetMethod()
+		return nil
+	case detectionmethod.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case detectionmethod.FieldEffectiveness:
+		m.ResetEffectiveness()
+		return nil
+	}
+	return fmt.Errorf("unknown DetectionMethod field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *DetectionMethodMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cwe != nil {
+		edges = append(edges, detectionmethod.EdgeCwe)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *DetectionMethodMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case detectionmethod.EdgeCwe:
+		ids := make([]ent.Value, 0, len(m.cwe))
+		for id := range m.cwe {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *DetectionMethodMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedcwe != nil {
+		edges = append(edges, detectionmethod.EdgeCwe)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *DetectionMethodMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case detectionmethod.EdgeCwe:
+		ids := make([]ent.Value, 0, len(m.removedcwe))
+		for id := range m.removedcwe {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *DetectionMethodMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedcwe {
+		edges = append(edges, detectionmethod.EdgeCwe)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *DetectionMethodMutation) EdgeCleared(name string) bool {
+	switch name {
+	case detectionmethod.EdgeCwe:
+		return m.clearedcwe
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *DetectionMethodMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown DetectionMethod unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *DetectionMethodMutation) ResetEdge(name string) error {
+	switch name {
+	case detectionmethod.EdgeCwe:
+		m.ResetCwe()
+		return nil
+	}
+	return fmt.Errorf("unknown DetectionMethod edge %s", name)
+}
+
+// ExploitMutation represents an operation that mutates the Exploit nodes in the graph.
+type ExploitMutation struct {
+	config
+	op                 Op
+	typ                string
+	id                 *uuid.UUID
+	exploit_id         *string
+	description        *string
+	payload            *string
+	clearedFields      map[string]struct{}
+	certify_vex        map[uuid.UUID]struct{}
+	removedcertify_vex map[uuid.UUID]struct{}
+	clearedcertify_vex bool
+	done               bool
+	oldValue           func(context.Context) (*Exploit, error)
+	predicates         []predicate.Exploit
+}
+
+var _ ent.Mutation = (*ExploitMutation)(nil)
+
+// exploitOption allows management of the mutation configuration using functional options.
+type exploitOption func(*ExploitMutation)
+
+// newExploitMutation creates new mutation for the Exploit entity.
+func newExploitMutation(c config, op Op, opts ...exploitOption) *ExploitMutation {
+	m := &ExploitMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeExploit,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withExploitID sets the ID field of the mutation.
+func withExploitID(id uuid.UUID) exploitOption {
+	return func(m *ExploitMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *Exploit
+		)
+		m.oldValue = func(ctx context.Context) (*Exploit, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().Exploit.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withExploit sets the old Exploit of the mutation.
+func withExploit(node *Exploit) exploitOption {
+	return func(m *ExploitMutation) {
+		m.oldValue = func(context.Context) (*Exploit, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ExploitMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ExploitMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of Exploit entities.
+func (m *ExploitMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ExploitMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ExploitMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().Exploit.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetExploitID sets the "exploit_id" field.
+func (m *ExploitMutation) SetExploitID(s string) {
+	m.exploit_id = &s
+}
+
+// ExploitID returns the value of the "exploit_id" field in the mutation.
+func (m *ExploitMutation) ExploitID() (r string, exists bool) {
+	v := m.exploit_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldExploitID returns the old "exploit_id" field's value of the Exploit entity.
+// If the Exploit object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExploitMutation) OldExploitID(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldExploitID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldExploitID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldExploitID: %w", err)
+	}
+	return oldValue.ExploitID, nil
+}
+
+// ClearExploitID clears the value of the "exploit_id" field.
+func (m *ExploitMutation) ClearExploitID() {
+	m.exploit_id = nil
+	m.clearedFields[exploit.FieldExploitID] = struct{}{}
+}
+
+// ExploitIDCleared returns if the "exploit_id" field was cleared in this mutation.
+func (m *ExploitMutation) ExploitIDCleared() bool {
+	_, ok := m.clearedFields[exploit.FieldExploitID]
+	return ok
+}
+
+// ResetExploitID resets all changes to the "exploit_id" field.
+func (m *ExploitMutation) ResetExploitID() {
+	m.exploit_id = nil
+	delete(m.clearedFields, exploit.FieldExploitID)
+}
+
+// SetDescription sets the "description" field.
+func (m *ExploitMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *ExploitMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the Exploit entity.
+// If the Exploit object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExploitMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *ExploitMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[exploit.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *ExploitMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[exploit.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *ExploitMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, exploit.FieldDescription)
+}
+
+// SetPayload sets the "payload" field.
+func (m *ExploitMutation) SetPayload(s string) {
+	m.payload = &s
+}
+
+// Payload returns the value of the "payload" field in the mutation.
+func (m *ExploitMutation) Payload() (r string, exists bool) {
+	v := m.payload
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPayload returns the old "payload" field's value of the Exploit entity.
+// If the Exploit object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ExploitMutation) OldPayload(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPayload is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPayload requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPayload: %w", err)
+	}
+	return oldValue.Payload, nil
+}
+
+// ClearPayload clears the value of the "payload" field.
+func (m *ExploitMutation) ClearPayload() {
+	m.payload = nil
+	m.clearedFields[exploit.FieldPayload] = struct{}{}
+}
+
+// PayloadCleared returns if the "payload" field was cleared in this mutation.
+func (m *ExploitMutation) PayloadCleared() bool {
+	_, ok := m.clearedFields[exploit.FieldPayload]
+	return ok
+}
+
+// ResetPayload resets all changes to the "payload" field.
+func (m *ExploitMutation) ResetPayload() {
+	m.payload = nil
+	delete(m.clearedFields, exploit.FieldPayload)
+}
+
+// AddCertifyVexIDs adds the "certify_vex" edge to the CertifyVex entity by ids.
+func (m *ExploitMutation) AddCertifyVexIDs(ids ...uuid.UUID) {
+	if m.certify_vex == nil {
+		m.certify_vex = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.certify_vex[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCertifyVex clears the "certify_vex" edge to the CertifyVex entity.
+func (m *ExploitMutation) ClearCertifyVex() {
+	m.clearedcertify_vex = true
+}
+
+// CertifyVexCleared reports if the "certify_vex" edge to the CertifyVex entity was cleared.
+func (m *ExploitMutation) CertifyVexCleared() bool {
+	return m.clearedcertify_vex
+}
+
+// RemoveCertifyVexIDs removes the "certify_vex" edge to the CertifyVex entity by IDs.
+func (m *ExploitMutation) RemoveCertifyVexIDs(ids ...uuid.UUID) {
+	if m.removedcertify_vex == nil {
+		m.removedcertify_vex = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.certify_vex, ids[i])
+		m.removedcertify_vex[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCertifyVex returns the removed IDs of the "certify_vex" edge to the CertifyVex entity.
+func (m *ExploitMutation) RemovedCertifyVexIDs() (ids []uuid.UUID) {
+	for id := range m.removedcertify_vex {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CertifyVexIDs returns the "certify_vex" edge IDs in the mutation.
+func (m *ExploitMutation) CertifyVexIDs() (ids []uuid.UUID) {
+	for id := range m.certify_vex {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCertifyVex resets all changes to the "certify_vex" edge.
+func (m *ExploitMutation) ResetCertifyVex() {
+	m.certify_vex = nil
+	m.clearedcertify_vex = false
+	m.removedcertify_vex = nil
+}
+
+// Where appends a list predicates to the ExploitMutation builder.
+func (m *ExploitMutation) Where(ps ...predicate.Exploit) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ExploitMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ExploitMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.Exploit, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ExploitMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ExploitMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (Exploit).
+func (m *ExploitMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ExploitMutation) Fields() []string {
+	fields := make([]string, 0, 3)
+	if m.exploit_id != nil {
+		fields = append(fields, exploit.FieldExploitID)
+	}
+	if m.description != nil {
+		fields = append(fields, exploit.FieldDescription)
+	}
+	if m.payload != nil {
+		fields = append(fields, exploit.FieldPayload)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ExploitMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case exploit.FieldExploitID:
+		return m.ExploitID()
+	case exploit.FieldDescription:
+		return m.Description()
+	case exploit.FieldPayload:
+		return m.Payload()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ExploitMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case exploit.FieldExploitID:
+		return m.OldExploitID(ctx)
+	case exploit.FieldDescription:
+		return m.OldDescription(ctx)
+	case exploit.FieldPayload:
+		return m.OldPayload(ctx)
+	}
+	return nil, fmt.Errorf("unknown Exploit field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ExploitMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case exploit.FieldExploitID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetExploitID(v)
+		return nil
+	case exploit.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case exploit.FieldPayload:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPayload(v)
+		return nil
+	}
+	return fmt.Errorf("unknown Exploit field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ExploitMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ExploitMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ExploitMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Exploit numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ExploitMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(exploit.FieldExploitID) {
+		fields = append(fields, exploit.FieldExploitID)
+	}
+	if m.FieldCleared(exploit.FieldDescription) {
+		fields = append(fields, exploit.FieldDescription)
+	}
+	if m.FieldCleared(exploit.FieldPayload) {
+		fields = append(fields, exploit.FieldPayload)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ExploitMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ExploitMutation) ClearField(name string) error {
+	switch name {
+	case exploit.FieldExploitID:
+		m.ClearExploitID()
+		return nil
+	case exploit.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case exploit.FieldPayload:
+		m.ClearPayload()
+		return nil
+	}
+	return fmt.Errorf("unknown Exploit nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ExploitMutation) ResetField(name string) error {
+	switch name {
+	case exploit.FieldExploitID:
+		m.ResetExploitID()
+		return nil
+	case exploit.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case exploit.FieldPayload:
+		m.ResetPayload()
+		return nil
+	}
+	return fmt.Errorf("unknown Exploit field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ExploitMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.certify_vex != nil {
+		edges = append(edges, exploit.EdgeCertifyVex)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ExploitMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case exploit.EdgeCertifyVex:
+		ids := make([]ent.Value, 0, len(m.certify_vex))
+		for id := range m.certify_vex {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ExploitMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedcertify_vex != nil {
+		edges = append(edges, exploit.EdgeCertifyVex)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ExploitMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case exploit.EdgeCertifyVex:
+		ids := make([]ent.Value, 0, len(m.removedcertify_vex))
+		for id := range m.removedcertify_vex {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ExploitMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedcertify_vex {
+		edges = append(edges, exploit.EdgeCertifyVex)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ExploitMutation) EdgeCleared(name string) bool {
+	switch name {
+	case exploit.EdgeCertifyVex:
+		return m.clearedcertify_vex
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ExploitMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown Exploit unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ExploitMutation) ResetEdge(name string) error {
+	switch name {
+	case exploit.EdgeCertifyVex:
+		m.ResetCertifyVex()
+		return nil
+	}
+	return fmt.Errorf("unknown Exploit edge %s", name)
 }
 
 // HasMetadataMutation represents an operation that mutates the HasMetadata nodes in the graph.
@@ -18507,6 +23701,1722 @@ func (m *PointOfContactMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown PointOfContact edge %s", name)
+}
+
+// PotentialMitigationMutation represents an operation that mutates the PotentialMitigation nodes in the graph.
+type PotentialMitigationMutation struct {
+	config
+	op                  Op
+	typ                 string
+	id                  *uuid.UUID
+	phase               *string
+	description         *string
+	effectiveness       *string
+	effectiveness_notes *string
+	clearedFields       map[string]struct{}
+	cwe                 map[uuid.UUID]struct{}
+	removedcwe          map[uuid.UUID]struct{}
+	clearedcwe          bool
+	done                bool
+	oldValue            func(context.Context) (*PotentialMitigation, error)
+	predicates          []predicate.PotentialMitigation
+}
+
+var _ ent.Mutation = (*PotentialMitigationMutation)(nil)
+
+// potentialmitigationOption allows management of the mutation configuration using functional options.
+type potentialmitigationOption func(*PotentialMitigationMutation)
+
+// newPotentialMitigationMutation creates new mutation for the PotentialMitigation entity.
+func newPotentialMitigationMutation(c config, op Op, opts ...potentialmitigationOption) *PotentialMitigationMutation {
+	m := &PotentialMitigationMutation{
+		config:        c,
+		op:            op,
+		typ:           TypePotentialMitigation,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withPotentialMitigationID sets the ID field of the mutation.
+func withPotentialMitigationID(id uuid.UUID) potentialmitigationOption {
+	return func(m *PotentialMitigationMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *PotentialMitigation
+		)
+		m.oldValue = func(ctx context.Context) (*PotentialMitigation, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().PotentialMitigation.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withPotentialMitigation sets the old PotentialMitigation of the mutation.
+func withPotentialMitigation(node *PotentialMitigation) potentialmitigationOption {
+	return func(m *PotentialMitigationMutation) {
+		m.oldValue = func(context.Context) (*PotentialMitigation, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m PotentialMitigationMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m PotentialMitigationMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of PotentialMitigation entities.
+func (m *PotentialMitigationMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *PotentialMitigationMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *PotentialMitigationMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().PotentialMitigation.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetPhase sets the "phase" field.
+func (m *PotentialMitigationMutation) SetPhase(s string) {
+	m.phase = &s
+}
+
+// Phase returns the value of the "phase" field in the mutation.
+func (m *PotentialMitigationMutation) Phase() (r string, exists bool) {
+	v := m.phase
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPhase returns the old "phase" field's value of the PotentialMitigation entity.
+// If the PotentialMitigation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PotentialMitigationMutation) OldPhase(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPhase is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPhase requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPhase: %w", err)
+	}
+	return oldValue.Phase, nil
+}
+
+// ClearPhase clears the value of the "phase" field.
+func (m *PotentialMitigationMutation) ClearPhase() {
+	m.phase = nil
+	m.clearedFields[potentialmitigation.FieldPhase] = struct{}{}
+}
+
+// PhaseCleared returns if the "phase" field was cleared in this mutation.
+func (m *PotentialMitigationMutation) PhaseCleared() bool {
+	_, ok := m.clearedFields[potentialmitigation.FieldPhase]
+	return ok
+}
+
+// ResetPhase resets all changes to the "phase" field.
+func (m *PotentialMitigationMutation) ResetPhase() {
+	m.phase = nil
+	delete(m.clearedFields, potentialmitigation.FieldPhase)
+}
+
+// SetDescription sets the "description" field.
+func (m *PotentialMitigationMutation) SetDescription(s string) {
+	m.description = &s
+}
+
+// Description returns the value of the "description" field in the mutation.
+func (m *PotentialMitigationMutation) Description() (r string, exists bool) {
+	v := m.description
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDescription returns the old "description" field's value of the PotentialMitigation entity.
+// If the PotentialMitigation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PotentialMitigationMutation) OldDescription(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDescription is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDescription requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDescription: %w", err)
+	}
+	return oldValue.Description, nil
+}
+
+// ClearDescription clears the value of the "description" field.
+func (m *PotentialMitigationMutation) ClearDescription() {
+	m.description = nil
+	m.clearedFields[potentialmitigation.FieldDescription] = struct{}{}
+}
+
+// DescriptionCleared returns if the "description" field was cleared in this mutation.
+func (m *PotentialMitigationMutation) DescriptionCleared() bool {
+	_, ok := m.clearedFields[potentialmitigation.FieldDescription]
+	return ok
+}
+
+// ResetDescription resets all changes to the "description" field.
+func (m *PotentialMitigationMutation) ResetDescription() {
+	m.description = nil
+	delete(m.clearedFields, potentialmitigation.FieldDescription)
+}
+
+// SetEffectiveness sets the "effectiveness" field.
+func (m *PotentialMitigationMutation) SetEffectiveness(s string) {
+	m.effectiveness = &s
+}
+
+// Effectiveness returns the value of the "effectiveness" field in the mutation.
+func (m *PotentialMitigationMutation) Effectiveness() (r string, exists bool) {
+	v := m.effectiveness
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEffectiveness returns the old "effectiveness" field's value of the PotentialMitigation entity.
+// If the PotentialMitigation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PotentialMitigationMutation) OldEffectiveness(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEffectiveness is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEffectiveness requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEffectiveness: %w", err)
+	}
+	return oldValue.Effectiveness, nil
+}
+
+// ClearEffectiveness clears the value of the "effectiveness" field.
+func (m *PotentialMitigationMutation) ClearEffectiveness() {
+	m.effectiveness = nil
+	m.clearedFields[potentialmitigation.FieldEffectiveness] = struct{}{}
+}
+
+// EffectivenessCleared returns if the "effectiveness" field was cleared in this mutation.
+func (m *PotentialMitigationMutation) EffectivenessCleared() bool {
+	_, ok := m.clearedFields[potentialmitigation.FieldEffectiveness]
+	return ok
+}
+
+// ResetEffectiveness resets all changes to the "effectiveness" field.
+func (m *PotentialMitigationMutation) ResetEffectiveness() {
+	m.effectiveness = nil
+	delete(m.clearedFields, potentialmitigation.FieldEffectiveness)
+}
+
+// SetEffectivenessNotes sets the "effectiveness_notes" field.
+func (m *PotentialMitigationMutation) SetEffectivenessNotes(s string) {
+	m.effectiveness_notes = &s
+}
+
+// EffectivenessNotes returns the value of the "effectiveness_notes" field in the mutation.
+func (m *PotentialMitigationMutation) EffectivenessNotes() (r string, exists bool) {
+	v := m.effectiveness_notes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEffectivenessNotes returns the old "effectiveness_notes" field's value of the PotentialMitigation entity.
+// If the PotentialMitigation object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PotentialMitigationMutation) OldEffectivenessNotes(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEffectivenessNotes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEffectivenessNotes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEffectivenessNotes: %w", err)
+	}
+	return oldValue.EffectivenessNotes, nil
+}
+
+// ClearEffectivenessNotes clears the value of the "effectiveness_notes" field.
+func (m *PotentialMitigationMutation) ClearEffectivenessNotes() {
+	m.effectiveness_notes = nil
+	m.clearedFields[potentialmitigation.FieldEffectivenessNotes] = struct{}{}
+}
+
+// EffectivenessNotesCleared returns if the "effectiveness_notes" field was cleared in this mutation.
+func (m *PotentialMitigationMutation) EffectivenessNotesCleared() bool {
+	_, ok := m.clearedFields[potentialmitigation.FieldEffectivenessNotes]
+	return ok
+}
+
+// ResetEffectivenessNotes resets all changes to the "effectiveness_notes" field.
+func (m *PotentialMitigationMutation) ResetEffectivenessNotes() {
+	m.effectiveness_notes = nil
+	delete(m.clearedFields, potentialmitigation.FieldEffectivenessNotes)
+}
+
+// AddCweIDs adds the "cwe" edge to the CWE entity by ids.
+func (m *PotentialMitigationMutation) AddCweIDs(ids ...uuid.UUID) {
+	if m.cwe == nil {
+		m.cwe = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.cwe[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCwe clears the "cwe" edge to the CWE entity.
+func (m *PotentialMitigationMutation) ClearCwe() {
+	m.clearedcwe = true
+}
+
+// CweCleared reports if the "cwe" edge to the CWE entity was cleared.
+func (m *PotentialMitigationMutation) CweCleared() bool {
+	return m.clearedcwe
+}
+
+// RemoveCweIDs removes the "cwe" edge to the CWE entity by IDs.
+func (m *PotentialMitigationMutation) RemoveCweIDs(ids ...uuid.UUID) {
+	if m.removedcwe == nil {
+		m.removedcwe = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.cwe, ids[i])
+		m.removedcwe[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCwe returns the removed IDs of the "cwe" edge to the CWE entity.
+func (m *PotentialMitigationMutation) RemovedCweIDs() (ids []uuid.UUID) {
+	for id := range m.removedcwe {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CweIDs returns the "cwe" edge IDs in the mutation.
+func (m *PotentialMitigationMutation) CweIDs() (ids []uuid.UUID) {
+	for id := range m.cwe {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCwe resets all changes to the "cwe" edge.
+func (m *PotentialMitigationMutation) ResetCwe() {
+	m.cwe = nil
+	m.clearedcwe = false
+	m.removedcwe = nil
+}
+
+// Where appends a list predicates to the PotentialMitigationMutation builder.
+func (m *PotentialMitigationMutation) Where(ps ...predicate.PotentialMitigation) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the PotentialMitigationMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *PotentialMitigationMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.PotentialMitigation, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *PotentialMitigationMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *PotentialMitigationMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (PotentialMitigation).
+func (m *PotentialMitigationMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *PotentialMitigationMutation) Fields() []string {
+	fields := make([]string, 0, 4)
+	if m.phase != nil {
+		fields = append(fields, potentialmitigation.FieldPhase)
+	}
+	if m.description != nil {
+		fields = append(fields, potentialmitigation.FieldDescription)
+	}
+	if m.effectiveness != nil {
+		fields = append(fields, potentialmitigation.FieldEffectiveness)
+	}
+	if m.effectiveness_notes != nil {
+		fields = append(fields, potentialmitigation.FieldEffectivenessNotes)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *PotentialMitigationMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case potentialmitigation.FieldPhase:
+		return m.Phase()
+	case potentialmitigation.FieldDescription:
+		return m.Description()
+	case potentialmitigation.FieldEffectiveness:
+		return m.Effectiveness()
+	case potentialmitigation.FieldEffectivenessNotes:
+		return m.EffectivenessNotes()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *PotentialMitigationMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case potentialmitigation.FieldPhase:
+		return m.OldPhase(ctx)
+	case potentialmitigation.FieldDescription:
+		return m.OldDescription(ctx)
+	case potentialmitigation.FieldEffectiveness:
+		return m.OldEffectiveness(ctx)
+	case potentialmitigation.FieldEffectivenessNotes:
+		return m.OldEffectivenessNotes(ctx)
+	}
+	return nil, fmt.Errorf("unknown PotentialMitigation field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PotentialMitigationMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case potentialmitigation.FieldPhase:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPhase(v)
+		return nil
+	case potentialmitigation.FieldDescription:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDescription(v)
+		return nil
+	case potentialmitigation.FieldEffectiveness:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEffectiveness(v)
+		return nil
+	case potentialmitigation.FieldEffectivenessNotes:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEffectivenessNotes(v)
+		return nil
+	}
+	return fmt.Errorf("unknown PotentialMitigation field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *PotentialMitigationMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *PotentialMitigationMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *PotentialMitigationMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown PotentialMitigation numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *PotentialMitigationMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(potentialmitigation.FieldPhase) {
+		fields = append(fields, potentialmitigation.FieldPhase)
+	}
+	if m.FieldCleared(potentialmitigation.FieldDescription) {
+		fields = append(fields, potentialmitigation.FieldDescription)
+	}
+	if m.FieldCleared(potentialmitigation.FieldEffectiveness) {
+		fields = append(fields, potentialmitigation.FieldEffectiveness)
+	}
+	if m.FieldCleared(potentialmitigation.FieldEffectivenessNotes) {
+		fields = append(fields, potentialmitigation.FieldEffectivenessNotes)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *PotentialMitigationMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *PotentialMitigationMutation) ClearField(name string) error {
+	switch name {
+	case potentialmitigation.FieldPhase:
+		m.ClearPhase()
+		return nil
+	case potentialmitigation.FieldDescription:
+		m.ClearDescription()
+		return nil
+	case potentialmitigation.FieldEffectiveness:
+		m.ClearEffectiveness()
+		return nil
+	case potentialmitigation.FieldEffectivenessNotes:
+		m.ClearEffectivenessNotes()
+		return nil
+	}
+	return fmt.Errorf("unknown PotentialMitigation nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *PotentialMitigationMutation) ResetField(name string) error {
+	switch name {
+	case potentialmitigation.FieldPhase:
+		m.ResetPhase()
+		return nil
+	case potentialmitigation.FieldDescription:
+		m.ResetDescription()
+		return nil
+	case potentialmitigation.FieldEffectiveness:
+		m.ResetEffectiveness()
+		return nil
+	case potentialmitigation.FieldEffectivenessNotes:
+		m.ResetEffectivenessNotes()
+		return nil
+	}
+	return fmt.Errorf("unknown PotentialMitigation field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *PotentialMitigationMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.cwe != nil {
+		edges = append(edges, potentialmitigation.EdgeCwe)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *PotentialMitigationMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case potentialmitigation.EdgeCwe:
+		ids := make([]ent.Value, 0, len(m.cwe))
+		for id := range m.cwe {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *PotentialMitigationMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedcwe != nil {
+		edges = append(edges, potentialmitigation.EdgeCwe)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *PotentialMitigationMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case potentialmitigation.EdgeCwe:
+		ids := make([]ent.Value, 0, len(m.removedcwe))
+		for id := range m.removedcwe {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *PotentialMitigationMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedcwe {
+		edges = append(edges, potentialmitigation.EdgeCwe)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *PotentialMitigationMutation) EdgeCleared(name string) bool {
+	switch name {
+	case potentialmitigation.EdgeCwe:
+		return m.clearedcwe
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *PotentialMitigationMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown PotentialMitigation unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *PotentialMitigationMutation) ResetEdge(name string) error {
+	switch name {
+	case potentialmitigation.EdgeCwe:
+		m.ResetCwe()
+		return nil
+	}
+	return fmt.Errorf("unknown PotentialMitigation edge %s", name)
+}
+
+// ReachableCodeMutation represents an operation that mutates the ReachableCode nodes in the graph.
+type ReachableCodeMutation struct {
+	config
+	op                             Op
+	typ                            string
+	id                             *uuid.UUID
+	path_to_file                   *string
+	clearedFields                  map[string]struct{}
+	certify_vex                    map[uuid.UUID]struct{}
+	removedcertify_vex             map[uuid.UUID]struct{}
+	clearedcertify_vex             bool
+	reachable_code_artifact        map[uuid.UUID]struct{}
+	removedreachable_code_artifact map[uuid.UUID]struct{}
+	clearedreachable_code_artifact bool
+	done                           bool
+	oldValue                       func(context.Context) (*ReachableCode, error)
+	predicates                     []predicate.ReachableCode
+}
+
+var _ ent.Mutation = (*ReachableCodeMutation)(nil)
+
+// reachablecodeOption allows management of the mutation configuration using functional options.
+type reachablecodeOption func(*ReachableCodeMutation)
+
+// newReachableCodeMutation creates new mutation for the ReachableCode entity.
+func newReachableCodeMutation(c config, op Op, opts ...reachablecodeOption) *ReachableCodeMutation {
+	m := &ReachableCodeMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeReachableCode,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withReachableCodeID sets the ID field of the mutation.
+func withReachableCodeID(id uuid.UUID) reachablecodeOption {
+	return func(m *ReachableCodeMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ReachableCode
+		)
+		m.oldValue = func(ctx context.Context) (*ReachableCode, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ReachableCode.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withReachableCode sets the old ReachableCode of the mutation.
+func withReachableCode(node *ReachableCode) reachablecodeOption {
+	return func(m *ReachableCodeMutation) {
+		m.oldValue = func(context.Context) (*ReachableCode, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ReachableCodeMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ReachableCodeMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ReachableCode entities.
+func (m *ReachableCodeMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ReachableCodeMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ReachableCodeMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ReachableCode.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetPathToFile sets the "path_to_file" field.
+func (m *ReachableCodeMutation) SetPathToFile(s string) {
+	m.path_to_file = &s
+}
+
+// PathToFile returns the value of the "path_to_file" field in the mutation.
+func (m *ReachableCodeMutation) PathToFile() (r string, exists bool) {
+	v := m.path_to_file
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPathToFile returns the old "path_to_file" field's value of the ReachableCode entity.
+// If the ReachableCode object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReachableCodeMutation) OldPathToFile(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPathToFile is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPathToFile requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPathToFile: %w", err)
+	}
+	return oldValue.PathToFile, nil
+}
+
+// ClearPathToFile clears the value of the "path_to_file" field.
+func (m *ReachableCodeMutation) ClearPathToFile() {
+	m.path_to_file = nil
+	m.clearedFields[reachablecode.FieldPathToFile] = struct{}{}
+}
+
+// PathToFileCleared returns if the "path_to_file" field was cleared in this mutation.
+func (m *ReachableCodeMutation) PathToFileCleared() bool {
+	_, ok := m.clearedFields[reachablecode.FieldPathToFile]
+	return ok
+}
+
+// ResetPathToFile resets all changes to the "path_to_file" field.
+func (m *ReachableCodeMutation) ResetPathToFile() {
+	m.path_to_file = nil
+	delete(m.clearedFields, reachablecode.FieldPathToFile)
+}
+
+// AddCertifyVexIDs adds the "certify_vex" edge to the CertifyVex entity by ids.
+func (m *ReachableCodeMutation) AddCertifyVexIDs(ids ...uuid.UUID) {
+	if m.certify_vex == nil {
+		m.certify_vex = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.certify_vex[ids[i]] = struct{}{}
+	}
+}
+
+// ClearCertifyVex clears the "certify_vex" edge to the CertifyVex entity.
+func (m *ReachableCodeMutation) ClearCertifyVex() {
+	m.clearedcertify_vex = true
+}
+
+// CertifyVexCleared reports if the "certify_vex" edge to the CertifyVex entity was cleared.
+func (m *ReachableCodeMutation) CertifyVexCleared() bool {
+	return m.clearedcertify_vex
+}
+
+// RemoveCertifyVexIDs removes the "certify_vex" edge to the CertifyVex entity by IDs.
+func (m *ReachableCodeMutation) RemoveCertifyVexIDs(ids ...uuid.UUID) {
+	if m.removedcertify_vex == nil {
+		m.removedcertify_vex = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.certify_vex, ids[i])
+		m.removedcertify_vex[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedCertifyVex returns the removed IDs of the "certify_vex" edge to the CertifyVex entity.
+func (m *ReachableCodeMutation) RemovedCertifyVexIDs() (ids []uuid.UUID) {
+	for id := range m.removedcertify_vex {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// CertifyVexIDs returns the "certify_vex" edge IDs in the mutation.
+func (m *ReachableCodeMutation) CertifyVexIDs() (ids []uuid.UUID) {
+	for id := range m.certify_vex {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetCertifyVex resets all changes to the "certify_vex" edge.
+func (m *ReachableCodeMutation) ResetCertifyVex() {
+	m.certify_vex = nil
+	m.clearedcertify_vex = false
+	m.removedcertify_vex = nil
+}
+
+// AddReachableCodeArtifactIDs adds the "reachable_code_artifact" edge to the ReachableCodeArtifact entity by ids.
+func (m *ReachableCodeMutation) AddReachableCodeArtifactIDs(ids ...uuid.UUID) {
+	if m.reachable_code_artifact == nil {
+		m.reachable_code_artifact = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.reachable_code_artifact[ids[i]] = struct{}{}
+	}
+}
+
+// ClearReachableCodeArtifact clears the "reachable_code_artifact" edge to the ReachableCodeArtifact entity.
+func (m *ReachableCodeMutation) ClearReachableCodeArtifact() {
+	m.clearedreachable_code_artifact = true
+}
+
+// ReachableCodeArtifactCleared reports if the "reachable_code_artifact" edge to the ReachableCodeArtifact entity was cleared.
+func (m *ReachableCodeMutation) ReachableCodeArtifactCleared() bool {
+	return m.clearedreachable_code_artifact
+}
+
+// RemoveReachableCodeArtifactIDs removes the "reachable_code_artifact" edge to the ReachableCodeArtifact entity by IDs.
+func (m *ReachableCodeMutation) RemoveReachableCodeArtifactIDs(ids ...uuid.UUID) {
+	if m.removedreachable_code_artifact == nil {
+		m.removedreachable_code_artifact = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.reachable_code_artifact, ids[i])
+		m.removedreachable_code_artifact[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedReachableCodeArtifact returns the removed IDs of the "reachable_code_artifact" edge to the ReachableCodeArtifact entity.
+func (m *ReachableCodeMutation) RemovedReachableCodeArtifactIDs() (ids []uuid.UUID) {
+	for id := range m.removedreachable_code_artifact {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ReachableCodeArtifactIDs returns the "reachable_code_artifact" edge IDs in the mutation.
+func (m *ReachableCodeMutation) ReachableCodeArtifactIDs() (ids []uuid.UUID) {
+	for id := range m.reachable_code_artifact {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetReachableCodeArtifact resets all changes to the "reachable_code_artifact" edge.
+func (m *ReachableCodeMutation) ResetReachableCodeArtifact() {
+	m.reachable_code_artifact = nil
+	m.clearedreachable_code_artifact = false
+	m.removedreachable_code_artifact = nil
+}
+
+// Where appends a list predicates to the ReachableCodeMutation builder.
+func (m *ReachableCodeMutation) Where(ps ...predicate.ReachableCode) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ReachableCodeMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ReachableCodeMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ReachableCode, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ReachableCodeMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ReachableCodeMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ReachableCode).
+func (m *ReachableCodeMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ReachableCodeMutation) Fields() []string {
+	fields := make([]string, 0, 1)
+	if m.path_to_file != nil {
+		fields = append(fields, reachablecode.FieldPathToFile)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ReachableCodeMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case reachablecode.FieldPathToFile:
+		return m.PathToFile()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ReachableCodeMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case reachablecode.FieldPathToFile:
+		return m.OldPathToFile(ctx)
+	}
+	return nil, fmt.Errorf("unknown ReachableCode field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ReachableCodeMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case reachablecode.FieldPathToFile:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPathToFile(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ReachableCode field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ReachableCodeMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ReachableCodeMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ReachableCodeMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ReachableCode numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ReachableCodeMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(reachablecode.FieldPathToFile) {
+		fields = append(fields, reachablecode.FieldPathToFile)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ReachableCodeMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ReachableCodeMutation) ClearField(name string) error {
+	switch name {
+	case reachablecode.FieldPathToFile:
+		m.ClearPathToFile()
+		return nil
+	}
+	return fmt.Errorf("unknown ReachableCode nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ReachableCodeMutation) ResetField(name string) error {
+	switch name {
+	case reachablecode.FieldPathToFile:
+		m.ResetPathToFile()
+		return nil
+	}
+	return fmt.Errorf("unknown ReachableCode field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ReachableCodeMutation) AddedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.certify_vex != nil {
+		edges = append(edges, reachablecode.EdgeCertifyVex)
+	}
+	if m.reachable_code_artifact != nil {
+		edges = append(edges, reachablecode.EdgeReachableCodeArtifact)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ReachableCodeMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case reachablecode.EdgeCertifyVex:
+		ids := make([]ent.Value, 0, len(m.certify_vex))
+		for id := range m.certify_vex {
+			ids = append(ids, id)
+		}
+		return ids
+	case reachablecode.EdgeReachableCodeArtifact:
+		ids := make([]ent.Value, 0, len(m.reachable_code_artifact))
+		for id := range m.reachable_code_artifact {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ReachableCodeMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.removedcertify_vex != nil {
+		edges = append(edges, reachablecode.EdgeCertifyVex)
+	}
+	if m.removedreachable_code_artifact != nil {
+		edges = append(edges, reachablecode.EdgeReachableCodeArtifact)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ReachableCodeMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case reachablecode.EdgeCertifyVex:
+		ids := make([]ent.Value, 0, len(m.removedcertify_vex))
+		for id := range m.removedcertify_vex {
+			ids = append(ids, id)
+		}
+		return ids
+	case reachablecode.EdgeReachableCodeArtifact:
+		ids := make([]ent.Value, 0, len(m.removedreachable_code_artifact))
+		for id := range m.removedreachable_code_artifact {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ReachableCodeMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 2)
+	if m.clearedcertify_vex {
+		edges = append(edges, reachablecode.EdgeCertifyVex)
+	}
+	if m.clearedreachable_code_artifact {
+		edges = append(edges, reachablecode.EdgeReachableCodeArtifact)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ReachableCodeMutation) EdgeCleared(name string) bool {
+	switch name {
+	case reachablecode.EdgeCertifyVex:
+		return m.clearedcertify_vex
+	case reachablecode.EdgeReachableCodeArtifact:
+		return m.clearedreachable_code_artifact
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ReachableCodeMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ReachableCode unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ReachableCodeMutation) ResetEdge(name string) error {
+	switch name {
+	case reachablecode.EdgeCertifyVex:
+		m.ResetCertifyVex()
+		return nil
+	case reachablecode.EdgeReachableCodeArtifact:
+		m.ResetReachableCodeArtifact()
+		return nil
+	}
+	return fmt.Errorf("unknown ReachableCode edge %s", name)
+}
+
+// ReachableCodeArtifactMutation represents an operation that mutates the ReachableCodeArtifact nodes in the graph.
+type ReachableCodeArtifactMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *uuid.UUID
+	artifact_name         *string
+	used_in_lines         *string
+	clearedFields         map[string]struct{}
+	reachable_code        map[uuid.UUID]struct{}
+	removedreachable_code map[uuid.UUID]struct{}
+	clearedreachable_code bool
+	done                  bool
+	oldValue              func(context.Context) (*ReachableCodeArtifact, error)
+	predicates            []predicate.ReachableCodeArtifact
+}
+
+var _ ent.Mutation = (*ReachableCodeArtifactMutation)(nil)
+
+// reachablecodeartifactOption allows management of the mutation configuration using functional options.
+type reachablecodeartifactOption func(*ReachableCodeArtifactMutation)
+
+// newReachableCodeArtifactMutation creates new mutation for the ReachableCodeArtifact entity.
+func newReachableCodeArtifactMutation(c config, op Op, opts ...reachablecodeartifactOption) *ReachableCodeArtifactMutation {
+	m := &ReachableCodeArtifactMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeReachableCodeArtifact,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withReachableCodeArtifactID sets the ID field of the mutation.
+func withReachableCodeArtifactID(id uuid.UUID) reachablecodeartifactOption {
+	return func(m *ReachableCodeArtifactMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *ReachableCodeArtifact
+		)
+		m.oldValue = func(ctx context.Context) (*ReachableCodeArtifact, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().ReachableCodeArtifact.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withReachableCodeArtifact sets the old ReachableCodeArtifact of the mutation.
+func withReachableCodeArtifact(node *ReachableCodeArtifact) reachablecodeartifactOption {
+	return func(m *ReachableCodeArtifactMutation) {
+		m.oldValue = func(context.Context) (*ReachableCodeArtifact, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m ReachableCodeArtifactMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m ReachableCodeArtifactMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// SetID sets the value of the id field. Note that this
+// operation is only accepted on creation of ReachableCodeArtifact entities.
+func (m *ReachableCodeArtifactMutation) SetID(id uuid.UUID) {
+	m.id = &id
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *ReachableCodeArtifactMutation) ID() (id uuid.UUID, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *ReachableCodeArtifactMutation) IDs(ctx context.Context) ([]uuid.UUID, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []uuid.UUID{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().ReachableCodeArtifact.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetArtifactName sets the "artifact_name" field.
+func (m *ReachableCodeArtifactMutation) SetArtifactName(s string) {
+	m.artifact_name = &s
+}
+
+// ArtifactName returns the value of the "artifact_name" field in the mutation.
+func (m *ReachableCodeArtifactMutation) ArtifactName() (r string, exists bool) {
+	v := m.artifact_name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldArtifactName returns the old "artifact_name" field's value of the ReachableCodeArtifact entity.
+// If the ReachableCodeArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReachableCodeArtifactMutation) OldArtifactName(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldArtifactName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldArtifactName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldArtifactName: %w", err)
+	}
+	return oldValue.ArtifactName, nil
+}
+
+// ClearArtifactName clears the value of the "artifact_name" field.
+func (m *ReachableCodeArtifactMutation) ClearArtifactName() {
+	m.artifact_name = nil
+	m.clearedFields[reachablecodeartifact.FieldArtifactName] = struct{}{}
+}
+
+// ArtifactNameCleared returns if the "artifact_name" field was cleared in this mutation.
+func (m *ReachableCodeArtifactMutation) ArtifactNameCleared() bool {
+	_, ok := m.clearedFields[reachablecodeartifact.FieldArtifactName]
+	return ok
+}
+
+// ResetArtifactName resets all changes to the "artifact_name" field.
+func (m *ReachableCodeArtifactMutation) ResetArtifactName() {
+	m.artifact_name = nil
+	delete(m.clearedFields, reachablecodeartifact.FieldArtifactName)
+}
+
+// SetUsedInLines sets the "used_in_lines" field.
+func (m *ReachableCodeArtifactMutation) SetUsedInLines(s string) {
+	m.used_in_lines = &s
+}
+
+// UsedInLines returns the value of the "used_in_lines" field in the mutation.
+func (m *ReachableCodeArtifactMutation) UsedInLines() (r string, exists bool) {
+	v := m.used_in_lines
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUsedInLines returns the old "used_in_lines" field's value of the ReachableCodeArtifact entity.
+// If the ReachableCodeArtifact object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ReachableCodeArtifactMutation) OldUsedInLines(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUsedInLines is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUsedInLines requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUsedInLines: %w", err)
+	}
+	return oldValue.UsedInLines, nil
+}
+
+// ClearUsedInLines clears the value of the "used_in_lines" field.
+func (m *ReachableCodeArtifactMutation) ClearUsedInLines() {
+	m.used_in_lines = nil
+	m.clearedFields[reachablecodeartifact.FieldUsedInLines] = struct{}{}
+}
+
+// UsedInLinesCleared returns if the "used_in_lines" field was cleared in this mutation.
+func (m *ReachableCodeArtifactMutation) UsedInLinesCleared() bool {
+	_, ok := m.clearedFields[reachablecodeartifact.FieldUsedInLines]
+	return ok
+}
+
+// ResetUsedInLines resets all changes to the "used_in_lines" field.
+func (m *ReachableCodeArtifactMutation) ResetUsedInLines() {
+	m.used_in_lines = nil
+	delete(m.clearedFields, reachablecodeartifact.FieldUsedInLines)
+}
+
+// AddReachableCodeIDs adds the "reachable_code" edge to the ReachableCode entity by ids.
+func (m *ReachableCodeArtifactMutation) AddReachableCodeIDs(ids ...uuid.UUID) {
+	if m.reachable_code == nil {
+		m.reachable_code = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		m.reachable_code[ids[i]] = struct{}{}
+	}
+}
+
+// ClearReachableCode clears the "reachable_code" edge to the ReachableCode entity.
+func (m *ReachableCodeArtifactMutation) ClearReachableCode() {
+	m.clearedreachable_code = true
+}
+
+// ReachableCodeCleared reports if the "reachable_code" edge to the ReachableCode entity was cleared.
+func (m *ReachableCodeArtifactMutation) ReachableCodeCleared() bool {
+	return m.clearedreachable_code
+}
+
+// RemoveReachableCodeIDs removes the "reachable_code" edge to the ReachableCode entity by IDs.
+func (m *ReachableCodeArtifactMutation) RemoveReachableCodeIDs(ids ...uuid.UUID) {
+	if m.removedreachable_code == nil {
+		m.removedreachable_code = make(map[uuid.UUID]struct{})
+	}
+	for i := range ids {
+		delete(m.reachable_code, ids[i])
+		m.removedreachable_code[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedReachableCode returns the removed IDs of the "reachable_code" edge to the ReachableCode entity.
+func (m *ReachableCodeArtifactMutation) RemovedReachableCodeIDs() (ids []uuid.UUID) {
+	for id := range m.removedreachable_code {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ReachableCodeIDs returns the "reachable_code" edge IDs in the mutation.
+func (m *ReachableCodeArtifactMutation) ReachableCodeIDs() (ids []uuid.UUID) {
+	for id := range m.reachable_code {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetReachableCode resets all changes to the "reachable_code" edge.
+func (m *ReachableCodeArtifactMutation) ResetReachableCode() {
+	m.reachable_code = nil
+	m.clearedreachable_code = false
+	m.removedreachable_code = nil
+}
+
+// Where appends a list predicates to the ReachableCodeArtifactMutation builder.
+func (m *ReachableCodeArtifactMutation) Where(ps ...predicate.ReachableCodeArtifact) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the ReachableCodeArtifactMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *ReachableCodeArtifactMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.ReachableCodeArtifact, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *ReachableCodeArtifactMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *ReachableCodeArtifactMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (ReachableCodeArtifact).
+func (m *ReachableCodeArtifactMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *ReachableCodeArtifactMutation) Fields() []string {
+	fields := make([]string, 0, 2)
+	if m.artifact_name != nil {
+		fields = append(fields, reachablecodeartifact.FieldArtifactName)
+	}
+	if m.used_in_lines != nil {
+		fields = append(fields, reachablecodeartifact.FieldUsedInLines)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *ReachableCodeArtifactMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case reachablecodeartifact.FieldArtifactName:
+		return m.ArtifactName()
+	case reachablecodeartifact.FieldUsedInLines:
+		return m.UsedInLines()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *ReachableCodeArtifactMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case reachablecodeartifact.FieldArtifactName:
+		return m.OldArtifactName(ctx)
+	case reachablecodeartifact.FieldUsedInLines:
+		return m.OldUsedInLines(ctx)
+	}
+	return nil, fmt.Errorf("unknown ReachableCodeArtifact field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ReachableCodeArtifactMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case reachablecodeartifact.FieldArtifactName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetArtifactName(v)
+		return nil
+	case reachablecodeartifact.FieldUsedInLines:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUsedInLines(v)
+		return nil
+	}
+	return fmt.Errorf("unknown ReachableCodeArtifact field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *ReachableCodeArtifactMutation) AddedFields() []string {
+	return nil
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *ReachableCodeArtifactMutation) AddedField(name string) (ent.Value, bool) {
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *ReachableCodeArtifactMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ReachableCodeArtifact numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *ReachableCodeArtifactMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(reachablecodeartifact.FieldArtifactName) {
+		fields = append(fields, reachablecodeartifact.FieldArtifactName)
+	}
+	if m.FieldCleared(reachablecodeartifact.FieldUsedInLines) {
+		fields = append(fields, reachablecodeartifact.FieldUsedInLines)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *ReachableCodeArtifactMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *ReachableCodeArtifactMutation) ClearField(name string) error {
+	switch name {
+	case reachablecodeartifact.FieldArtifactName:
+		m.ClearArtifactName()
+		return nil
+	case reachablecodeartifact.FieldUsedInLines:
+		m.ClearUsedInLines()
+		return nil
+	}
+	return fmt.Errorf("unknown ReachableCodeArtifact nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *ReachableCodeArtifactMutation) ResetField(name string) error {
+	switch name {
+	case reachablecodeartifact.FieldArtifactName:
+		m.ResetArtifactName()
+		return nil
+	case reachablecodeartifact.FieldUsedInLines:
+		m.ResetUsedInLines()
+		return nil
+	}
+	return fmt.Errorf("unknown ReachableCodeArtifact field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *ReachableCodeArtifactMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.reachable_code != nil {
+		edges = append(edges, reachablecodeartifact.EdgeReachableCode)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *ReachableCodeArtifactMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case reachablecodeartifact.EdgeReachableCode:
+		ids := make([]ent.Value, 0, len(m.reachable_code))
+		for id := range m.reachable_code {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *ReachableCodeArtifactMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedreachable_code != nil {
+		edges = append(edges, reachablecodeartifact.EdgeReachableCode)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *ReachableCodeArtifactMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case reachablecodeartifact.EdgeReachableCode:
+		ids := make([]ent.Value, 0, len(m.removedreachable_code))
+		for id := range m.removedreachable_code {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *ReachableCodeArtifactMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedreachable_code {
+		edges = append(edges, reachablecodeartifact.EdgeReachableCode)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *ReachableCodeArtifactMutation) EdgeCleared(name string) bool {
+	switch name {
+	case reachablecodeartifact.EdgeReachableCode:
+		return m.clearedreachable_code
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *ReachableCodeArtifactMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown ReachableCodeArtifact unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *ReachableCodeArtifactMutation) ResetEdge(name string) error {
+	switch name {
+	case reachablecodeartifact.EdgeReachableCode:
+		m.ResetReachableCode()
+		return nil
+	}
+	return fmt.Errorf("unknown ReachableCodeArtifact edge %s", name)
 }
 
 // SLSAAttestationMutation represents an operation that mutates the SLSAAttestation nodes in the graph.

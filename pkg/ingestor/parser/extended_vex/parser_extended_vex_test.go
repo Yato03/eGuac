@@ -41,7 +41,7 @@ func Test_ExtendedVEXParser_Parse(t *testing.T) {
 			name: "test",
 			args: args{
 				ctx: context.Background(),
-				doc: &processor.Document{Blob: testdata.ExtendedVexExample},
+				doc: &processor.Document{Blob: testdata.ExtendedVexSmallExample},
 			},
 			wantErr: false,
 		},

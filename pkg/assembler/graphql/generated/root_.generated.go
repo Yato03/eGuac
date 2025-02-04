@@ -83,14 +83,14 @@ type ComplexityRoot struct {
 	}
 
 	CWE struct {
-		Abstraction          func(childComplexity int) int
-		BackgroundDetail     func(childComplexity int) int
-		Consequences         func(childComplexity int) int
-		DemostrativeExamples func(childComplexity int) int
-		DetectionMethods     func(childComplexity int) int
-		ID                   func(childComplexity int) int
-		Name                 func(childComplexity int) int
-		PotentialMitigations func(childComplexity int) int
+		Abstraction           func(childComplexity int) int
+		BackgroundDetail      func(childComplexity int) int
+		Consequences          func(childComplexity int) int
+		DemonstrativeExamples func(childComplexity int) int
+		DetectionMethods      func(childComplexity int) int
+		ID                    func(childComplexity int) int
+		Name                  func(childComplexity int) int
+		PotentialMitigations  func(childComplexity int) int
 	}
 
 	CertifyBad struct {
@@ -188,6 +188,7 @@ type ComplexityRoot struct {
 		ID               func(childComplexity int) int
 		KnownSince       func(childComplexity int) int
 		Origin           func(childComplexity int) int
+		Priority         func(childComplexity int) int
 		ReachableCode    func(childComplexity int) int
 		Statement        func(childComplexity int) int
 		Status           func(childComplexity int) int
@@ -640,7 +641,8 @@ type ComplexityRoot struct {
 	}
 
 	ReachableCode struct {
-		PathToFile func(childComplexity int) int
+		PathToFile    func(childComplexity int) int
+		UsedArtifacts func(childComplexity int) int
 	}
 
 	SLSA struct {
@@ -727,6 +729,11 @@ type ComplexityRoot struct {
 		ID        func(childComplexity int) int
 		Names     func(childComplexity int) int
 		Namespace func(childComplexity int) int
+	}
+
+	UsedArtifact struct {
+		Name        func(childComplexity int) int
+		UsedInLines func(childComplexity int) int
 	}
 
 	VEXConnection struct {
@@ -976,12 +983,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.CWE.Consequences(childComplexity), true
 
-	case "CWE.DemostrativeExamples":
-		if e.complexity.CWE.DemostrativeExamples == nil {
+	case "CWE.DemonstrativeExamples":
+		if e.complexity.CWE.DemonstrativeExamples == nil {
 			break
 		}
 
-		return e.complexity.CWE.DemostrativeExamples(childComplexity), true
+		return e.complexity.CWE.DemonstrativeExamples(childComplexity), true
 
 	case "CWE.DetectionMethods":
 		if e.complexity.CWE.DetectionMethods == nil {
@@ -1416,6 +1423,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.CertifyVEXStatement.Origin(childComplexity), true
+
+	case "CertifyVEXStatement.priority":
+		if e.complexity.CertifyVEXStatement.Priority == nil {
+			break
+		}
+
+		return e.complexity.CertifyVEXStatement.Priority(childComplexity), true
 
 	case "CertifyVEXStatement.reachableCode":
 		if e.complexity.CertifyVEXStatement.ReachableCode == nil {
@@ -4026,6 +4040,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.ReachableCode.PathToFile(childComplexity), true
 
+	case "ReachableCode.UsedArtifacts":
+		if e.complexity.ReachableCode.UsedArtifacts == nil {
+			break
+		}
+
+		return e.complexity.ReachableCode.UsedArtifacts(childComplexity), true
+
 	case "SLSA.buildType":
 		if e.complexity.SLSA.BuildType == nil {
 			break
@@ -4375,6 +4396,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.SourceNamespace.Namespace(childComplexity), true
+
+	case "UsedArtifact.Name":
+		if e.complexity.UsedArtifact.Name == nil {
+			break
+		}
+
+		return e.complexity.UsedArtifact.Name(childComplexity), true
+
+	case "UsedArtifact.UsedInLines":
+		if e.complexity.UsedArtifact.UsedInLines == nil {
+			break
+		}
+
+		return e.complexity.UsedArtifact.UsedInLines(childComplexity), true
 
 	case "VEXConnection.edges":
 		if e.complexity.VEXConnection.Edges == nil {
@@ -4747,6 +4782,8 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 		ec.unmarshalInputScorecardInputSpec,
 		ec.unmarshalInputSourceInputSpec,
 		ec.unmarshalInputSourceSpec,
+		ec.unmarshalInputUsedArtifactInput,
+		ec.unmarshalInputUsedArtifactInputSpec,
 		ec.unmarshalInputVexStatementInputSpec,
 		ec.unmarshalInputVulnEqualInputSpec,
 		ec.unmarshalInputVulnEqualSpec,
@@ -5797,7 +5834,7 @@ type CWE {
   "Consequences of the CWE"
   Consequences: [Consequences]
   "Demonstrative examples of the CWE"
-  DemostrativeExamples: [String]
+  DemonstrativeExamples: [String]
   "Detection methods of the CWE"
   DetectionMethods: [DetectionMethods]
 }
@@ -5809,7 +5846,7 @@ input CWEInput {
   BackgroundDetail: String
   PotentialMitigations: [PotentialMitigationsInput]
   Consequences: [ConsequencesInput]
-  DemostrativeExamples: [String]
+  DemonstrativeExamples: [String]
   DetectionMethods: [DetectionMethodsInput]
 }
 
@@ -5820,7 +5857,7 @@ input CWEInputSpec {
   BackgroundDetail: String
   PotentialMitigations: [PotentialMitigationsInputSpec]
   Consequences: [ConsequencesInputSpec]
-  DemostrativeExamples: [String]
+  DemonstrativeExamples: [String]
   DetectionMethods: [DetectionMethodsInputSpec]
 }
 
@@ -5923,18 +5960,38 @@ type CertifyVEXStatement {
   reachableCode: [ReachableCode]
   "Exploits"
   exploits: [Exploits]
+  "Priority of the VEX statement"
+  priority: Float
 }
 
 type ReachableCode {
   PathToFile: String
+  UsedArtifacts: [UsedArtifact]
 }
 
 input ReachableCodeInput {
   PathToFile: String
+  UsedArtifacts: [UsedArtifactInput]
 }
 
 input ReachableCodeInputSpec {
   PathToFile: String
+  UsedArtifacts: [UsedArtifactInputSpec]
+}
+
+type UsedArtifact {
+  Name: String
+  UsedInLines: [Int]
+}
+
+input UsedArtifactInput {
+  Name: String
+  UsedInLines: [Int]
+}
+
+input UsedArtifactInputSpec {
+  Name: String
+  UsedInLines: [Int]
 }
 
 type Exploits {
@@ -5981,6 +6038,7 @@ input CertifyVEXStatementSpec {
   cwe: [CWEInputSpec]
   reachableCode: [ReachableCodeInputSpec]
   exploits: [ExploitsInputSpec]
+  priority: Float
 }
 
 
@@ -5999,6 +6057,7 @@ input VexStatementInputSpec {
   cwe: [CWEInput]
   reachableCode: [ReachableCodeInputSpec]
   exploits: [ExploitsInputSpec]
+  priority: Float
 }
 
 """

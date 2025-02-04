@@ -175,31 +175,31 @@ type Cwe struct {
 	// Consequences of the CWE
 	Consequences []*Consequences `json:"Consequences,omitempty"`
 	// Demonstrative examples of the CWE
-	DemostrativeExamples []*string `json:"DemostrativeExamples,omitempty"`
+	DemonstrativeExamples []*string `json:"DemonstrativeExamples,omitempty"`
 	// Detection methods of the CWE
 	DetectionMethods []*DetectionMethods `json:"DetectionMethods,omitempty"`
 }
 
 type CWEInput struct {
-	ID                   string                       `json:"ID"`
-	Abstraction          string                       `json:"Abstraction"`
-	Name                 string                       `json:"Name"`
-	BackgroundDetail     *string                      `json:"BackgroundDetail,omitempty"`
-	PotentialMitigations []*PotentialMitigationsInput `json:"PotentialMitigations,omitempty"`
-	Consequences         []*ConsequencesInput         `json:"Consequences,omitempty"`
-	DemostrativeExamples []*string                    `json:"DemostrativeExamples,omitempty"`
-	DetectionMethods     []*DetectionMethodsInput     `json:"DetectionMethods,omitempty"`
+	ID                    string                       `json:"ID"`
+	Abstraction           string                       `json:"Abstraction"`
+	Name                  string                       `json:"Name"`
+	BackgroundDetail      *string                      `json:"BackgroundDetail,omitempty"`
+	PotentialMitigations  []*PotentialMitigationsInput `json:"PotentialMitigations,omitempty"`
+	Consequences          []*ConsequencesInput         `json:"Consequences,omitempty"`
+	DemonstrativeExamples []*string                    `json:"DemonstrativeExamples,omitempty"`
+	DetectionMethods      []*DetectionMethodsInput     `json:"DetectionMethods,omitempty"`
 }
 
 type CWEInputSpec struct {
-	ID                   *string                          `json:"ID,omitempty"`
-	Abstraction          *string                          `json:"Abstraction,omitempty"`
-	Name                 *string                          `json:"Name,omitempty"`
-	BackgroundDetail     *string                          `json:"BackgroundDetail,omitempty"`
-	PotentialMitigations []*PotentialMitigationsInputSpec `json:"PotentialMitigations,omitempty"`
-	Consequences         []*ConsequencesInputSpec         `json:"Consequences,omitempty"`
-	DemostrativeExamples []*string                        `json:"DemostrativeExamples,omitempty"`
-	DetectionMethods     []*DetectionMethodsInputSpec     `json:"DetectionMethods,omitempty"`
+	ID                    *string                          `json:"ID,omitempty"`
+	Abstraction           *string                          `json:"Abstraction,omitempty"`
+	Name                  *string                          `json:"Name,omitempty"`
+	BackgroundDetail      *string                          `json:"BackgroundDetail,omitempty"`
+	PotentialMitigations  []*PotentialMitigationsInputSpec `json:"PotentialMitigations,omitempty"`
+	Consequences          []*ConsequencesInputSpec         `json:"Consequences,omitempty"`
+	DemonstrativeExamples []*string                        `json:"DemonstrativeExamples,omitempty"`
+	DetectionMethods      []*DetectionMethodsInputSpec     `json:"DetectionMethods,omitempty"`
 }
 
 // CertifyBad is an attestation that a package, source, or artifact is considered
@@ -550,6 +550,8 @@ type CertifyVEXStatement struct {
 	ReachableCode []*ReachableCode `json:"reachableCode,omitempty"`
 	// Exploits
 	Exploits []*Exploits `json:"exploits,omitempty"`
+	// Priority of the VEX statement
+	Priority *float64 `json:"priority,omitempty"`
 }
 
 func (CertifyVEXStatement) IsNode() {}
@@ -577,6 +579,7 @@ type CertifyVEXStatementSpec struct {
 	Cwe              []*CWEInputSpec           `json:"cwe,omitempty"`
 	ReachableCode    []*ReachableCodeInputSpec `json:"reachableCode,omitempty"`
 	Exploits         []*ExploitsInputSpec      `json:"exploits,omitempty"`
+	Priority         *float64                  `json:"priority,omitempty"`
 }
 
 // CertifyVuln is an attestation to attach vulnerability information to a package.
@@ -1850,15 +1853,18 @@ type Query struct {
 }
 
 type ReachableCode struct {
-	PathToFile *string `json:"PathToFile,omitempty"`
+	PathToFile    *string         `json:"PathToFile,omitempty"`
+	UsedArtifacts []*UsedArtifact `json:"UsedArtifacts,omitempty"`
 }
 
 type ReachableCodeInput struct {
-	PathToFile *string `json:"PathToFile,omitempty"`
+	PathToFile    *string              `json:"PathToFile,omitempty"`
+	UsedArtifacts []*UsedArtifactInput `json:"UsedArtifacts,omitempty"`
 }
 
 type ReachableCodeInputSpec struct {
-	PathToFile *string `json:"PathToFile,omitempty"`
+	PathToFile    *string                  `json:"PathToFile,omitempty"`
+	UsedArtifacts []*UsedArtifactInputSpec `json:"UsedArtifacts,omitempty"`
 }
 
 // SLSA contains all of the fields present in a SLSA attestation.
@@ -2169,6 +2175,21 @@ type SourceSpec struct {
 	Commit    *string `json:"commit,omitempty"`
 }
 
+type UsedArtifact struct {
+	Name        *string `json:"Name,omitempty"`
+	UsedInLines []*int  `json:"UsedInLines,omitempty"`
+}
+
+type UsedArtifactInput struct {
+	Name        *string `json:"Name,omitempty"`
+	UsedInLines []*int  `json:"UsedInLines,omitempty"`
+}
+
+type UsedArtifactInputSpec struct {
+	Name        *string `json:"Name,omitempty"`
+	UsedInLines []*int  `json:"UsedInLines,omitempty"`
+}
+
 // VEXConnection returns the paginated results for CertifyVEXStatement.
 //
 // totalCount is the total number of results returned.
@@ -2207,6 +2228,7 @@ type VexStatementInputSpec struct {
 	Cwe              []*CWEInput               `json:"cwe,omitempty"`
 	ReachableCode    []*ReachableCodeInputSpec `json:"reachableCode,omitempty"`
 	Exploits         []*ExploitsInputSpec      `json:"exploits,omitempty"`
+	Priority         *float64                  `json:"priority,omitempty"`
 }
 
 // VulnEqual is an attestation to link two vulnerabilities together as being equal"
