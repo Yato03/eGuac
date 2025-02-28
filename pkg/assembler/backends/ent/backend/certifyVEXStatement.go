@@ -202,8 +202,11 @@ func generateVexCreate(ctx context.Context, tx *ent.Tx, pkg *model.IDorPkgInput,
 		SetJustification(vexStatement.VexJustification.String()).
 		SetOrigin(vexStatement.Origin).
 		SetCollector(vexStatement.Collector).
-		SetDocumentRef(vexStatement.DocumentRef).
-		SetDescription(*vexStatement.Description)
+		SetDocumentRef(vexStatement.DocumentRef)
+
+	if vexStatement.Description != nil {
+		certifyVexCreate.SetDescription(*vexStatement.Description)
+	}
 
 	// Create and link CVSS if provided
 	if vexStatement.Cvss != nil {

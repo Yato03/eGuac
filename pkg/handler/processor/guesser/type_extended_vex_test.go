@@ -53,7 +53,7 @@ func Test_extendedVexTypeGuesser_GuessDocumentType(t *testing.T) {
 		{
 			name: "valid Extended vex Document",
 			args: args{
-				blob:   testdata.ExtendedVexExample,
+				blob:   testdata.ExtendedVexSmallExample,
 				format: processor.FormatJSON,
 			},
 			want: processor.DocumentExtendedVEX,
