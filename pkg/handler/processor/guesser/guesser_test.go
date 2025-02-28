@@ -223,7 +223,7 @@ func Test_GuessDocument(t *testing.T) {
 		{
 			name: "valid Extended vex Document",
 			document: &processor.Document{
-				Blob:              testdata.ExtendedVexExample,
+				Blob:              testdata.ExtendedVexSmallExample,
 				Type:              processor.DocumentUnknown,
 				Format:            processor.FormatUnknown,
 				SourceInformation: processor.SourceInformation{},
