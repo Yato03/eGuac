@@ -60,7 +60,7 @@ jobs:
           sleep 10
           echo "backends started"
       - name: Clean atlas checksums
-        run: rm -rf pkg/assembler/backends/ent/migrate/migrations/.atlas-metadata
+        run: atlas migrate hash --dir "file://pkg/assembler/backends/ent/migrate/migrations"
       - name: Run integration tests
         env:
             ENT_TEST_DATABASE_URL: 'postgresql://guac:guac@localhost/guac?sslmode=disable'
