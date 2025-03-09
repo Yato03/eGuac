@@ -161,12 +161,30 @@ func (c *demoClient) ingestVEXStatement(ctx context.Context, subject model.Packa
 		Origin:        vexStatement.Origin,
 		Collector:     vexStatement.Collector,
 		DocumentRef:   vexStatement.DocumentRef,
-		Description:   *vexStatement.Description,
-		Cvss:          *vexStatement.Cvss,
-		Cwe:           convertCweInputs(vexStatement.Cwe),
-		Exploits:      ConvertExploitsInputs(vexStatement.Exploits),
-		ReachableCode: ConvertReachableCodeInputs(vexStatement.ReachableCode),
-		Priority:      *vexStatement.Priority,
+	}
+
+	if vexStatement.Description != nil {
+		in.Statement = *vexStatement.Description
+	}
+
+	if vexStatement.Cvss != nil {
+		in.Cvss = *vexStatement.Cvss
+	}
+
+	if vexStatement.Cwe != nil {
+		in.Cwe = convertCweInputs(vexStatement.Cwe)
+	}
+
+	if vexStatement.Exploits != nil {
+		in.Exploits = ConvertExploitsInputs(vexStatement.Exploits)
+	}
+
+	if vexStatement.ReachableCode != nil {
+		in.ReachableCode = ConvertReachableCodeInputs(vexStatement.ReachableCode)
+	}
+
+	if vexStatement.Priority != nil {
+		in.Priority = *vexStatement.Priority
 	}
 
 	lock(&c.m, readOnly)
