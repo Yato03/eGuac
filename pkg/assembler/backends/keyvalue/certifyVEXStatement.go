@@ -96,7 +96,6 @@ func (n *vexLink) Key() string {
 		n.Collector,
 		n.DocumentRef,
 		n.Description,
-		*n.Cvss.AttackString,
 		fmt.Sprintf("%f", n.Priority),
 	}, ":"))
 }
@@ -161,6 +160,7 @@ func (c *demoClient) ingestVEXStatement(ctx context.Context, subject model.Packa
 		Origin:        vexStatement.Origin,
 		Collector:     vexStatement.Collector,
 		DocumentRef:   vexStatement.DocumentRef,
+		Description:   "",
 	}
 
 	if vexStatement.Description != nil {
