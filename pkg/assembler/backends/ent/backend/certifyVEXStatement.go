@@ -566,18 +566,18 @@ func getVEXObject(q *ent.CertifyVexQuery) *ent.CertifyVexQuery {
 }
 
 func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStatement {
-	subject := model.PackageOrArtifactInput{}
+
+	var subject model.PackageOrArtifact
 	if record.Edges.Package != nil {
-		subject = model.PackageOrArtifactInput{
-			Package: &model.IDorPkgInput{
-				PackageVersionID: ptrfrom.String(record.Edges.Package.ID.String()),
-			},
+		subject = model.Package{
+			ID:   record.Edges.Package.ID.String(),
+			Type: record.Edges.Package.Edges.Name.Type,
 		}
 	} else if record.Edges.Artifact != nil {
-		subject = model.PackageOrArtifactInput{
-			Artifact: &model.IDorArtifactInput{
-				ArtifactID: ptrfrom.String(record.Edges.Artifact.ID.String()),
-			},
+		subject = model.Artifact{
+			ID:        record.Edges.Artifact.ID.String(),
+			Algorithm: record.Edges.Artifact.Algorithm,
+			Digest:    record.Edges.Artifact.Digest,
 		}
 	}
 
@@ -585,7 +585,7 @@ func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStateme
 		ID:               certifyVEXGlobalID(record.ID.String()),
 		Vulnerability:    toModelVulnerabilityFromVulnerabilityID(record.Edges.Vulnerability),
 		KnownSince:       record.KnownSince,
-		Subject:          toModelPackageOrArtifact(subject),
+		Subject:          subject,
 		Status:           model.VexStatus(record.Status),
 		Statement:        record.Statement,
 		StatusNotes:      record.StatusNotes,
@@ -600,22 +600,6 @@ func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStateme
 		ReachableCode:    toModelReachableCodes(record.Edges.ReachableCode),
 		Priority:         record.Priority,
 	}
-}
-
-func toModelPackageOrArtifact(input model.PackageOrArtifactInput) model.PackageOrArtifact {
-	if input.Package != nil && input.Package.PackageTypeID != nil {
-		return &model.Package{
-			ID:   *input.Package.PackageVersionID,
-			Type: pkgTypeGlobalID(*input.Package.PackageTypeID),
-		}
-	} else if input.Artifact != nil {
-		return &model.Artifact{
-			ID:        *input.Artifact.ArtifactID,
-			Algorithm: input.Artifact.ArtifactInput.Algorithm,
-			Digest:    input.Artifact.ArtifactInput.Digest,
-		}
-	}
-	return nil
 }
 
 func certifyVexPredicate(filter model.CertifyVEXStatementSpec) predicate.CertifyVex {
