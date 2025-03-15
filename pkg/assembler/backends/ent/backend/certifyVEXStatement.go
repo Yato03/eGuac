@@ -605,8 +605,8 @@ func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStateme
 func toModelPackageOrArtifact(input model.PackageOrArtifactInput) model.PackageOrArtifact {
 	if input.Package != nil && input.Package.PackageVersionID != nil {
 		return &model.Package{
-			ID:   pkgTypeGlobalID(*input.Package.PackageVersionID),
-			Type: *input.Package.PackageTypeID,
+			ID:   *input.Package.PackageVersionID,
+			Type: pkgTypeGlobalID(*input.Package.PackageTypeID),
 		}
 	} else if input.Artifact != nil {
 		return &model.Artifact{
