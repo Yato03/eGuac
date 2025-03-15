@@ -566,10 +566,26 @@ func getVEXObject(q *ent.CertifyVexQuery) *ent.CertifyVexQuery {
 }
 
 func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStatement {
+	subject := model.PackageOrArtifactInput{}
+	if record.Edges.Package != nil {
+		subject = model.PackageOrArtifactInput{
+			Package: &model.IDorPkgInput{
+				PackageVersionID: ptrfrom.String(record.Edges.Package.ID.String()),
+			},
+		}
+	} else if record.Edges.Artifact != nil {
+		subject = model.PackageOrArtifactInput{
+			Artifact: &model.IDorArtifactInput{
+				ArtifactID: ptrfrom.String(record.Edges.Artifact.ID.String()),
+			},
+		}
+	}
+
 	return &model.CertifyVEXStatement{
 		ID:               certifyVEXGlobalID(record.ID.String()),
 		Vulnerability:    toModelVulnerabilityFromVulnerabilityID(record.Edges.Vulnerability),
 		KnownSince:       record.KnownSince,
+		Subject:          toModelPackageOrArtifact(subject), // Include the subject here
 		Status:           model.VexStatus(record.Status),
 		Statement:        record.Statement,
 		StatusNotes:      record.StatusNotes,
@@ -584,6 +600,19 @@ func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStateme
 		ReachableCode:    toModelReachableCodes(record.Edges.ReachableCode),
 		Priority:         record.Priority,
 	}
+}
+
+func toModelPackageOrArtifact(input model.PackageOrArtifactInput) model.PackageOrArtifact {
+	if input.Package != nil {
+		return &model.Package{
+			ID: *input.Package.PackageVersionID,
+		}
+	} else if input.Artifact != nil {
+		return &model.Artifact{
+			ID: *input.Artifact.ArtifactID,
+		}
+	}
+	return nil
 }
 
 func certifyVexPredicate(filter model.CertifyVEXStatementSpec) predicate.CertifyVex {
