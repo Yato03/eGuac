@@ -23,6 +23,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/guacsec/guac/internal/testing/ptrfrom"
 	"github.com/guacsec/guac/internal/testing/testdata"
 	"github.com/guacsec/guac/pkg/assembler/graphql/model"
 )
@@ -555,6 +556,9 @@ func TestNodes(t *testing.T) {
 			},
 			VexJustification: "test justification",
 			KnownSince:       time.Unix(1e9, 0),
+			Description:      ptrfrom.String(""),
+			Cvss:             &model.Cvss{},
+			Priority:         ptrfrom.Float64(0),
 		}},
 	}, {
 		name:   "certifyVuln",

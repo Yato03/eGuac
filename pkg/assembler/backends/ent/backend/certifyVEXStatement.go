@@ -585,7 +585,7 @@ func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStateme
 		ID:               certifyVEXGlobalID(record.ID.String()),
 		Vulnerability:    toModelVulnerabilityFromVulnerabilityID(record.Edges.Vulnerability),
 		KnownSince:       record.KnownSince,
-		Subject:          toModelPackageOrArtifact(subject), // Include the subject here
+		Subject:          toModelPackageOrArtifact(subject),
 		Status:           model.VexStatus(record.Status),
 		Statement:        record.Statement,
 		StatusNotes:      record.StatusNotes,
@@ -603,13 +603,16 @@ func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStateme
 }
 
 func toModelPackageOrArtifact(input model.PackageOrArtifactInput) model.PackageOrArtifact {
-	if input.Package != nil {
+	if input.Package != nil && input.Package.PackageVersionID != nil {
 		return &model.Package{
-			ID: *input.Package.PackageVersionID,
+			ID:   pkgTypeGlobalID(*input.Package.PackageVersionID),
+			Type: *input.Package.PackageTypeID,
 		}
 	} else if input.Artifact != nil {
 		return &model.Artifact{
-			ID: *input.Artifact.ArtifactID,
+			ID:        *input.Artifact.ArtifactID,
+			Algorithm: input.Artifact.ArtifactInput.Algorithm,
+			Digest:    input.Artifact.ArtifactInput.Digest,
 		}
 	}
 	return nil
