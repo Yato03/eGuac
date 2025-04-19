@@ -10733,6 +10733,18 @@ func (ec *executionContext) fieldContext_Query_CertifyVEXStatement(ctx context.C
 				return ec.fieldContext_CertifyVEXStatement_collector(ctx, field)
 			case "documentRef":
 				return ec.fieldContext_CertifyVEXStatement_documentRef(ctx, field)
+			case "description":
+				return ec.fieldContext_CertifyVEXStatement_description(ctx, field)
+			case "cvss":
+				return ec.fieldContext_CertifyVEXStatement_cvss(ctx, field)
+			case "cwe":
+				return ec.fieldContext_CertifyVEXStatement_cwe(ctx, field)
+			case "reachableCode":
+				return ec.fieldContext_CertifyVEXStatement_reachableCode(ctx, field)
+			case "exploits":
+				return ec.fieldContext_CertifyVEXStatement_exploits(ctx, field)
+			case "priority":
+				return ec.fieldContext_CertifyVEXStatement_priority(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type CertifyVEXStatement", field.Name)
 		},

@@ -17,7 +17,15 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyscorecard"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvuln"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_impact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_scope"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cvss"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cwe"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/demonstrativeexample"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/dependency"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/detectionmethod"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/exploit"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hashequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hasmetadata"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hassourceat"
@@ -27,6 +35,9 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pkgequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pointofcontact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/potentialmitigation"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecode"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecodeartifact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/slsaattestation"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/sourcename"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnequal"
@@ -55,6 +66,16 @@ var builderImplementors = []string{"Builder", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*Builder) IsNode() {}
 
+var cvssImplementors = []string{"CVSS", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CVSS) IsNode() {}
+
+var cweImplementors = []string{"CWE", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*CWE) IsNode() {}
+
 var certificationImplementors = []string{"Certification", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
@@ -80,10 +101,40 @@ var certifyvulnImplementors = []string{"CertifyVuln", "Node"}
 // IsNode implements the Node interface check for GQLGen.
 func (*CertifyVuln) IsNode() {}
 
+var consequenceImplementors = []string{"Consequence", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Consequence) IsNode() {}
+
+var consequence_impactImplementors = []string{"Consequence_Impact", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Consequence_Impact) IsNode() {}
+
+var consequence_scopeImplementors = []string{"Consequence_Scope", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Consequence_Scope) IsNode() {}
+
+var demonstrativeexampleImplementors = []string{"DemonstrativeExample", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*DemonstrativeExample) IsNode() {}
+
 var dependencyImplementors = []string{"Dependency", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*Dependency) IsNode() {}
+
+var detectionmethodImplementors = []string{"DetectionMethod", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*DetectionMethod) IsNode() {}
+
+var exploitImplementors = []string{"Exploit", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*Exploit) IsNode() {}
 
 var hasmetadataImplementors = []string{"HasMetadata", "Node"}
 
@@ -129,6 +180,21 @@ var pointofcontactImplementors = []string{"PointOfContact", "Node"}
 
 // IsNode implements the Node interface check for GQLGen.
 func (*PointOfContact) IsNode() {}
+
+var potentialmitigationImplementors = []string{"PotentialMitigation", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*PotentialMitigation) IsNode() {}
+
+var reachablecodeImplementors = []string{"ReachableCode", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*ReachableCode) IsNode() {}
+
+var reachablecodeartifactImplementors = []string{"ReachableCodeArtifact", "Node"}
+
+// IsNode implements the Node interface check for GQLGen.
+func (*ReachableCodeArtifact) IsNode() {}
 
 var slsaattestationImplementors = []string{"SLSAAttestation", "Node"}
 
@@ -240,6 +306,24 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			}
 		}
 		return query.Only(ctx)
+	case cvss.Table:
+		query := c.CVSS.Query().
+			Where(cvss.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, cvssImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case cwe.Table:
+		query := c.CWE.Query().
+			Where(cwe.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, cweImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case certification.Table:
 		query := c.Certification.Query().
 			Where(certification.ID(id))
@@ -285,11 +369,65 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			}
 		}
 		return query.Only(ctx)
+	case consequence.Table:
+		query := c.Consequence.Query().
+			Where(consequence.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, consequenceImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case consequence_impact.Table:
+		query := c.Consequence_Impact.Query().
+			Where(consequence_impact.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, consequence_impactImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case consequence_scope.Table:
+		query := c.Consequence_Scope.Query().
+			Where(consequence_scope.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, consequence_scopeImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case demonstrativeexample.Table:
+		query := c.DemonstrativeExample.Query().
+			Where(demonstrativeexample.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, demonstrativeexampleImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
 	case dependency.Table:
 		query := c.Dependency.Query().
 			Where(dependency.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, dependencyImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case detectionmethod.Table:
+		query := c.DetectionMethod.Query().
+			Where(detectionmethod.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, detectionmethodImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case exploit.Table:
+		query := c.Exploit.Query().
+			Where(exploit.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, exploitImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -371,6 +509,33 @@ func (c *Client) noder(ctx context.Context, table string, id uuid.UUID) (Noder, 
 			Where(pointofcontact.ID(id))
 		if fc := graphql.GetFieldContext(ctx); fc != nil {
 			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, pointofcontactImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case potentialmitigation.Table:
+		query := c.PotentialMitigation.Query().
+			Where(potentialmitigation.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, potentialmitigationImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case reachablecode.Table:
+		query := c.ReachableCode.Query().
+			Where(reachablecode.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, reachablecodeImplementors...); err != nil {
+				return nil, err
+			}
+		}
+		return query.Only(ctx)
+	case reachablecodeartifact.Table:
+		query := c.ReachableCodeArtifact.Query().
+			Where(reachablecodeartifact.ID(id))
+		if fc := graphql.GetFieldContext(ctx); fc != nil {
+			if err := query.collectField(ctx, true, graphql.GetOperationContext(ctx), fc.Field, nil, reachablecodeartifactImplementors...); err != nil {
 				return nil, err
 			}
 		}
@@ -541,6 +706,38 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 				*noder = node
 			}
 		}
+	case cvss.Table:
+		query := c.CVSS.Query().
+			Where(cvss.IDIn(ids...))
+		query, err := query.CollectFields(ctx, cvssImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case cwe.Table:
+		query := c.CWE.Query().
+			Where(cwe.IDIn(ids...))
+		query, err := query.CollectFields(ctx, cweImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case certification.Table:
 		query := c.Certification.Query().
 			Where(certification.IDIn(ids...))
@@ -621,10 +818,106 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 				*noder = node
 			}
 		}
+	case consequence.Table:
+		query := c.Consequence.Query().
+			Where(consequence.IDIn(ids...))
+		query, err := query.CollectFields(ctx, consequenceImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case consequence_impact.Table:
+		query := c.Consequence_Impact.Query().
+			Where(consequence_impact.IDIn(ids...))
+		query, err := query.CollectFields(ctx, consequence_impactImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case consequence_scope.Table:
+		query := c.Consequence_Scope.Query().
+			Where(consequence_scope.IDIn(ids...))
+		query, err := query.CollectFields(ctx, consequence_scopeImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case demonstrativeexample.Table:
+		query := c.DemonstrativeExample.Query().
+			Where(demonstrativeexample.IDIn(ids...))
+		query, err := query.CollectFields(ctx, demonstrativeexampleImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
 	case dependency.Table:
 		query := c.Dependency.Query().
 			Where(dependency.IDIn(ids...))
 		query, err := query.CollectFields(ctx, dependencyImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case detectionmethod.Table:
+		query := c.DetectionMethod.Query().
+			Where(detectionmethod.IDIn(ids...))
+		query, err := query.CollectFields(ctx, detectionmethodImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case exploit.Table:
+		query := c.Exploit.Query().
+			Where(exploit.IDIn(ids...))
+		query, err := query.CollectFields(ctx, exploitImplementors...)
 		if err != nil {
 			return nil, err
 		}
@@ -769,6 +1062,54 @@ func (c *Client) noders(ctx context.Context, table string, ids []uuid.UUID) ([]N
 		query := c.PointOfContact.Query().
 			Where(pointofcontact.IDIn(ids...))
 		query, err := query.CollectFields(ctx, pointofcontactImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case potentialmitigation.Table:
+		query := c.PotentialMitigation.Query().
+			Where(potentialmitigation.IDIn(ids...))
+		query, err := query.CollectFields(ctx, potentialmitigationImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case reachablecode.Table:
+		query := c.ReachableCode.Query().
+			Where(reachablecode.IDIn(ids...))
+		query, err := query.CollectFields(ctx, reachablecodeImplementors...)
+		if err != nil {
+			return nil, err
+		}
+		nodes, err := query.All(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for _, node := range nodes {
+			for _, noder := range idmap[node.ID] {
+				*noder = node
+			}
+		}
+	case reachablecodeartifact.Table:
+		query := c.ReachableCodeArtifact.Query().
+			Where(reachablecodeartifact.IDIn(ids...))
+		query, err := query.CollectFields(ctx, reachablecodeartifactImplementors...)
 		if err != nil {
 			return nil, err
 		}

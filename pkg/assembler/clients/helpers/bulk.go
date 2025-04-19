@@ -208,7 +208,6 @@ func GetBulkAssembler(ctx context.Context, logger *zap.SugaredLogger, gqlclient 
 				rvErr = err
 			}
 
-			logger.Infof("assembling VEX : %v", len(p.Vex))
 			if err := ingestVEXs(ctx, gqlclient, p.Vex, collectedIDorPkgInputs, collectedIDorArtInputs, collectedIDorVulnInputs); err != nil {
 				logger.Errorf("ingestVEXs failed with error: %v", err)
 				rvErr = err

@@ -1,0 +1,1710 @@
+{
+  "@context": "https://github.com/GermanMT/vexgen/wiki/Extended-VEX-Spec-v0.1.0",
+  "@id": "https://github.com/GermanMT/VexGen",
+  "author": "aws-samples",
+  "role": "Generate Automated VEX with Depex",
+  "timestamp": "2024-09-06T13:11:08.068416Z",
+  "last_updated": "2024-09-06T13:11:08.068416Z",
+  "version": 1,
+  "tooling": "https://github.com/GermanMT/vexgen",
+  "extended_statements": [
+    {
+      "affected_component": "fast-xml-parser",
+      "affected_component_version": "4.1.2",
+      "affected_component_manager": "npm",
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2023-34104",
+        "name": "CVE-2023-34104",
+        "description": "fast-xml-parser is an open source, pure javascript xml parser. fast-xml-parser allows special characters in entity names, which are not escaped or sanitized. Since the entity name is used for creating a regex for searching and replacing entities in the XML body, an attacker can abuse it for denial of service (DoS) attacks. By crafting an entity name that results in an intentionally bad performing regex and utilizing it in the entity replacement step of the parser, this can cause the parser to stall for an indefinite amount of time. This problem has been resolved in v4.2.4. Users are advised to upgrade. Users unable to upgrade should avoid using DOCTYPE parsing by setting the `processEntities: false` option.",
+        "cvss": {
+          "vuln_impact": 3.6,
+          "version": "3.1",
+          "attack_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "cwes": [
+          {
+            "@id": "https://cwe.mitre.org/data/definitions/1333.html",
+            "abstraction": "Base",
+            "name": "1333",
+            "description": "",
+            "consequences": [{
+              "Scope": ["Availability"],
+              "Impact": ["DoS: Resource Consumption (CPU)"],
+              "Likelihood": "High"
+            }],
+            "potential_mitigations": [
+              {
+                "Phase": "Architecture and Design",
+                "Description": "Use regular expressions that do not support backtracking, e.g. by removing nested quantifiers.",
+                "Effectiveness": "High",
+                "Effectiveness_Notes": "This is one of the few effective solutions when using user-provided regular expressions."
+              },
+              {
+                "Phase": "System Configuration",
+                "Description": "Set backtracking limits in the configuration of the regular expression implementation, such as PHP's pcre.backtrack_limit. Also consider limits on execution time for the process.",
+                "Effectiveness": "Moderate"
+              },
+              {
+                "Phase": "Implementation",
+                "Description": "Do not use regular expressions with untrusted input. If regular expressions must be used, avoid using backtracking in the expression.",
+                "Effectiveness": "High"
+              },
+              {
+                "Phase": "Implementation",
+                "Description": "Limit the length of the input that the regular expression will process.",
+                "Effectiveness": "Moderate"
+              }
+            ],
+            "demonstrative_examples": [
+              {
+                "@Demonstrative_Example_ID": "DX-158",
+                "Intro_Text": "This example attempts to check if an input string is a \"sentence\" [REF-1164].",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "JavaScript",
+                    "xhtml:br": [
+                      null,
+                      null
+                    ],
+                    "#text": "var test_string = \"Bad characters: $@#\";\n                        var bad_pattern  = /^(\\w+\\s?)*$/i;\n                        var result = test_string.search(bad_pattern);"
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "JavaScript",
+                    "xhtml:br": [
+                      null,
+                      null
+                    ],
+                    "#text": "var test_string = \"Bad characters: $@#\";\n                        var good_pattern  = /^((?=(\\w+))\\2\\s?)*$/i;\n                        var result = test_string.search(good_pattern);"
+                  }
+                ],
+                "Body_Text": [
+                  {
+                    "xhtml:p": [
+                      "The regular expression has a vulnerable backtracking clause inside (\\w+\\s?)*$ which can be triggered to cause a Denial of Service by processing particular phrases.",
+                      "To fix the backtracking problem, backtracking is removed with the ?= portion of the expression which changes it to a lookahead and the \\2 which prevents the backtracking. The modified example is:"
+                    ]
+                  },
+                  "Note that [REF-1164] has a more thorough (and lengthy) explanation of everything going on within the RegEx."
+                ]
+              },
+              {
+                "Intro_Text": "This example attempts to check if an input string is a \"sentence\" and is modified for Perl [REF-1164].",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "Perl",
+                    "xhtml:br": [
+                      null,
+                      null
+                    ],
+                    "#text": "my $test_string = \"Bad characters: \\$\\@\\#\";\n                        my $bdrslt = $test_string;\n                        $bdrslt =~ /^(\\w+\\s?)*$/i;"
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "Perl",
+                    "xhtml:br": [
+                      null,
+                      null
+                    ],
+                    "#text": "my $test_string = \"Bad characters: \\$\\@\\#\";\n                        my $gdrslt = $test_string;\n                         $gdrslt =~ /^((?=(\\w+))\\2\\s?)*$/i;"
+                  }
+                ],
+                "Body_Text": [
+                  {
+                    "xhtml:p": [
+                      "The regular expression has a vulnerable backtracking clause inside (\\w+\\s?)*$ which can be triggered to cause a Denial of Service by processing particular phrases.",
+                      "To fix the backtracking problem, backtracking is removed with the ?= portion of the expression which changes it to a lookahead and the \\2 which prevents the backtracking. The modified example is:"
+                    ]
+                  },
+                  "Note that [REF-1164] has a more thorough (and lengthy) explanation of everything going on within the RegEx."
+                ]
+              }
+            ]
+          },
+          {
+            "@id": "https://cwe.mitre.org/data/definitions/400.html",
+            "abstraction": "Class",
+            "name": "400",
+            "description": "",
+            "consequences": [
+              {
+                "Scope": ["Availability"],
+                "Impact": [
+                  "DoS: Crash, Exit, or Restart",
+                  "DoS: Resource Consumption (CPU)",
+                  "DoS: Resource Consumption (Memory)",
+                  "DoS: Resource Consumption (Other)"
+                ],
+                "Note": "The most common result of resource exhaustion is denial of service. The product may slow down, crash due to unhandled errors, or lock out legitimate users."
+              },
+              {
+                "Scope": [
+                  "Access Control",
+                  "Other"
+                ],
+                "Impact": [
+                  "Bypass Protection Mechanism",
+                  "Other"
+                ],
+                "Note": "In some cases it may be possible to force the product to \"fail open\" in the event of resource exhaustion. The state of the product -- and possibly the security functionality - may then be compromised."
+              }
+            ],
+            "detection_methods": [
+              {
+                "Method": "Automated Static Analysis",
+                "Description": "",
+                "Effectiveness": "Limited"
+              },
+              {
+                "Method": "Automated Dynamic Analysis",
+                "Description": "Certain automated dynamic analysis techniques may be effective in spotting resource exhaustion problems, especially with resources such as processes, memory, and connections. The technique may involve generating a large number of requests to the product within a short time frame.",
+                "Effectiveness": "Moderate"
+              },
+              {
+                "Method": "Fuzzing",
+                "Description": "While fuzzing is typically geared toward finding low-level implementation bugs, it can inadvertently find resource exhaustion problems. This can occur when the fuzzer generates a large number of test cases but does not restart the targeted product in between test cases. If an individual test case produces a crash, but it does not do so reliably, then an inability to handle resource exhaustion may be the cause.",
+                "Effectiveness": "Opportunistic"
+              }
+            ],
+            "potential_mitigations": [
+              {
+                "Phase": "Architecture and Design",
+                "Description": "Design throttling mechanisms into the system architecture. The best protection is to limit the amount of resources that an unauthorized user can cause to be expended. A strong authentication and access control model will help prevent such attacks from occurring in the first place. The login application should be protected against DoS attacks as much as possible. Limiting the database access, perhaps by caching result sets, can help minimize the resources expended. To further limit the potential for a DoS attack, consider tracking the rate of requests received from users and blocking requests that exceed a defined rate threshold."
+              },
+              {
+                "Phase": "Architecture and Design",
+                "Description": ""
+              },
+              {
+                "Phase": "Architecture and Design",
+                "Description": "Ensure that protocols have specific limits of scale placed on them."
+              },
+              {
+                "Phase": "Implementation",
+                "Description": "Ensure that all failures in resource allocation place the system into a safe posture."
+              }
+            ],
+            "demonstrative_examples": [
+              {
+                "Intro_Text": "The following example demonstrates the weakness.",
+                "Example_Code": {
+                  "@Nature": "Bad",
+                  "@Language": "Java",
+                  "xhtml:div": {
+                    "xhtml:div": {
+                      "@style": "margin-left:1em;",
+                      "xhtml:div": {
+                        "xhtml:br": [
+                          null,
+                          null,
+                          null,
+                          null,
+                          null
+                        ],
+                        "xhtml:div": [
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:div": {
+                              "xhtml:br": [
+                                null,
+                                null
+                              ],
+                              "xhtml:div": [
+                                {
+                                  "@style": "margin-left:1em;",
+                                  "#text": "..."
+                                },
+                                {
+                                  "@style": "margin-left:1em;",
+                                  "xhtml:div": {
+                                    "xhtml:br": [
+                                      null,
+                                      null
+                                    ],
+                                    "xhtml:i": "// postpone response",
+                                    "#text": "Thread.currentThread().interrupt();"
+                                  }
+                                }
+                              ],
+                              "#text": "try {}catch (InterruptedException ie) {}"
+                            }
+                          },
+                          {
+                            "@style": "margin-left:1em;",
+                            "#text": "..."
+                          },
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:div": {
+                              "xhtml:br": [
+                                null,
+                                null
+                              ],
+                              "xhtml:div": {
+                                "@style": "margin-left:1em;",
+                                "xhtml:div": {
+                                  "xhtml:br": null,
+                                  "xhtml:div": {
+                                    "@style": "margin-left:1em;",
+                                    "xhtml:div": {
+                                      "xhtml:br": [
+                                        null,
+                                        null
+                                      ],
+                                      "xhtml:div": [
+                                        {
+                                          "@style": "margin-left:1em;",
+                                          "xhtml:div": {
+                                            "@style": "margin-left:1em;",
+                                            "xhtml:br": null,
+                                            "#text": "Runnable r = ...;r.run();"
+                                          },
+                                          "#text": "for (;;) {}"
+                                        },
+                                        {
+                                          "@style": "margin-left:1em;",
+                                          "#text": "..."
+                                        }
+                                      ],
+                                      "#text": "try {}catch (InterruptedException ie) {}"
+                                    }
+                                  },
+                                  "#text": "public void run() {}"
+                                }
+                              },
+                              "#text": "Runnable loop = new Runnable() {};new Thread(loop).start();"
+                            }
+                          }
+                        ],
+                        "#text": "...public void execute(Runnable r) {}\n                           public Worker(Channel ch, int nworkers) {}\n                           protected void activate() {}"
+                      }
+                    },
+                    "#text": "class Worker implements Executor {}"
+                  }
+                },
+                "Body_Text": "There are no limits to runnables. Potentially an attacker could cause resource problems very quickly."
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-25",
+                "Intro_Text": "This code allocates a socket and forks each time it receives a new connection.",
+                "Example_Code": {
+                  "@Nature": "Bad",
+                  "@Language": "C",
+                  "xhtml:div": {
+                    "xhtml:br": null,
+                    "xhtml:div": {
+                      "@style": "margin-left:1em;",
+                      "xhtml:br": [
+                        null,
+                        null
+                      ],
+                      "#text": "newsock=accept(sock, ...);printf(\"A connection has been accepted\\n\");pid = fork();"
+                    },
+                    "#text": "sock=socket(AF_INET, SOCK_STREAM, 0);while (1) {}"
+                  }
+                },
+                "Body_Text": "The program does not track how many connections have been made, and it does not limit the number of connections. Because forking is a relatively expensive operation, an attacker would be able to cause the system to run out of CPU, processes, or memory by making a large number of connections. Alternatively, an attacker could consume all available connections, preventing others from accessing the system remotely."
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-50",
+                "Intro_Text": "In the following example a server socket connection is used to accept a request to store data on the local file system using a specified filename. The method openSocketConnection establishes a server socket to accept requests from a client. When a client establishes a connection to this service the getNextMessage method is first used to retrieve from the socket the name of the file to store the data, the openFileToWrite method will validate the filename and open a file to write to on the local file system. The getNextMessage is then used within a while loop to continuously read data from the socket and output the data to the file until there is no longer any data from the socket.",
+                "Example_Code": {
+                  "@Nature": "Bad",
+                  "@Language": "C",
+                  "xhtml:div": {
+                    "xhtml:br": null,
+                    "xhtml:div": {
+                      "@style": "margin-left:1em;",
+                      "xhtml:div": {
+                        "xhtml:br": [
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null
+                        ],
+                        "xhtml:div": [
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": null,
+                            "#text": "printf(\"Unable to open socket connection\");return(FAIL);"
+                          },
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:div": {
+                              "xhtml:div": {
+                                "@style": "margin-left:1em;",
+                                "xhtml:div": {
+                                  "xhtml:div": {
+                                    "@style": "margin-left:1em;",
+                                    "xhtml:div": {
+                                      "@style": "margin-left:1em;",
+                                      "#text": "break;"
+                                    },
+                                    "#text": "if (!(writeToFile(buffer) > 0))"
+                                  },
+                                  "#text": "while (getNextMessage(socket, buffer, BUFFER_SIZE) > 0){}"
+                                }
+                              },
+                              "xhtml:br": null,
+                              "#text": "if (openFileToWrite(filename) > 0) {}closeFile();"
+                            }
+                          }
+                        ],
+                        "#text": "char filename[FILENAME_SIZE];char buffer[BUFFER_SIZE];int socket = openSocketConnection(host, port);\n                           if (socket < 0) {}if (getNextMessage(socket, filename, FILENAME_SIZE) > 0) {}closeSocket(socket);"
+                      }
+                    },
+                    "#text": "int writeDataFromSocketToFile(char *host, int port){}"
+                  }
+                },
+                "Body_Text": "This example creates a situation where data can be dumped to a file on the local file system without any limits on the size of the file. This could potentially exhaust file or disk resources and/or limit other clients' ability to access the service."
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-51",
+                "Intro_Text": "In the following example, the processMessage method receives a two dimensional character array containing the message to be processed. The two-dimensional character array contains the length of the message in the first character array and the message body in the second character array. The getMessageLength method retrieves the integer value of the length from the first character array. After validating that the message length is greater than zero, the body character array pointer points to the start of the second character array of the two-dimensional character array and memory is allocated for the new body character array.",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "C",
+                    "xhtml:div": {
+                      "xhtml:br": [
+                        null,
+                        null,
+                        null
+                      ],
+                      "xhtml:i": "/* process message accepts a two-dimensional character array of the form [length][body] containing the message to be processed */",
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:div": {
+                          "xhtml:br": [
+                            null,
+                            null,
+                            null,
+                            null,
+                            null
+                          ],
+                          "xhtml:div": [
+                            {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": [
+                                null,
+                                null
+                              ],
+                              "#text": "body = &message[1][0];processMessageBody(body);return(SUCCESS);"
+                            },
+                            {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": null,
+                              "#text": "printf(\"Unable to process message; invalid message length\");return(FAIL);"
+                            }
+                          ],
+                          "#text": "char *body;\n                           int length = getMessageLength(message[0]);\n                           if (length > 0) {}else {}"
+                        }
+                      },
+                      "#text": "int processMessage(char **message){}"
+                    }
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "C",
+                    "xhtml:div": {
+                      "xhtml:br": null,
+                      "#text": "unsigned int length = getMessageLength(message[0]);if ((length > 0) && (length < MAX_LENGTH)) {...}"
+                    }
+                  }
+                ],
+                "Body_Text": [
+                  "This example creates a situation where the length of the body character array can be very large and will consume excessive memory, exhausting system resources. This can be avoided by restricting the length of the second character array with a maximum length check",
+                  "Also, consider changing the type from 'int' to 'unsigned int', so that you are always guaranteed that the number is positive. This might not be possible if the protocol specifically requires allowing negative values, or if you cannot control the return value from getMessageLength(), but it could simplify the check to ensure the input is positive, and eliminate other errors such as signed-to-unsigned conversion errors (CWE-195) that may occur elsewhere in the code."
+                ]
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-52",
+                "Intro_Text": "In the following example, a server object creates a server socket and accepts client connections to the socket. For every client connection to the socket a separate thread object is generated using the ClientSocketThread class that handles request made by the client through the socket.",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "Java",
+                    "xhtml:div": {
+                      "xhtml:br": null,
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:div": {
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": [
+                              null,
+                              null,
+                              null,
+                              null
+                            ],
+                            "xhtml:div": {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": [
+                                null,
+                                null,
+                                null
+                              ],
+                              "#text": "Socket client = serverSocket.accept();Thread t = new Thread(new ClientSocketThread(client));t.setName(client.getInetAddress().getHostName() + \":\" + counter++);t.start();"
+                            },
+                            "#text": "ServerSocket serverSocket = new ServerSocket(SERVER_PORT);int counter = 0;boolean hasConnections = true;while (hasConnections) {}serverSocket.close();"
+                          },
+                          "xhtml:br": [
+                            null,
+                            null
+                          ],
+                          "#text": "try {\n                           \n                           } catch (IOException ex) {...}"
+                        }
+                      },
+                      "#text": "public void acceptConnections() {\n                     }"
+                    }
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "Java",
+                    "xhtml:div": {
+                      "xhtml:br": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                      ],
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:div": {
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": [
+                              null,
+                              null,
+                              null,
+                              null
+                            ],
+                            "xhtml:div": {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": [
+                                null,
+                                null,
+                                null,
+                                null,
+                                null
+                              ],
+                              "#text": "hasConnections = checkForMoreConnections();Socket client = serverSocket.accept();Thread t = new Thread(new ClientSocketThread(client));t.setName(client.getInetAddress().getHostName() + \":\" + counter++);ExecutorService pool = Executors.newFixedThreadPool(MAX_CONNECTIONS);pool.execute(t);"
+                            },
+                            "#text": "ServerSocket serverSocket = new ServerSocket(SERVER_PORT);int counter = 0;boolean hasConnections = true;while (hasConnections) {}serverSocket.close();"
+                          },
+                          "xhtml:br": [
+                            null,
+                            null
+                          ],
+                          "#text": "try {\n                           \n                           } catch (IOException ex) {...}"
+                        }
+                      },
+                      "#text": "public static final int SERVER_PORT = 4444;public static final int MAX_CONNECTIONS = 10;...\n                     public void acceptConnections() {\n                     }"
+                    }
+                  }
+                ],
+                "Body_Text": [
+                  "In this example there is no limit to the number of client connections and client threads that are created. Allowing an unlimited number of client connections and threads could potentially overwhelm the system and system resources.",
+                  "The server should limit the number of client connections and the client threads that are created. This can be easily done by creating a thread pool object that limits the number of threads that are generated."
+                ]
+              },
+              {
+                "Intro_Text": "In the following example, the serve function receives an http request and an http response writer. It reads the entire request body.",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "Go",
+                    "xhtml:div": {
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:br": [
+                          null,
+                          null
+                        ],
+                        "xhtml:div": {
+                          "@style": "margin-left:1em;",
+                          "xhtml:br": null,
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": null,
+                            "#text": "body = data"
+                          },
+                          "#text": "if data, err := io.ReadAll(r.Body); err == nil {\n                           \n                           }"
+                        },
+                        "#text": "var body []byte\n                        if r.Body != nil {\n                        \n                        }"
+                      },
+                      "#text": "func serve(w http.ResponseWriter, r *http.Request) {\n                     \n                  }"
+                    }
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "Go",
+                    "xhtml:div": {
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:br": [
+                          null,
+                          null,
+                          null
+                        ],
+                        "xhtml:div": {
+                          "@style": "margin-left:1em;",
+                          "xhtml:br": [
+                            null,
+                            null
+                          ],
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": null,
+                            "#text": "body = data"
+                          },
+                          "#text": "r.Body = http.MaxBytesReader(w, r.Body, MaxRespBodyLength)\n                           if data, err := io.ReadAll(r.Body); err == nil {\n                           \n                           }"
+                        },
+                        "#text": "var body []byte\n                        const MaxRespBodyLength = 1e6\n                        if r.Body != nil {\n                        \n                        }"
+                      },
+                      "#text": "func serve(w http.ResponseWriter, r *http.Request) {\n                     \n                  }"
+                    }
+                  }
+                ],
+                "Body_Text": [
+                  "Because ReadAll is defined to read from src until EOF, it does not treat an EOF from Read as an error to be reported. This example creates a situation where the length of the body supplied can be very large and will consume excessive memory, exhausting system resources. This can be avoided by ensuring the body does not exceed a predetermined length of bytes.",
+                  "MaxBytesReader prevents clients from accidentally or maliciously sending a large request and wasting server resources. If possible, the code could be changed to tell ResponseWriter to close the connection after the limit has been reached."
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "priority": 3.52,
+      "timestamp": "2024-09-06T13:11:08.068416Z",
+      "last_updated": "2024-09-06T13:11:08.068416Z",
+      "status": "affected",
+      "justification": "vulnerable_code_not_present"
+    },
+    {
+      "affected_component": "semver",
+      "affected_component_version": "7.5.0",
+      "affected_component_manager": "npm",
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2022-25883",
+        "name": "CVE-2022-25883",
+        "description": "Versions of the package semver before 7.5.2 are vulnerable to Regular Expression Denial of Service (ReDoS) via the function new Range, when untrusted user data is provided as a range.\r\r\r",
+        "cvss": {
+          "vuln_impact": 3.6,
+          "version": "3.1",
+          "attack_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "cwes": [
+          {
+            "@id": "https://cwe.mitre.org/data/definitions/1333.html",
+            "abstraction": "Base",
+            "name": "1333",
+            "description": "",
+            "consequences": [{
+              "Scope": ["Availability"],
+              "Impact":[ "DoS: Resource Consumption (CPU)"],
+              "Likelihood": "High"
+            }],
+            "potential_mitigations": [
+              {
+                "Phase": "Architecture and Design",
+                "Description": "Use regular expressions that do not support backtracking, e.g. by removing nested quantifiers.",
+                "Effectiveness": "High",
+                "Effectiveness_Notes": "This is one of the few effective solutions when using user-provided regular expressions."
+              },
+              {
+                "Phase": "System Configuration",
+                "Description": "Set backtracking limits in the configuration of the regular expression implementation, such as PHP's pcre.backtrack_limit. Also consider limits on execution time for the process.",
+                "Effectiveness": "Moderate"
+              },
+              {
+                "Phase": "Implementation",
+                "Description": "Do not use regular expressions with untrusted input. If regular expressions must be used, avoid using backtracking in the expression.",
+                "Effectiveness": "High"
+              },
+              {
+                "Phase": "Implementation",
+                "Description": "Limit the length of the input that the regular expression will process.",
+                "Effectiveness": "Moderate"
+              }
+            ],
+            "demonstrative_examples": [
+              {
+                "@Demonstrative_Example_ID": "DX-158",
+                "Intro_Text": "This example attempts to check if an input string is a \"sentence\" [REF-1164].",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "JavaScript",
+                    "xhtml:br": [
+                      null,
+                      null
+                    ],
+                    "#text": "var test_string = \"Bad characters: $@#\";\n                        var bad_pattern  = /^(\\w+\\s?)*$/i;\n                        var result = test_string.search(bad_pattern);"
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "JavaScript",
+                    "xhtml:br": [
+                      null,
+                      null
+                    ],
+                    "#text": "var test_string = \"Bad characters: $@#\";\n                        var good_pattern  = /^((?=(\\w+))\\2\\s?)*$/i;\n                        var result = test_string.search(good_pattern);"
+                  }
+                ],
+                "Body_Text": [
+                  {
+                    "xhtml:p": [
+                      "The regular expression has a vulnerable backtracking clause inside (\\w+\\s?)*$ which can be triggered to cause a Denial of Service by processing particular phrases.",
+                      "To fix the backtracking problem, backtracking is removed with the ?= portion of the expression which changes it to a lookahead and the \\2 which prevents the backtracking. The modified example is:"
+                    ]
+                  },
+                  "Note that [REF-1164] has a more thorough (and lengthy) explanation of everything going on within the RegEx."
+                ]
+              },
+              {
+                "Intro_Text": "This example attempts to check if an input string is a \"sentence\" and is modified for Perl [REF-1164].",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "Perl",
+                    "xhtml:br": [
+                      null,
+                      null
+                    ],
+                    "#text": "my $test_string = \"Bad characters: \\$\\@\\#\";\n                        my $bdrslt = $test_string;\n                        $bdrslt =~ /^(\\w+\\s?)*$/i;"
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "Perl",
+                    "xhtml:br": [
+                      null,
+                      null
+                    ],
+                    "#text": "my $test_string = \"Bad characters: \\$\\@\\#\";\n                        my $gdrslt = $test_string;\n                         $gdrslt =~ /^((?=(\\w+))\\2\\s?)*$/i;"
+                  }
+                ],
+                "Body_Text": [
+                  {
+                    "xhtml:p": [
+                      "The regular expression has a vulnerable backtracking clause inside (\\w+\\s?)*$ which can be triggered to cause a Denial of Service by processing particular phrases.",
+                      "To fix the backtracking problem, backtracking is removed with the ?= portion of the expression which changes it to a lookahead and the \\2 which prevents the backtracking. The modified example is:"
+                    ]
+                  },
+                  "Note that [REF-1164] has a more thorough (and lengthy) explanation of everything going on within the RegEx."
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "priority": 3.52,
+      "timestamp": "2024-09-06T13:11:08.068416Z",
+      "last_updated": "2024-09-06T13:11:08.068416Z",
+      "status": "affected",
+      "justification": "vulnerable_code_not_present"
+    },
+    {
+      "affected_component": "yaml",
+      "affected_component_version": "1.10.2",
+      "affected_component_manager": "npm",
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2022-3064",
+        "name": "CVE-2022-3064",
+        "description": "Parsing malicious or large YAML documents can consume excessive amounts of CPU or memory.",
+        "cvss": {
+          "vuln_impact": 3.6,
+          "version": "3.1",
+          "attack_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "cwes": [
+          {
+            "@id": "https://cwe.mitre.org/data/definitions/400.html",
+            "abstraction": "Class",
+            "name": "400",
+            "description": "",
+            "consequences": [
+              {
+                "Scope": ["Availability"],
+                "Impact": [
+                  "DoS: Crash, Exit, or Restart",
+                  "DoS: Resource Consumption (CPU)",
+                  "DoS: Resource Consumption (Memory)",
+                  "DoS: Resource Consumption (Other)"
+                ],
+                "Note": "The most common result of resource exhaustion is denial of service. The product may slow down, crash due to unhandled errors, or lock out legitimate users."
+              },
+              {
+                "Scope": [
+                  "Access Control",
+                  "Other"
+                ],
+                "Impact": [
+                  "Bypass Protection Mechanism",
+                  "Other"
+                ],
+                "Note": "In some cases it may be possible to force the product to \"fail open\" in the event of resource exhaustion. The state of the product -- and possibly the security functionality - may then be compromised."
+              }
+            ],
+            "detection_methods": [
+              {
+                "Method": "Automated Static Analysis",
+                "Description": "",
+                "Effectiveness": "Limited"
+              },
+              {
+                "Method": "Automated Dynamic Analysis",
+                "Description": "Certain automated dynamic analysis techniques may be effective in spotting resource exhaustion problems, especially with resources such as processes, memory, and connections. The technique may involve generating a large number of requests to the product within a short time frame.",
+                "Effectiveness": "Moderate"
+              },
+              {
+                "Method": "Fuzzing",
+                "Description": "While fuzzing is typically geared toward finding low-level implementation bugs, it can inadvertently find resource exhaustion problems. This can occur when the fuzzer generates a large number of test cases but does not restart the targeted product in between test cases. If an individual test case produces a crash, but it does not do so reliably, then an inability to handle resource exhaustion may be the cause.",
+                "Effectiveness": "Opportunistic"
+              }
+            ],
+            "potential_mitigations": [
+              {
+                "Phase": "Architecture and Design",
+                "Description": "Design throttling mechanisms into the system architecture. The best protection is to limit the amount of resources that an unauthorized user can cause to be expended. A strong authentication and access control model will help prevent such attacks from occurring in the first place. The login application should be protected against DoS attacks as much as possible. Limiting the database access, perhaps by caching result sets, can help minimize the resources expended. To further limit the potential for a DoS attack, consider tracking the rate of requests received from users and blocking requests that exceed a defined rate threshold."
+              },
+              {
+                "Phase": "Architecture and Design",
+                "Description": ""
+              },
+              {
+                "Phase": "Architecture and Design",
+                "Description": "Ensure that protocols have specific limits of scale placed on them."
+              },
+              {
+                "Phase": "Implementation",
+                "Description": "Ensure that all failures in resource allocation place the system into a safe posture."
+              }
+            ],
+            "demonstrative_examples": [
+              {
+                "Intro_Text": "The following example demonstrates the weakness.",
+                "Example_Code": {
+                  "@Nature": "Bad",
+                  "@Language": "Java",
+                  "xhtml:div": {
+                    "xhtml:div": {
+                      "@style": "margin-left:1em;",
+                      "xhtml:div": {
+                        "xhtml:br": [
+                          null,
+                          null,
+                          null,
+                          null,
+                          null
+                        ],
+                        "xhtml:div": [
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:div": {
+                              "xhtml:br": [
+                                null,
+                                null
+                              ],
+                              "xhtml:div": [
+                                {
+                                  "@style": "margin-left:1em;",
+                                  "#text": "..."
+                                },
+                                {
+                                  "@style": "margin-left:1em;",
+                                  "xhtml:div": {
+                                    "xhtml:br": [
+                                      null,
+                                      null
+                                    ],
+                                    "xhtml:i": "// postpone response",
+                                    "#text": "Thread.currentThread().interrupt();"
+                                  }
+                                }
+                              ],
+                              "#text": "try {}catch (InterruptedException ie) {}"
+                            }
+                          },
+                          {
+                            "@style": "margin-left:1em;",
+                            "#text": "..."
+                          },
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:div": {
+                              "xhtml:br": [
+                                null,
+                                null
+                              ],
+                              "xhtml:div": {
+                                "@style": "margin-left:1em;",
+                                "xhtml:div": {
+                                  "xhtml:br": null,
+                                  "xhtml:div": {
+                                    "@style": "margin-left:1em;",
+                                    "xhtml:div": {
+                                      "xhtml:br": [
+                                        null,
+                                        null
+                                      ],
+                                      "xhtml:div": [
+                                        {
+                                          "@style": "margin-left:1em;",
+                                          "xhtml:div": {
+                                            "@style": "margin-left:1em;",
+                                            "xhtml:br": null,
+                                            "#text": "Runnable r = ...;r.run();"
+                                          },
+                                          "#text": "for (;;) {}"
+                                        },
+                                        {
+                                          "@style": "margin-left:1em;",
+                                          "#text": "..."
+                                        }
+                                      ],
+                                      "#text": "try {}catch (InterruptedException ie) {}"
+                                    }
+                                  },
+                                  "#text": "public void run() {}"
+                                }
+                              },
+                              "#text": "Runnable loop = new Runnable() {};new Thread(loop).start();"
+                            }
+                          }
+                        ],
+                        "#text": "...public void execute(Runnable r) {}\n                           public Worker(Channel ch, int nworkers) {}\n                           protected void activate() {}"
+                      }
+                    },
+                    "#text": "class Worker implements Executor {}"
+                  }
+                },
+                "Body_Text": "There are no limits to runnables. Potentially an attacker could cause resource problems very quickly."
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-25",
+                "Intro_Text": "This code allocates a socket and forks each time it receives a new connection.",
+                "Example_Code": {
+                  "@Nature": "Bad",
+                  "@Language": "C",
+                  "xhtml:div": {
+                    "xhtml:br": null,
+                    "xhtml:div": {
+                      "@style": "margin-left:1em;",
+                      "xhtml:br": [
+                        null,
+                        null
+                      ],
+                      "#text": "newsock=accept(sock, ...);printf(\"A connection has been accepted\\n\");pid = fork();"
+                    },
+                    "#text": "sock=socket(AF_INET, SOCK_STREAM, 0);while (1) {}"
+                  }
+                },
+                "Body_Text": "The program does not track how many connections have been made, and it does not limit the number of connections. Because forking is a relatively expensive operation, an attacker would be able to cause the system to run out of CPU, processes, or memory by making a large number of connections. Alternatively, an attacker could consume all available connections, preventing others from accessing the system remotely."
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-50",
+                "Intro_Text": "In the following example a server socket connection is used to accept a request to store data on the local file system using a specified filename. The method openSocketConnection establishes a server socket to accept requests from a client. When a client establishes a connection to this service the getNextMessage method is first used to retrieve from the socket the name of the file to store the data, the openFileToWrite method will validate the filename and open a file to write to on the local file system. The getNextMessage is then used within a while loop to continuously read data from the socket and output the data to the file until there is no longer any data from the socket.",
+                "Example_Code": {
+                  "@Nature": "Bad",
+                  "@Language": "C",
+                  "xhtml:div": {
+                    "xhtml:br": null,
+                    "xhtml:div": {
+                      "@style": "margin-left:1em;",
+                      "xhtml:div": {
+                        "xhtml:br": [
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null
+                        ],
+                        "xhtml:div": [
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": null,
+                            "#text": "printf(\"Unable to open socket connection\");return(FAIL);"
+                          },
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:div": {
+                              "xhtml:div": {
+                                "@style": "margin-left:1em;",
+                                "xhtml:div": {
+                                  "xhtml:div": {
+                                    "@style": "margin-left:1em;",
+                                    "xhtml:div": {
+                                      "@style": "margin-left:1em;",
+                                      "#text": "break;"
+                                    },
+                                    "#text": "if (!(writeToFile(buffer) > 0))"
+                                  },
+                                  "#text": "while (getNextMessage(socket, buffer, BUFFER_SIZE) > 0){}"
+                                }
+                              },
+                              "xhtml:br": null,
+                              "#text": "if (openFileToWrite(filename) > 0) {}closeFile();"
+                            }
+                          }
+                        ],
+                        "#text": "char filename[FILENAME_SIZE];char buffer[BUFFER_SIZE];int socket = openSocketConnection(host, port);\n                           if (socket < 0) {}if (getNextMessage(socket, filename, FILENAME_SIZE) > 0) {}closeSocket(socket);"
+                      }
+                    },
+                    "#text": "int writeDataFromSocketToFile(char *host, int port){}"
+                  }
+                },
+                "Body_Text": "This example creates a situation where data can be dumped to a file on the local file system without any limits on the size of the file. This could potentially exhaust file or disk resources and/or limit other clients' ability to access the service."
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-51",
+                "Intro_Text": "In the following example, the processMessage method receives a two dimensional character array containing the message to be processed. The two-dimensional character array contains the length of the message in the first character array and the message body in the second character array. The getMessageLength method retrieves the integer value of the length from the first character array. After validating that the message length is greater than zero, the body character array pointer points to the start of the second character array of the two-dimensional character array and memory is allocated for the new body character array.",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "C",
+                    "xhtml:div": {
+                      "xhtml:br": [
+                        null,
+                        null,
+                        null
+                      ],
+                      "xhtml:i": "/* process message accepts a two-dimensional character array of the form [length][body] containing the message to be processed */",
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:div": {
+                          "xhtml:br": [
+                            null,
+                            null,
+                            null,
+                            null,
+                            null
+                          ],
+                          "xhtml:div": [
+                            {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": [
+                                null,
+                                null
+                              ],
+                              "#text": "body = &message[1][0];processMessageBody(body);return(SUCCESS);"
+                            },
+                            {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": null,
+                              "#text": "printf(\"Unable to process message; invalid message length\");return(FAIL);"
+                            }
+                          ],
+                          "#text": "char *body;\n                           int length = getMessageLength(message[0]);\n                           if (length > 0) {}else {}"
+                        }
+                      },
+                      "#text": "int processMessage(char **message){}"
+                    }
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "C",
+                    "xhtml:div": {
+                      "xhtml:br": null,
+                      "#text": "unsigned int length = getMessageLength(message[0]);if ((length > 0) && (length < MAX_LENGTH)) {...}"
+                    }
+                  }
+                ],
+                "Body_Text": [
+                  "This example creates a situation where the length of the body character array can be very large and will consume excessive memory, exhausting system resources. This can be avoided by restricting the length of the second character array with a maximum length check",
+                  "Also, consider changing the type from 'int' to 'unsigned int', so that you are always guaranteed that the number is positive. This might not be possible if the protocol specifically requires allowing negative values, or if you cannot control the return value from getMessageLength(), but it could simplify the check to ensure the input is positive, and eliminate other errors such as signed-to-unsigned conversion errors (CWE-195) that may occur elsewhere in the code."
+                ]
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-52",
+                "Intro_Text": "In the following example, a server object creates a server socket and accepts client connections to the socket. For every client connection to the socket a separate thread object is generated using the ClientSocketThread class that handles request made by the client through the socket.",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "Java",
+                    "xhtml:div": {
+                      "xhtml:br": null,
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:div": {
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": [
+                              null,
+                              null,
+                              null,
+                              null
+                            ],
+                            "xhtml:div": {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": [
+                                null,
+                                null,
+                                null
+                              ],
+                              "#text": "Socket client = serverSocket.accept();Thread t = new Thread(new ClientSocketThread(client));t.setName(client.getInetAddress().getHostName() + \":\" + counter++);t.start();"
+                            },
+                            "#text": "ServerSocket serverSocket = new ServerSocket(SERVER_PORT);int counter = 0;boolean hasConnections = true;while (hasConnections) {}serverSocket.close();"
+                          },
+                          "xhtml:br": [
+                            null,
+                            null
+                          ],
+                          "#text": "try {\n                           \n                           } catch (IOException ex) {...}"
+                        }
+                      },
+                      "#text": "public void acceptConnections() {\n                     }"
+                    }
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "Java",
+                    "xhtml:div": {
+                      "xhtml:br": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                      ],
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:div": {
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": [
+                              null,
+                              null,
+                              null,
+                              null
+                            ],
+                            "xhtml:div": {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": [
+                                null,
+                                null,
+                                null,
+                                null,
+                                null
+                              ],
+                              "#text": "hasConnections = checkForMoreConnections();Socket client = serverSocket.accept();Thread t = new Thread(new ClientSocketThread(client));t.setName(client.getInetAddress().getHostName() + \":\" + counter++);ExecutorService pool = Executors.newFixedThreadPool(MAX_CONNECTIONS);pool.execute(t);"
+                            },
+                            "#text": "ServerSocket serverSocket = new ServerSocket(SERVER_PORT);int counter = 0;boolean hasConnections = true;while (hasConnections) {}serverSocket.close();"
+                          },
+                          "xhtml:br": [
+                            null,
+                            null
+                          ],
+                          "#text": "try {\n                           \n                           } catch (IOException ex) {...}"
+                        }
+                      },
+                      "#text": "public static final int SERVER_PORT = 4444;public static final int MAX_CONNECTIONS = 10;...\n                     public void acceptConnections() {\n                     }"
+                    }
+                  }
+                ],
+                "Body_Text": [
+                  "In this example there is no limit to the number of client connections and client threads that are created. Allowing an unlimited number of client connections and threads could potentially overwhelm the system and system resources.",
+                  "The server should limit the number of client connections and the client threads that are created. This can be easily done by creating a thread pool object that limits the number of threads that are generated."
+                ]
+              },
+              {
+                "Intro_Text": "In the following example, the serve function receives an http request and an http response writer. It reads the entire request body.",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "Go",
+                    "xhtml:div": {
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:br": [
+                          null,
+                          null
+                        ],
+                        "xhtml:div": {
+                          "@style": "margin-left:1em;",
+                          "xhtml:br": null,
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": null,
+                            "#text": "body = data"
+                          },
+                          "#text": "if data, err := io.ReadAll(r.Body); err == nil {\n                           \n                           }"
+                        },
+                        "#text": "var body []byte\n                        if r.Body != nil {\n                        \n                        }"
+                      },
+                      "#text": "func serve(w http.ResponseWriter, r *http.Request) {\n                     \n                  }"
+                    }
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "Go",
+                    "xhtml:div": {
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:br": [
+                          null,
+                          null,
+                          null
+                        ],
+                        "xhtml:div": {
+                          "@style": "margin-left:1em;",
+                          "xhtml:br": [
+                            null,
+                            null
+                          ],
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": null,
+                            "#text": "body = data"
+                          },
+                          "#text": "r.Body = http.MaxBytesReader(w, r.Body, MaxRespBodyLength)\n                           if data, err := io.ReadAll(r.Body); err == nil {\n                           \n                           }"
+                        },
+                        "#text": "var body []byte\n                        const MaxRespBodyLength = 1e6\n                        if r.Body != nil {\n                        \n                        }"
+                      },
+                      "#text": "func serve(w http.ResponseWriter, r *http.Request) {\n                     \n                  }"
+                    }
+                  }
+                ],
+                "Body_Text": [
+                  "Because ReadAll is defined to read from src until EOF, it does not treat an EOF from Read as an error to be reported. This example creates a situation where the length of the body supplied can be very large and will consume excessive memory, exhausting system resources. This can be avoided by ensuring the body does not exceed a predetermined length of bytes.",
+                  "MaxBytesReader prevents clients from accidentally or maliciously sending a large request and wasting server resources. If possible, the code could be changed to tell ResponseWriter to close the connection after the limit has been reached."
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "priority": 3.52,
+      "timestamp": "2024-09-06T13:11:08.068416Z",
+      "last_updated": "2024-09-06T13:11:08.068416Z",
+      "status": "affected",
+      "justification": "vulnerable_code_not_present"
+    },
+    {
+      "affected_component": "yaml",
+      "affected_component_version": "2.2.2",
+      "affected_component_manager": "npm",
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2022-3064",
+        "name": "CVE-2022-3064",
+        "description": "Parsing malicious or large YAML documents can consume excessive amounts of CPU or memory.",
+        "cvss": {
+          "vuln_impact": 3.6,
+          "version": "3.1",
+          "attack_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "cwes": [
+          {
+            "@id": "https://cwe.mitre.org/data/definitions/400.html",
+            "abstraction": "Class",
+            "name": "400",
+            "description": "",
+            "consequences": [
+              {
+                "Scope": ["Availability"],
+                "Impact": [
+                  "DoS: Crash, Exit, or Restart",
+                  "DoS: Resource Consumption (CPU)",
+                  "DoS: Resource Consumption (Memory)",
+                  "DoS: Resource Consumption (Other)"
+                ],
+                "Note": "The most common result of resource exhaustion is denial of service. The product may slow down, crash due to unhandled errors, or lock out legitimate users."
+              },
+              {
+                "Scope": [
+                  "Access Control",
+                  "Other"
+                ],
+                "Impact": [
+                  "Bypass Protection Mechanism",
+                  "Other"
+                ],
+                "Note": "In some cases it may be possible to force the product to \"fail open\" in the event of resource exhaustion. The state of the product -- and possibly the security functionality - may then be compromised."
+              }
+            ],
+            "detection_methods": [
+              {
+                "Method": "Automated Static Analysis",
+                "Description": "",
+                "Effectiveness": "Limited"
+              },
+              {
+                "Method": "Automated Dynamic Analysis",
+                "Description": "Certain automated dynamic analysis techniques may be effective in spotting resource exhaustion problems, especially with resources such as processes, memory, and connections. The technique may involve generating a large number of requests to the product within a short time frame.",
+                "Effectiveness": "Moderate"
+              },
+              {
+                "Method": "Fuzzing",
+                "Description": "While fuzzing is typically geared toward finding low-level implementation bugs, it can inadvertently find resource exhaustion problems. This can occur when the fuzzer generates a large number of test cases but does not restart the targeted product in between test cases. If an individual test case produces a crash, but it does not do so reliably, then an inability to handle resource exhaustion may be the cause.",
+                "Effectiveness": "Opportunistic"
+              }
+            ],
+            "potential_mitigations": [
+              {
+                "Phase": "Architecture and Design",
+                "Description": "Design throttling mechanisms into the system architecture. The best protection is to limit the amount of resources that an unauthorized user can cause to be expended. A strong authentication and access control model will help prevent such attacks from occurring in the first place. The login application should be protected against DoS attacks as much as possible. Limiting the database access, perhaps by caching result sets, can help minimize the resources expended. To further limit the potential for a DoS attack, consider tracking the rate of requests received from users and blocking requests that exceed a defined rate threshold."
+              },
+              {
+                "Phase": "Architecture and Design",
+                "Description": ""
+              },
+              {
+                "Phase": "Architecture and Design",
+                "Description": "Ensure that protocols have specific limits of scale placed on them."
+              },
+              {
+                "Phase": "Implementation",
+                "Description": "Ensure that all failures in resource allocation place the system into a safe posture."
+              }
+            ],
+            "demonstrative_examples": [
+              {
+                "Intro_Text": "The following example demonstrates the weakness.",
+                "Example_Code": {
+                  "@Nature": "Bad",
+                  "@Language": "Java",
+                  "xhtml:div": {
+                    "xhtml:div": {
+                      "@style": "margin-left:1em;",
+                      "xhtml:div": {
+                        "xhtml:br": [
+                          null,
+                          null,
+                          null,
+                          null,
+                          null
+                        ],
+                        "xhtml:div": [
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:div": {
+                              "xhtml:br": [
+                                null,
+                                null
+                              ],
+                              "xhtml:div": [
+                                {
+                                  "@style": "margin-left:1em;",
+                                  "#text": "..."
+                                },
+                                {
+                                  "@style": "margin-left:1em;",
+                                  "xhtml:div": {
+                                    "xhtml:br": [
+                                      null,
+                                      null
+                                    ],
+                                    "xhtml:i": "// postpone response",
+                                    "#text": "Thread.currentThread().interrupt();"
+                                  }
+                                }
+                              ],
+                              "#text": "try {}catch (InterruptedException ie) {}"
+                            }
+                          },
+                          {
+                            "@style": "margin-left:1em;",
+                            "#text": "..."
+                          },
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:div": {
+                              "xhtml:br": [
+                                null,
+                                null
+                              ],
+                              "xhtml:div": {
+                                "@style": "margin-left:1em;",
+                                "xhtml:div": {
+                                  "xhtml:br": null,
+                                  "xhtml:div": {
+                                    "@style": "margin-left:1em;",
+                                    "xhtml:div": {
+                                      "xhtml:br": [
+                                        null,
+                                        null
+                                      ],
+                                      "xhtml:div": [
+                                        {
+                                          "@style": "margin-left:1em;",
+                                          "xhtml:div": {
+                                            "@style": "margin-left:1em;",
+                                            "xhtml:br": null,
+                                            "#text": "Runnable r = ...;r.run();"
+                                          },
+                                          "#text": "for (;;) {}"
+                                        },
+                                        {
+                                          "@style": "margin-left:1em;",
+                                          "#text": "..."
+                                        }
+                                      ],
+                                      "#text": "try {}catch (InterruptedException ie) {}"
+                                    }
+                                  },
+                                  "#text": "public void run() {}"
+                                }
+                              },
+                              "#text": "Runnable loop = new Runnable() {};new Thread(loop).start();"
+                            }
+                          }
+                        ],
+                        "#text": "...public void execute(Runnable r) {}\n                           public Worker(Channel ch, int nworkers) {}\n                           protected void activate() {}"
+                      }
+                    },
+                    "#text": "class Worker implements Executor {}"
+                  }
+                },
+                "Body_Text": "There are no limits to runnables. Potentially an attacker could cause resource problems very quickly."
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-25",
+                "Intro_Text": "This code allocates a socket and forks each time it receives a new connection.",
+                "Example_Code": {
+                  "@Nature": "Bad",
+                  "@Language": "C",
+                  "xhtml:div": {
+                    "xhtml:br": null,
+                    "xhtml:div": {
+                      "@style": "margin-left:1em;",
+                      "xhtml:br": [
+                        null,
+                        null
+                      ],
+                      "#text": "newsock=accept(sock, ...);printf(\"A connection has been accepted\\n\");pid = fork();"
+                    },
+                    "#text": "sock=socket(AF_INET, SOCK_STREAM, 0);while (1) {}"
+                  }
+                },
+                "Body_Text": "The program does not track how many connections have been made, and it does not limit the number of connections. Because forking is a relatively expensive operation, an attacker would be able to cause the system to run out of CPU, processes, or memory by making a large number of connections. Alternatively, an attacker could consume all available connections, preventing others from accessing the system remotely."
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-50",
+                "Intro_Text": "In the following example a server socket connection is used to accept a request to store data on the local file system using a specified filename. The method openSocketConnection establishes a server socket to accept requests from a client. When a client establishes a connection to this service the getNextMessage method is first used to retrieve from the socket the name of the file to store the data, the openFileToWrite method will validate the filename and open a file to write to on the local file system. The getNextMessage is then used within a while loop to continuously read data from the socket and output the data to the file until there is no longer any data from the socket.",
+                "Example_Code": {
+                  "@Nature": "Bad",
+                  "@Language": "C",
+                  "xhtml:div": {
+                    "xhtml:br": null,
+                    "xhtml:div": {
+                      "@style": "margin-left:1em;",
+                      "xhtml:div": {
+                        "xhtml:br": [
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null,
+                          null
+                        ],
+                        "xhtml:div": [
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": null,
+                            "#text": "printf(\"Unable to open socket connection\");return(FAIL);"
+                          },
+                          {
+                            "@style": "margin-left:1em;",
+                            "xhtml:div": {
+                              "xhtml:div": {
+                                "@style": "margin-left:1em;",
+                                "xhtml:div": {
+                                  "xhtml:div": {
+                                    "@style": "margin-left:1em;",
+                                    "xhtml:div": {
+                                      "@style": "margin-left:1em;",
+                                      "#text": "break;"
+                                    },
+                                    "#text": "if (!(writeToFile(buffer) > 0))"
+                                  },
+                                  "#text": "while (getNextMessage(socket, buffer, BUFFER_SIZE) > 0){}"
+                                }
+                              },
+                              "xhtml:br": null,
+                              "#text": "if (openFileToWrite(filename) > 0) {}closeFile();"
+                            }
+                          }
+                        ],
+                        "#text": "char filename[FILENAME_SIZE];char buffer[BUFFER_SIZE];int socket = openSocketConnection(host, port);\n                           if (socket < 0) {}if (getNextMessage(socket, filename, FILENAME_SIZE) > 0) {}closeSocket(socket);"
+                      }
+                    },
+                    "#text": "int writeDataFromSocketToFile(char *host, int port){}"
+                  }
+                },
+                "Body_Text": "This example creates a situation where data can be dumped to a file on the local file system without any limits on the size of the file. This could potentially exhaust file or disk resources and/or limit other clients' ability to access the service."
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-51",
+                "Intro_Text": "In the following example, the processMessage method receives a two dimensional character array containing the message to be processed. The two-dimensional character array contains the length of the message in the first character array and the message body in the second character array. The getMessageLength method retrieves the integer value of the length from the first character array. After validating that the message length is greater than zero, the body character array pointer points to the start of the second character array of the two-dimensional character array and memory is allocated for the new body character array.",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "C",
+                    "xhtml:div": {
+                      "xhtml:br": [
+                        null,
+                        null,
+                        null
+                      ],
+                      "xhtml:i": "/* process message accepts a two-dimensional character array of the form [length][body] containing the message to be processed */",
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:div": {
+                          "xhtml:br": [
+                            null,
+                            null,
+                            null,
+                            null,
+                            null
+                          ],
+                          "xhtml:div": [
+                            {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": [
+                                null,
+                                null
+                              ],
+                              "#text": "body = &message[1][0];processMessageBody(body);return(SUCCESS);"
+                            },
+                            {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": null,
+                              "#text": "printf(\"Unable to process message; invalid message length\");return(FAIL);"
+                            }
+                          ],
+                          "#text": "char *body;\n                           int length = getMessageLength(message[0]);\n                           if (length > 0) {}else {}"
+                        }
+                      },
+                      "#text": "int processMessage(char **message){}"
+                    }
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "C",
+                    "xhtml:div": {
+                      "xhtml:br": null,
+                      "#text": "unsigned int length = getMessageLength(message[0]);if ((length > 0) && (length < MAX_LENGTH)) {...}"
+                    }
+                  }
+                ],
+                "Body_Text": [
+                  "This example creates a situation where the length of the body character array can be very large and will consume excessive memory, exhausting system resources. This can be avoided by restricting the length of the second character array with a maximum length check",
+                  "Also, consider changing the type from 'int' to 'unsigned int', so that you are always guaranteed that the number is positive. This might not be possible if the protocol specifically requires allowing negative values, or if you cannot control the return value from getMessageLength(), but it could simplify the check to ensure the input is positive, and eliminate other errors such as signed-to-unsigned conversion errors (CWE-195) that may occur elsewhere in the code."
+                ]
+              },
+              {
+                "@Demonstrative_Example_ID": "DX-52",
+                "Intro_Text": "In the following example, a server object creates a server socket and accepts client connections to the socket. For every client connection to the socket a separate thread object is generated using the ClientSocketThread class that handles request made by the client through the socket.",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "Java",
+                    "xhtml:div": {
+                      "xhtml:br": null,
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:div": {
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": [
+                              null,
+                              null,
+                              null,
+                              null
+                            ],
+                            "xhtml:div": {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": [
+                                null,
+                                null,
+                                null
+                              ],
+                              "#text": "Socket client = serverSocket.accept();Thread t = new Thread(new ClientSocketThread(client));t.setName(client.getInetAddress().getHostName() + \":\" + counter++);t.start();"
+                            },
+                            "#text": "ServerSocket serverSocket = new ServerSocket(SERVER_PORT);int counter = 0;boolean hasConnections = true;while (hasConnections) {}serverSocket.close();"
+                          },
+                          "xhtml:br": [
+                            null,
+                            null
+                          ],
+                          "#text": "try {\n                           \n                           } catch (IOException ex) {...}"
+                        }
+                      },
+                      "#text": "public void acceptConnections() {\n                     }"
+                    }
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "Java",
+                    "xhtml:div": {
+                      "xhtml:br": [
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                      ],
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:div": {
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": [
+                              null,
+                              null,
+                              null,
+                              null
+                            ],
+                            "xhtml:div": {
+                              "@style": "margin-left:1em;",
+                              "xhtml:br": [
+                                null,
+                                null,
+                                null,
+                                null,
+                                null
+                              ],
+                              "#text": "hasConnections = checkForMoreConnections();Socket client = serverSocket.accept();Thread t = new Thread(new ClientSocketThread(client));t.setName(client.getInetAddress().getHostName() + \":\" + counter++);ExecutorService pool = Executors.newFixedThreadPool(MAX_CONNECTIONS);pool.execute(t);"
+                            },
+                            "#text": "ServerSocket serverSocket = new ServerSocket(SERVER_PORT);int counter = 0;boolean hasConnections = true;while (hasConnections) {}serverSocket.close();"
+                          },
+                          "xhtml:br": [
+                            null,
+                            null
+                          ],
+                          "#text": "try {\n                           \n                           } catch (IOException ex) {...}"
+                        }
+                      },
+                      "#text": "public static final int SERVER_PORT = 4444;public static final int MAX_CONNECTIONS = 10;...\n                     public void acceptConnections() {\n                     }"
+                    }
+                  }
+                ],
+                "Body_Text": [
+                  "In this example there is no limit to the number of client connections and client threads that are created. Allowing an unlimited number of client connections and threads could potentially overwhelm the system and system resources.",
+                  "The server should limit the number of client connections and the client threads that are created. This can be easily done by creating a thread pool object that limits the number of threads that are generated."
+                ]
+              },
+              {
+                "Intro_Text": "In the following example, the serve function receives an http request and an http response writer. It reads the entire request body.",
+                "Example_Code": [
+                  {
+                    "@Nature": "Bad",
+                    "@Language": "Go",
+                    "xhtml:div": {
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:br": [
+                          null,
+                          null
+                        ],
+                        "xhtml:div": {
+                          "@style": "margin-left:1em;",
+                          "xhtml:br": null,
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": null,
+                            "#text": "body = data"
+                          },
+                          "#text": "if data, err := io.ReadAll(r.Body); err == nil {\n                           \n                           }"
+                        },
+                        "#text": "var body []byte\n                        if r.Body != nil {\n                        \n                        }"
+                      },
+                      "#text": "func serve(w http.ResponseWriter, r *http.Request) {\n                     \n                  }"
+                    }
+                  },
+                  {
+                    "@Nature": "Good",
+                    "@Language": "Go",
+                    "xhtml:div": {
+                      "xhtml:div": {
+                        "@style": "margin-left:1em;",
+                        "xhtml:br": [
+                          null,
+                          null,
+                          null
+                        ],
+                        "xhtml:div": {
+                          "@style": "margin-left:1em;",
+                          "xhtml:br": [
+                            null,
+                            null
+                          ],
+                          "xhtml:div": {
+                            "@style": "margin-left:1em;",
+                            "xhtml:br": null,
+                            "#text": "body = data"
+                          },
+                          "#text": "r.Body = http.MaxBytesReader(w, r.Body, MaxRespBodyLength)\n                           if data, err := io.ReadAll(r.Body); err == nil {\n                           \n                           }"
+                        },
+                        "#text": "var body []byte\n                        const MaxRespBodyLength = 1e6\n                        if r.Body != nil {\n                        \n                        }"
+                      },
+                      "#text": "func serve(w http.ResponseWriter, r *http.Request) {\n                     \n                  }"
+                    }
+                  }
+                ],
+                "Body_Text": [
+                  "Because ReadAll is defined to read from src until EOF, it does not treat an EOF from Read as an error to be reported. This example creates a situation where the length of the body supplied can be very large and will consume excessive memory, exhausting system resources. This can be avoided by ensuring the body does not exceed a predetermined length of bytes.",
+                  "MaxBytesReader prevents clients from accidentally or maliciously sending a large request and wasting server resources. If possible, the code could be changed to tell ResponseWriter to close the connection after the limit has been reached."
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "priority": 3.52,
+      "timestamp": "2024-09-06T13:11:08.068416Z",
+      "last_updated": "2024-09-06T13:11:08.068416Z",
+      "status": "affected",
+      "justification": "vulnerable_code_not_present"
+    },
+    {
+      "affected_component": "yaml",
+      "affected_component_version": "1.10.2",
+      "affected_component_manager": "npm",
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2021-4235",
+        "name": "CVE-2021-4235",
+        "description": "Due to unbounded alias chasing, a maliciously crafted YAML file can cause the system to consume significant system resources. If parsing user input, this may be used as a denial of service vector.",
+        "cvss": {
+          "vuln_impact": 3.6,
+          "version": "3.1",
+          "attack_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
+        }
+      },
+      "priority": 2.52,
+      "timestamp": "2024-09-06T13:11:08.068416Z",
+      "last_updated": "2024-09-06T13:11:08.068416Z",
+      "status": "affected",
+      "justification": "vulnerable_code_not_present"
+    },
+    {
+      "affected_component": "yaml",
+      "affected_component_version": "2.2.2",
+      "affected_component_manager": "npm",
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2021-4235",
+        "name": "CVE-2021-4235",
+        "description": "Due to unbounded alias chasing, a maliciously crafted YAML file can cause the system to consume significant system resources. If parsing user input, this may be used as a denial of service vector.",
+        "cvss": {
+          "vuln_impact": 3.6,
+          "version": "3.1",
+          "attack_vector": "CVSS:3.1/AV:L/AC:L/PR:N/UI:R/S:U/C:N/I:N/A:H"
+        }
+      },
+      "priority": 2.52,
+      "timestamp": "2024-09-06T13:11:08.068416Z",
+      "last_updated": "2024-09-06T13:11:08.068416Z",
+      "status": "affected",
+      "justification": "vulnerable_code_not_present"
+    }
+  ]
+}

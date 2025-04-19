@@ -43,6 +43,10 @@ func PurlToPkg(purlUri string) (*model.PkgInputSpec, error) {
 	return purlConvert(p)
 }
 
+func AffectedComponentToPurl(manager string, component string, version string) string {
+	return fmt.Sprintf("pkg:%s/%s@%s", manager, component, version)
+}
+
 // PurlToPkgFilter converts a purl URI string into a graphql package filter spec.
 // The result will only match the input purl, and no other packages. The filter
 // is created with Guac's purl special casing.

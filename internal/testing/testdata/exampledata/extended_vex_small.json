@@ -1,0 +1,84 @@
+{
+  "@context": "https://github.com/GermanMT/vexgen/wiki/Extended-VEX-Spec-v0.1.0",
+  "@id": "https://github.com/GermanMT/VexGen",
+  "author": "aws-samples",
+  "role": "Generate Automated VEX with Depex",
+  "timestamp": "2024-09-06T13:11:08.068416Z",
+  "last_updated": "2024-09-06T13:11:08.068416Z",
+  "version": 1,
+  "tooling": "https://github.com/GermanMT/vexgen",
+  "extended_statements": [
+    {
+      "affected_component": "fast-xml-parser",
+      "affected_component_version": "4.1.2",
+      "affected_component_manager": "npm",
+      "vulnerability": {
+        "@id": "https://nvd.nist.gov/vuln/detail/CVE-2023-34104",
+        "name": "CVE-2023-34104",
+        "description": "a short description",
+        "cvss": {
+          "vuln_impact": 3.6,
+          "version": "3.1",
+          "attack_vector": "CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"
+        },
+        "cwes": [
+          {
+            "@id": "https://cwe.mitre.org/data/definitions/1333.html",
+            "abstraction": "Base",
+            "name": "1333",
+            "background_detail": "Regular Expression Without Backtracking",
+            "description": "",
+            "consequences": [{
+              "Scope": ["Availability"],
+              "Impact": ["DoS: Resource Consumption (CPU)"],
+              "Likelihood": "High",
+              "Note": "This can cause the application to consume excessive resources, such as CPU cycles."
+            }],
+            "potential_mitigations": [
+              {
+                "Phase": "Architecture and Design",
+                "Description": "Use regular expressions that do not support backtracking, e.g. by removing nested quantifiers.",
+                "Effectiveness": "High",
+                "Effectiveness_Notes": "This is one of the few effective solutions when using user-provided regular expressions."
+              }
+            ],
+            "demonstrative_examples": [
+                "This is a demonstrative example"
+            ],
+            "detection_methods": [
+              {
+                "@Detection_Method_ID": "09870987098",
+                "Description": "Use a regular expression that is known to be vulnerable to catastrophic backtracking.",
+                "Effectiveness": "High",
+                "Method": "Automated Static Analysis"
+              }
+            ]
+          }
+        ]
+      },
+      "priority": 3.52,
+      "timestamp": "2024-09-06T13:11:08.068416Z",
+      "last_updated": "2024-09-06T13:11:08.068416Z",
+      "status": "affected",
+      "justification": "vulnerable_code_not_present",
+      "reachable_code": [
+        {
+          "path_to_file": "src/index.js",
+          "used_artifacts": [
+            {
+              "artifact_name": "fast-xml-parser",
+              "used_in_lines": [1, 2, 3]
+            }
+          ]
+        }
+      ],
+      "exploits": [
+        {
+          "@id": "https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-34104",
+          "description": "This is a description of the exploit",
+          "payload": "This is the payload"
+        }
+      ]
+    }
+  ]
+}

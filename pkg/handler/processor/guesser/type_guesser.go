@@ -27,9 +27,10 @@ func init() {
 	_ = RegisterDocumentTypeGuesser(&spdxTypeGuesser{}, "spdx")
 	_ = RegisterDocumentTypeGuesser(&scorecardTypeGuesser{}, "scorecard")
 	_ = RegisterDocumentTypeGuesser(&cycloneDXTypeGuesser{}, "cyclonedx")
-	_ = RegisterDocumentTypeGuesser(&openVexTypeGuesser{}, "openvex")
 	_ = RegisterDocumentTypeGuesser(&depsDevTypeGuesser{}, "deps.dev")
 	_ = RegisterDocumentTypeGuesser(&csafTypeGuesser{}, "csaf")
+	_ = RegisterDocumentTypeGuesser(&eVexTypeGuesser{}, "evex")  // Register ExtendedVEX before OpenVEX
+	_ = RegisterDocumentTypeGuesser(&openVexTypeGuesser{}, "openvex")
 }
 
 // DocumentTypeGuesser guesses the document type based on the blob and format given
@@ -45,8 +46,7 @@ var (
 
 func RegisterDocumentTypeGuesser(g DocumentTypeGuesser, name string) error {
 	if _, ok := documentTypeGuessers[name]; ok {
-		documentTypeGuessers[name] = g
-		return fmt.Errorf("the document type guesser is being overwritten: %s", name)
+		return fmt.Errorf("document type guesser already registered: %s", name)
 	}
 	documentTypeGuessers[name] = g
 	return nil

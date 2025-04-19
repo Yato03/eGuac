@@ -70,6 +70,7 @@ const (
 	DocumentDepsDev            DocumentType = "DEPS_DEV"
 	DocumentCsaf               DocumentType = "CSAF"
 	DocumentOpenVEX            DocumentType = "OPEN_VEX"
+	DocumentExtendedVEX        DocumentType = "EXTENDED_VEX"
 	DocumentIngestPredicates   DocumentType = "INGEST_PREDICATES"
 	DocumentUnknown            DocumentType = "UNKNOWN"
 )

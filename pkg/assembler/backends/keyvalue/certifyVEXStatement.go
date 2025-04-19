@@ -18,10 +18,12 @@ package keyvalue
 import (
 	"context"
 	"errors"
-	"github.com/guacsec/guac/internal/testing/ptrfrom"
+	"fmt"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/guacsec/guac/internal/testing/ptrfrom"
 
 	"github.com/vektah/gqlparser/v2/gqlerror"
 
@@ -44,6 +46,38 @@ type vexLink struct {
 	Origin          string
 	Collector       string
 	DocumentRef     string
+	Description     string
+	Exploits        []model.Exploits
+	ReachableCode   []model.ReachableCode
+	Cvss            model.CVSSInput
+	Cwe             []model.CWEInput
+	Priority        float64
+}
+
+func convertCweInputs(inputs []*model.CWEInput) []model.CWEInput {
+	var result []model.CWEInput
+	for _, input := range inputs {
+		result = append(result, *input)
+	}
+	return result
+}
+
+func convertCweInputsToPointers(inputs []model.CWEInput) []*model.CWEInput {
+	var result []*model.CWEInput
+	for _, input := range inputs {
+		inputCopy := input
+		result = append(result, &inputCopy)
+	}
+	return result
+}
+
+func ConvertCwesToPointers(inputs []model.Cwe) []*model.Cwe {
+	var result []*model.Cwe
+	for _, input := range inputs {
+		inputCopy := input
+		result = append(result, &inputCopy)
+	}
+	return result
 }
 
 func (n *vexLink) ID() string { return n.ThisID }
@@ -61,6 +95,8 @@ func (n *vexLink) Key() string {
 		n.Origin,
 		n.Collector,
 		n.DocumentRef,
+		n.Description,
+		fmt.Sprintf("%f", n.Priority),
 	}, ":"))
 }
 
@@ -124,6 +160,31 @@ func (c *demoClient) ingestVEXStatement(ctx context.Context, subject model.Packa
 		Origin:        vexStatement.Origin,
 		Collector:     vexStatement.Collector,
 		DocumentRef:   vexStatement.DocumentRef,
+		Description:   "",
+	}
+
+	if vexStatement.Description != nil {
+		in.Statement = *vexStatement.Description
+	}
+
+	if vexStatement.Cvss != nil {
+		in.Cvss = *vexStatement.Cvss
+	}
+
+	if vexStatement.Cwe != nil {
+		in.Cwe = convertCweInputs(vexStatement.Cwe)
+	}
+
+	if vexStatement.Exploits != nil {
+		in.Exploits = ConvertExploitsInputs(vexStatement.Exploits)
+	}
+
+	if vexStatement.ReachableCode != nil {
+		in.ReachableCode = ConvertReachableCodeInputs(vexStatement.ReachableCode)
+	}
+
+	if vexStatement.Priority != nil {
+		in.Priority = *vexStatement.Priority
 	}
 
 	lock(&c.m, readOnly)
@@ -509,6 +570,20 @@ func (c *demoClient) vexIfMatch(ctx context.Context, filter *model.CertifyVEXSta
 	if filter != nil && noMatch(filter.DocumentRef, link.DocumentRef) {
 		return nil, nil
 	}
+	if filter != nil && noMatch(filter.Description, link.Description) {
+		return nil, nil
+	}
+	if filter != nil && filter.Cvss != nil {
+		if filter.Cvss.AttackString != nil && *filter.Cvss.AttackString != *link.Cvss.AttackString {
+			return nil, nil
+		}
+		if filter.Cvss.VulnImpact != nil && *filter.Cvss.VulnImpact != *link.Cvss.VulnImpact {
+			return nil, nil
+		}
+		if filter.Cvss.Version != nil && *filter.Cvss.Version != *link.Cvss.Version {
+			return nil, nil
+		}
+	}
 
 	foundCertifyVex, err := c.buildCertifyVEXStatement(ctx, link, filter, false)
 	if err != nil {
@@ -518,7 +593,6 @@ func (c *demoClient) vexIfMatch(ctx context.Context, filter *model.CertifyVEXSta
 		return nil, nil
 	}
 	return foundCertifyVex, nil
-
 }
 
 func (c *demoClient) buildCertifyVEXStatement(ctx context.Context, link *vexLink, filter *model.CertifyVEXStatementSpec, ingestOrIDProvided bool) (*model.CertifyVEXStatement, error) {
@@ -599,7 +673,6 @@ func (c *demoClient) buildCertifyVEXStatement(ctx context.Context, link *vexLink
 	return &model.CertifyVEXStatement{
 		ID:               link.ThisID,
 		Subject:          subj,
-		Vulnerability:    vuln,
 		Status:           link.Status,
 		VexJustification: link.Justification,
 		Statement:        link.Statement,
@@ -608,5 +681,192 @@ func (c *demoClient) buildCertifyVEXStatement(ctx context.Context, link *vexLink
 		Origin:           link.Origin,
 		Collector:        link.Collector,
 		DocumentRef:      link.DocumentRef,
+		Description:      &link.Description,
+		Exploits:         ConvertExploitToPointers(link.Exploits),
+		ReachableCode:    ConvertReachableCodeToPointers(link.ReachableCode),
+		Cvss:             (*model.Cvss)(&link.Cvss),
+		Cwe:              convertCwesInputToCwes(convertCweInputsToPointers(link.Cwe)),
+		Priority:         &link.Priority,
 	}, nil
+}
+
+func ConvertReachableCodeInputs(reachableCodeInputSpec []*model.ReachableCodeInputSpec) []model.ReachableCode {
+	var result []model.ReachableCode
+	for _, input := range reachableCodeInputSpec {
+		result = append(result, model.ReachableCode{
+			PathToFile:    input.PathToFile,
+			UsedArtifacts: convertUsedArtifactInputs(input.UsedArtifacts),
+		})
+	}
+	return result
+}
+
+func ConvertReachableCodeToPointers(inputs []model.ReachableCode) []*model.ReachableCode {
+	var result []*model.ReachableCode
+	for _, input := range inputs {
+		inputCopy := input
+		result = append(result, &inputCopy)
+	}
+	return result
+}
+
+func convertUsedArtifactInputs(usedArtifactInputSpec []*model.UsedArtifactInputSpec) []*model.UsedArtifact {
+	var result []*model.UsedArtifact
+	for _, input := range usedArtifactInputSpec {
+		artifact := model.UsedArtifact{
+			Name:        input.Name,
+			UsedInLines: input.UsedInLines,
+		}
+		result = append(result, &artifact)
+	}
+	return result
+}
+
+func ConvertExploitsInputs(exploitsInputSpec []*model.ExploitsInputSpec) []model.Exploits {
+	var result []model.Exploits
+	for _, input := range exploitsInputSpec {
+		result = append(result, model.Exploits{
+			ID:          input.ID,
+			Description: input.Description,
+			Payload:     input.Payload,
+		})
+	}
+	return result
+}
+
+func ConvertExploitToPointers(inputs []model.Exploits) []*model.Exploits {
+	var result []*model.Exploits
+	for _, input := range inputs {
+		inputCopy := input
+		result = append(result, &inputCopy)
+	}
+	return result
+}
+
+func convertCwesInputToCwes(input []*model.CWEInput) []*model.Cwe {
+	var out []*model.Cwe
+	for _, cwe := range input {
+		cweValue := convertCweInputToCwe(*cwe)
+		out = append(out, &cweValue)
+	}
+	return out
+}
+
+func convertCweInputToCwe(input model.CWEInput) model.Cwe {
+	var potentialMitigations []*model.PotentialMitigations
+
+	if input.PotentialMitigations != nil {
+		for _, mitigation := range input.PotentialMitigations {
+			p := model.PotentialMitigations{
+				Phase:              mitigation.Phase,
+				Description:        mitigation.Description,
+				Effectiveness:      mitigation.Effectiveness,
+				EffectivenessNotes: mitigation.EffectivenessNotes,
+			}
+			potentialMitigations = append(potentialMitigations, &p)
+		}
+	}
+
+	var consequences []*model.Consequences
+
+	if input.Consequences != nil {
+		for _, consequence := range input.Consequences {
+			c := model.Consequences{
+				Scope:      consequence.Scope,
+				Impact:     consequence.Impact,
+				Notes:      consequence.Notes,
+				Likelihood: consequence.Likelihood,
+			}
+			consequences = append(consequences, &c)
+		}
+	}
+
+	var detectionMethods []*model.DetectionMethods
+
+	if input.DetectionMethods != nil {
+		for _, detectionMethod := range input.DetectionMethods {
+			d := model.DetectionMethods{
+				ID:            detectionMethod.ID,
+				Method:        detectionMethod.Method,
+				Description:   detectionMethod.Description,
+				Effectiveness: detectionMethod.Effectiveness,
+			}
+			detectionMethods = append(detectionMethods, &d)
+		}
+	}
+
+	return model.Cwe{
+		ID:                    input.ID,
+		Abstraction:           input.Abstraction,
+		Name:                  input.Name,
+		BackgroundDetail:      input.BackgroundDetail,
+		PotentialMitigations:  potentialMitigations,
+		Consequences:          consequences,
+		DemonstrativeExamples: input.DemonstrativeExamples,
+		DetectionMethods:      detectionMethods,
+	}
+}
+
+func ConvertCwesInputSpecToCwes(input []*model.CWEInputSpec) []*model.Cwe {
+	var out []*model.Cwe
+	for _, cwe := range input {
+		cweValue := convertCweInputSpecToCwe(*cwe)
+		out = append(out, &cweValue)
+	}
+	return out
+}
+
+func convertCweInputSpecToCwe(input model.CWEInputSpec) model.Cwe {
+	var potentialMitigations []*model.PotentialMitigations
+
+	if input.PotentialMitigations != nil {
+		for _, mitigation := range input.PotentialMitigations {
+			p := model.PotentialMitigations{
+				Phase:              mitigation.Phase,
+				Description:        mitigation.Description,
+				Effectiveness:      mitigation.Effectiveness,
+				EffectivenessNotes: mitigation.EffectivenessNotes,
+			}
+			potentialMitigations = append(potentialMitigations, &p)
+		}
+	}
+
+	var consequences []*model.Consequences
+
+	if input.Consequences != nil {
+		for _, consequence := range input.Consequences {
+			c := model.Consequences{
+				Scope:      consequence.Scope,
+				Impact:     consequence.Impact,
+				Notes:      consequence.Notes,
+				Likelihood: consequence.Likelihood,
+			}
+			consequences = append(consequences, &c)
+		}
+	}
+
+	var detectionMethods []*model.DetectionMethods
+
+	if input.DetectionMethods != nil {
+		for _, detectionMethod := range input.DetectionMethods {
+			d := model.DetectionMethods{
+				ID:            detectionMethod.ID,
+				Method:        detectionMethod.Method,
+				Description:   detectionMethod.Description,
+				Effectiveness: detectionMethod.Effectiveness,
+			}
+			detectionMethods = append(detectionMethods, &d)
+		}
+	}
+
+	return model.Cwe{
+		ID:                    *input.ID,
+		Abstraction:           *input.Abstraction,
+		Name:                  *input.Name,
+		BackgroundDetail:      input.BackgroundDetail,
+		PotentialMitigations:  potentialMitigations,
+		Consequences:          consequences,
+		DemonstrativeExamples: input.DemonstrativeExamples,
+		DetectionMethods:      detectionMethods,
+	}
 }

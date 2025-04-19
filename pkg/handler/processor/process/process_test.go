@@ -19,11 +19,12 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 	"strings"
 	"testing"
 	"time"
+
+	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/guacsec/guac/internal/testing/dochelper"
 	nats_test "github.com/guacsec/guac/internal/testing/nats"
@@ -748,12 +749,24 @@ func Test_ProcessSubscribe(t *testing.T) {
 			t.Errorf("unexpected error: %v", err)
 		}
 	}
+	/*
+		err = guesser.RegisterDocumentTypeGuesser(&simpledoc.SimpleDocProc{}, "simple-doc-guesser")
+		if err != nil {
+			if !strings.Contains(err.Error(), "the document type guesser is being overwritten") {
+				t.Errorf("unexpected error: %v", err)
+			}
+		}
+	*/
+
 	err = guesser.RegisterDocumentTypeGuesser(&simpledoc.SimpleDocProc{}, "simple-doc-guesser")
 	if err != nil {
-		if !strings.Contains(err.Error(), "the document type guesser is being overwritten") {
-			t.Errorf("unexpected error: %v", err)
+		if strings.Contains(err.Error(), "already registered") {
+			t.Logf("Skipping duplicate registration of simple-doc-guesser")
+		} else {
+			t.Fatalf("unexpected error registering guesser: %v", err)
 		}
 	}
+
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()

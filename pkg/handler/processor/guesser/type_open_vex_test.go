@@ -50,6 +50,14 @@ func Test_openVexTypeGuesser_GuessDocumentType(t *testing.T) {
 			},
 			want: processor.DocumentOpenVEX,
 		},
+		{
+			name: "extended vex Document",
+			args: args{
+				blob:   testdata.ExtendedVexExample,
+				format: processor.FormatJSON,
+			},
+			want: processor.DocumentUnknown,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

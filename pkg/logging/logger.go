@@ -20,8 +20,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/guacsec/guac/pkg/version"
 	"testing"
+
+	"github.com/guacsec/guac/pkg/version"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"

@@ -24,7 +24,15 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyscorecard"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvuln"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_impact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_scope"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cvss"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cwe"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/demonstrativeexample"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/dependency"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/detectionmethod"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/exploit"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hashequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hasmetadata"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hassourceat"
@@ -34,6 +42,9 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pkgequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pointofcontact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/potentialmitigation"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecode"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecodeartifact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/slsaattestation"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/sourcename"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnequal"
@@ -52,6 +63,10 @@ type Client struct {
 	BillOfMaterials *BillOfMaterialsClient
 	// Builder is the client for interacting with the Builder builders.
 	Builder *BuilderClient
+	// CVSS is the client for interacting with the CVSS builders.
+	CVSS *CVSSClient
+	// CWE is the client for interacting with the CWE builders.
+	CWE *CWEClient
 	// Certification is the client for interacting with the Certification builders.
 	Certification *CertificationClient
 	// CertifyLegal is the client for interacting with the CertifyLegal builders.
@@ -62,8 +77,20 @@ type Client struct {
 	CertifyVex *CertifyVexClient
 	// CertifyVuln is the client for interacting with the CertifyVuln builders.
 	CertifyVuln *CertifyVulnClient
+	// Consequence is the client for interacting with the Consequence builders.
+	Consequence *ConsequenceClient
+	// Consequence_Impact is the client for interacting with the Consequence_Impact builders.
+	Consequence_Impact *ConsequenceImpactClient
+	// Consequence_Scope is the client for interacting with the Consequence_Scope builders.
+	Consequence_Scope *ConsequenceScopeClient
+	// DemonstrativeExample is the client for interacting with the DemonstrativeExample builders.
+	DemonstrativeExample *DemonstrativeExampleClient
 	// Dependency is the client for interacting with the Dependency builders.
 	Dependency *DependencyClient
+	// DetectionMethod is the client for interacting with the DetectionMethod builders.
+	DetectionMethod *DetectionMethodClient
+	// Exploit is the client for interacting with the Exploit builders.
+	Exploit *ExploitClient
 	// HasMetadata is the client for interacting with the HasMetadata builders.
 	HasMetadata *HasMetadataClient
 	// HasSourceAt is the client for interacting with the HasSourceAt builders.
@@ -82,6 +109,12 @@ type Client struct {
 	PkgEqual *PkgEqualClient
 	// PointOfContact is the client for interacting with the PointOfContact builders.
 	PointOfContact *PointOfContactClient
+	// PotentialMitigation is the client for interacting with the PotentialMitigation builders.
+	PotentialMitigation *PotentialMitigationClient
+	// ReachableCode is the client for interacting with the ReachableCode builders.
+	ReachableCode *ReachableCodeClient
+	// ReachableCodeArtifact is the client for interacting with the ReachableCodeArtifact builders.
+	ReachableCodeArtifact *ReachableCodeArtifactClient
 	// SLSAAttestation is the client for interacting with the SLSAAttestation builders.
 	SLSAAttestation *SLSAAttestationClient
 	// SourceName is the client for interacting with the SourceName builders.
@@ -106,12 +139,20 @@ func (c *Client) init() {
 	c.Artifact = NewArtifactClient(c.config)
 	c.BillOfMaterials = NewBillOfMaterialsClient(c.config)
 	c.Builder = NewBuilderClient(c.config)
+	c.CVSS = NewCVSSClient(c.config)
+	c.CWE = NewCWEClient(c.config)
 	c.Certification = NewCertificationClient(c.config)
 	c.CertifyLegal = NewCertifyLegalClient(c.config)
 	c.CertifyScorecard = NewCertifyScorecardClient(c.config)
 	c.CertifyVex = NewCertifyVexClient(c.config)
 	c.CertifyVuln = NewCertifyVulnClient(c.config)
+	c.Consequence = NewConsequenceClient(c.config)
+	c.Consequence_Impact = NewConsequenceImpactClient(c.config)
+	c.Consequence_Scope = NewConsequenceScopeClient(c.config)
+	c.DemonstrativeExample = NewDemonstrativeExampleClient(c.config)
 	c.Dependency = NewDependencyClient(c.config)
+	c.DetectionMethod = NewDetectionMethodClient(c.config)
+	c.Exploit = NewExploitClient(c.config)
 	c.HasMetadata = NewHasMetadataClient(c.config)
 	c.HasSourceAt = NewHasSourceAtClient(c.config)
 	c.HashEqual = NewHashEqualClient(c.config)
@@ -121,6 +162,9 @@ func (c *Client) init() {
 	c.PackageVersion = NewPackageVersionClient(c.config)
 	c.PkgEqual = NewPkgEqualClient(c.config)
 	c.PointOfContact = NewPointOfContactClient(c.config)
+	c.PotentialMitigation = NewPotentialMitigationClient(c.config)
+	c.ReachableCode = NewReachableCodeClient(c.config)
+	c.ReachableCodeArtifact = NewReachableCodeArtifactClient(c.config)
 	c.SLSAAttestation = NewSLSAAttestationClient(c.config)
 	c.SourceName = NewSourceNameClient(c.config)
 	c.VulnEqual = NewVulnEqualClient(c.config)
@@ -221,12 +265,20 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		Artifact:              NewArtifactClient(cfg),
 		BillOfMaterials:       NewBillOfMaterialsClient(cfg),
 		Builder:               NewBuilderClient(cfg),
+		CVSS:                  NewCVSSClient(cfg),
+		CWE:                   NewCWEClient(cfg),
 		Certification:         NewCertificationClient(cfg),
 		CertifyLegal:          NewCertifyLegalClient(cfg),
 		CertifyScorecard:      NewCertifyScorecardClient(cfg),
 		CertifyVex:            NewCertifyVexClient(cfg),
 		CertifyVuln:           NewCertifyVulnClient(cfg),
+		Consequence:           NewConsequenceClient(cfg),
+		Consequence_Impact:    NewConsequenceImpactClient(cfg),
+		Consequence_Scope:     NewConsequenceScopeClient(cfg),
+		DemonstrativeExample:  NewDemonstrativeExampleClient(cfg),
 		Dependency:            NewDependencyClient(cfg),
+		DetectionMethod:       NewDetectionMethodClient(cfg),
+		Exploit:               NewExploitClient(cfg),
 		HasMetadata:           NewHasMetadataClient(cfg),
 		HasSourceAt:           NewHasSourceAtClient(cfg),
 		HashEqual:             NewHashEqualClient(cfg),
@@ -236,6 +288,9 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		PackageVersion:        NewPackageVersionClient(cfg),
 		PkgEqual:              NewPkgEqualClient(cfg),
 		PointOfContact:        NewPointOfContactClient(cfg),
+		PotentialMitigation:   NewPotentialMitigationClient(cfg),
+		ReachableCode:         NewReachableCodeClient(cfg),
+		ReachableCodeArtifact: NewReachableCodeArtifactClient(cfg),
 		SLSAAttestation:       NewSLSAAttestationClient(cfg),
 		SourceName:            NewSourceNameClient(cfg),
 		VulnEqual:             NewVulnEqualClient(cfg),
@@ -263,12 +318,20 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		Artifact:              NewArtifactClient(cfg),
 		BillOfMaterials:       NewBillOfMaterialsClient(cfg),
 		Builder:               NewBuilderClient(cfg),
+		CVSS:                  NewCVSSClient(cfg),
+		CWE:                   NewCWEClient(cfg),
 		Certification:         NewCertificationClient(cfg),
 		CertifyLegal:          NewCertifyLegalClient(cfg),
 		CertifyScorecard:      NewCertifyScorecardClient(cfg),
 		CertifyVex:            NewCertifyVexClient(cfg),
 		CertifyVuln:           NewCertifyVulnClient(cfg),
+		Consequence:           NewConsequenceClient(cfg),
+		Consequence_Impact:    NewConsequenceImpactClient(cfg),
+		Consequence_Scope:     NewConsequenceScopeClient(cfg),
+		DemonstrativeExample:  NewDemonstrativeExampleClient(cfg),
 		Dependency:            NewDependencyClient(cfg),
+		DetectionMethod:       NewDetectionMethodClient(cfg),
+		Exploit:               NewExploitClient(cfg),
 		HasMetadata:           NewHasMetadataClient(cfg),
 		HasSourceAt:           NewHasSourceAtClient(cfg),
 		HashEqual:             NewHashEqualClient(cfg),
@@ -278,6 +341,9 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		PackageVersion:        NewPackageVersionClient(cfg),
 		PkgEqual:              NewPkgEqualClient(cfg),
 		PointOfContact:        NewPointOfContactClient(cfg),
+		PotentialMitigation:   NewPotentialMitigationClient(cfg),
+		ReachableCode:         NewReachableCodeClient(cfg),
+		ReachableCodeArtifact: NewReachableCodeArtifactClient(cfg),
 		SLSAAttestation:       NewSLSAAttestationClient(cfg),
 		SourceName:            NewSourceNameClient(cfg),
 		VulnEqual:             NewVulnEqualClient(cfg),
@@ -312,11 +378,14 @@ func (c *Client) Close() error {
 // In order to add hooks to a specific client, call: `client.Node.Use(...)`.
 func (c *Client) Use(hooks ...Hook) {
 	for _, n := range []interface{ Use(...Hook) }{
-		c.Artifact, c.BillOfMaterials, c.Builder, c.Certification, c.CertifyLegal,
-		c.CertifyScorecard, c.CertifyVex, c.CertifyVuln, c.Dependency, c.HasMetadata,
-		c.HasSourceAt, c.HashEqual, c.License, c.Occurrence, c.PackageName,
-		c.PackageVersion, c.PkgEqual, c.PointOfContact, c.SLSAAttestation,
-		c.SourceName, c.VulnEqual, c.VulnerabilityID, c.VulnerabilityMetadata,
+		c.Artifact, c.BillOfMaterials, c.Builder, c.CVSS, c.CWE, c.Certification,
+		c.CertifyLegal, c.CertifyScorecard, c.CertifyVex, c.CertifyVuln, c.Consequence,
+		c.Consequence_Impact, c.Consequence_Scope, c.DemonstrativeExample,
+		c.Dependency, c.DetectionMethod, c.Exploit, c.HasMetadata, c.HasSourceAt,
+		c.HashEqual, c.License, c.Occurrence, c.PackageName, c.PackageVersion,
+		c.PkgEqual, c.PointOfContact, c.PotentialMitigation, c.ReachableCode,
+		c.ReachableCodeArtifact, c.SLSAAttestation, c.SourceName, c.VulnEqual,
+		c.VulnerabilityID, c.VulnerabilityMetadata,
 	} {
 		n.Use(hooks...)
 	}
@@ -326,11 +395,14 @@ func (c *Client) Use(hooks ...Hook) {
 // In order to add interceptors to a specific client, call: `client.Node.Intercept(...)`.
 func (c *Client) Intercept(interceptors ...Interceptor) {
 	for _, n := range []interface{ Intercept(...Interceptor) }{
-		c.Artifact, c.BillOfMaterials, c.Builder, c.Certification, c.CertifyLegal,
-		c.CertifyScorecard, c.CertifyVex, c.CertifyVuln, c.Dependency, c.HasMetadata,
-		c.HasSourceAt, c.HashEqual, c.License, c.Occurrence, c.PackageName,
-		c.PackageVersion, c.PkgEqual, c.PointOfContact, c.SLSAAttestation,
-		c.SourceName, c.VulnEqual, c.VulnerabilityID, c.VulnerabilityMetadata,
+		c.Artifact, c.BillOfMaterials, c.Builder, c.CVSS, c.CWE, c.Certification,
+		c.CertifyLegal, c.CertifyScorecard, c.CertifyVex, c.CertifyVuln, c.Consequence,
+		c.Consequence_Impact, c.Consequence_Scope, c.DemonstrativeExample,
+		c.Dependency, c.DetectionMethod, c.Exploit, c.HasMetadata, c.HasSourceAt,
+		c.HashEqual, c.License, c.Occurrence, c.PackageName, c.PackageVersion,
+		c.PkgEqual, c.PointOfContact, c.PotentialMitigation, c.ReachableCode,
+		c.ReachableCodeArtifact, c.SLSAAttestation, c.SourceName, c.VulnEqual,
+		c.VulnerabilityID, c.VulnerabilityMetadata,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -345,6 +417,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.BillOfMaterials.mutate(ctx, m)
 	case *BuilderMutation:
 		return c.Builder.mutate(ctx, m)
+	case *CVSSMutation:
+		return c.CVSS.mutate(ctx, m)
+	case *CWEMutation:
+		return c.CWE.mutate(ctx, m)
 	case *CertificationMutation:
 		return c.Certification.mutate(ctx, m)
 	case *CertifyLegalMutation:
@@ -355,8 +431,20 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.CertifyVex.mutate(ctx, m)
 	case *CertifyVulnMutation:
 		return c.CertifyVuln.mutate(ctx, m)
+	case *ConsequenceMutation:
+		return c.Consequence.mutate(ctx, m)
+	case *ConsequenceImpactMutation:
+		return c.Consequence_Impact.mutate(ctx, m)
+	case *ConsequenceScopeMutation:
+		return c.Consequence_Scope.mutate(ctx, m)
+	case *DemonstrativeExampleMutation:
+		return c.DemonstrativeExample.mutate(ctx, m)
 	case *DependencyMutation:
 		return c.Dependency.mutate(ctx, m)
+	case *DetectionMethodMutation:
+		return c.DetectionMethod.mutate(ctx, m)
+	case *ExploitMutation:
+		return c.Exploit.mutate(ctx, m)
 	case *HasMetadataMutation:
 		return c.HasMetadata.mutate(ctx, m)
 	case *HasSourceAtMutation:
@@ -375,6 +463,12 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.PkgEqual.mutate(ctx, m)
 	case *PointOfContactMutation:
 		return c.PointOfContact.mutate(ctx, m)
+	case *PotentialMitigationMutation:
+		return c.PotentialMitigation.mutate(ctx, m)
+	case *ReachableCodeMutation:
+		return c.ReachableCode.mutate(ctx, m)
+	case *ReachableCodeArtifactMutation:
+		return c.ReachableCodeArtifact.mutate(ctx, m)
 	case *SLSAAttestationMutation:
 		return c.SLSAAttestation.mutate(ctx, m)
 	case *SourceNameMutation:
@@ -1077,6 +1171,368 @@ func (c *BuilderClient) mutate(ctx context.Context, m *BuilderMutation) (Value, 
 	}
 }
 
+// CVSSClient is a client for the CVSS schema.
+type CVSSClient struct {
+	config
+}
+
+// NewCVSSClient returns a client for the CVSS from the given config.
+func NewCVSSClient(c config) *CVSSClient {
+	return &CVSSClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `cvss.Hooks(f(g(h())))`.
+func (c *CVSSClient) Use(hooks ...Hook) {
+	c.hooks.CVSS = append(c.hooks.CVSS, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `cvss.Intercept(f(g(h())))`.
+func (c *CVSSClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CVSS = append(c.inters.CVSS, interceptors...)
+}
+
+// Create returns a builder for creating a CVSS entity.
+func (c *CVSSClient) Create() *CVSSCreate {
+	mutation := newCVSSMutation(c.config, OpCreate)
+	return &CVSSCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CVSS entities.
+func (c *CVSSClient) CreateBulk(builders ...*CVSSCreate) *CVSSCreateBulk {
+	return &CVSSCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CVSSClient) MapCreateBulk(slice any, setFunc func(*CVSSCreate, int)) *CVSSCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CVSSCreateBulk{err: fmt.Errorf("calling to CVSSClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CVSSCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CVSSCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CVSS.
+func (c *CVSSClient) Update() *CVSSUpdate {
+	mutation := newCVSSMutation(c.config, OpUpdate)
+	return &CVSSUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CVSSClient) UpdateOne(cv *CVSS) *CVSSUpdateOne {
+	mutation := newCVSSMutation(c.config, OpUpdateOne, withCVSS(cv))
+	return &CVSSUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CVSSClient) UpdateOneID(id uuid.UUID) *CVSSUpdateOne {
+	mutation := newCVSSMutation(c.config, OpUpdateOne, withCVSSID(id))
+	return &CVSSUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CVSS.
+func (c *CVSSClient) Delete() *CVSSDelete {
+	mutation := newCVSSMutation(c.config, OpDelete)
+	return &CVSSDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CVSSClient) DeleteOne(cv *CVSS) *CVSSDeleteOne {
+	return c.DeleteOneID(cv.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CVSSClient) DeleteOneID(id uuid.UUID) *CVSSDeleteOne {
+	builder := c.Delete().Where(cvss.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CVSSDeleteOne{builder}
+}
+
+// Query returns a query builder for CVSS.
+func (c *CVSSClient) Query() *CVSSQuery {
+	return &CVSSQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCVSS},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CVSS entity by its id.
+func (c *CVSSClient) Get(ctx context.Context, id uuid.UUID) (*CVSS, error) {
+	return c.Query().Where(cvss.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CVSSClient) GetX(ctx context.Context, id uuid.UUID) *CVSS {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCertifyVex queries the certify_vex edge of a CVSS.
+func (c *CVSSClient) QueryCertifyVex(cv *CVSS) *CertifyVexQuery {
+	query := (&CertifyVexClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cvss.Table, cvss.FieldID, id),
+			sqlgraph.To(certifyvex.Table, certifyvex.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, true, cvss.CertifyVexTable, cvss.CertifyVexColumn),
+		)
+		fromV = sqlgraph.Neighbors(cv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CVSSClient) Hooks() []Hook {
+	return c.hooks.CVSS
+}
+
+// Interceptors returns the client interceptors.
+func (c *CVSSClient) Interceptors() []Interceptor {
+	return c.inters.CVSS
+}
+
+func (c *CVSSClient) mutate(ctx context.Context, m *CVSSMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CVSSCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CVSSUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CVSSUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CVSSDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CVSS mutation op: %q", m.Op())
+	}
+}
+
+// CWEClient is a client for the CWE schema.
+type CWEClient struct {
+	config
+}
+
+// NewCWEClient returns a client for the CWE from the given config.
+func NewCWEClient(c config) *CWEClient {
+	return &CWEClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `cwe.Hooks(f(g(h())))`.
+func (c *CWEClient) Use(hooks ...Hook) {
+	c.hooks.CWE = append(c.hooks.CWE, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `cwe.Intercept(f(g(h())))`.
+func (c *CWEClient) Intercept(interceptors ...Interceptor) {
+	c.inters.CWE = append(c.inters.CWE, interceptors...)
+}
+
+// Create returns a builder for creating a CWE entity.
+func (c *CWEClient) Create() *CWECreate {
+	mutation := newCWEMutation(c.config, OpCreate)
+	return &CWECreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of CWE entities.
+func (c *CWEClient) CreateBulk(builders ...*CWECreate) *CWECreateBulk {
+	return &CWECreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *CWEClient) MapCreateBulk(slice any, setFunc func(*CWECreate, int)) *CWECreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &CWECreateBulk{err: fmt.Errorf("calling to CWEClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*CWECreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &CWECreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for CWE.
+func (c *CWEClient) Update() *CWEUpdate {
+	mutation := newCWEMutation(c.config, OpUpdate)
+	return &CWEUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *CWEClient) UpdateOne(cw *CWE) *CWEUpdateOne {
+	mutation := newCWEMutation(c.config, OpUpdateOne, withCWE(cw))
+	return &CWEUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *CWEClient) UpdateOneID(id uuid.UUID) *CWEUpdateOne {
+	mutation := newCWEMutation(c.config, OpUpdateOne, withCWEID(id))
+	return &CWEUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for CWE.
+func (c *CWEClient) Delete() *CWEDelete {
+	mutation := newCWEMutation(c.config, OpDelete)
+	return &CWEDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *CWEClient) DeleteOne(cw *CWE) *CWEDeleteOne {
+	return c.DeleteOneID(cw.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *CWEClient) DeleteOneID(id uuid.UUID) *CWEDeleteOne {
+	builder := c.Delete().Where(cwe.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &CWEDeleteOne{builder}
+}
+
+// Query returns a query builder for CWE.
+func (c *CWEClient) Query() *CWEQuery {
+	return &CWEQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeCWE},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a CWE entity by its id.
+func (c *CWEClient) Get(ctx context.Context, id uuid.UUID) (*CWE, error) {
+	return c.Query().Where(cwe.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *CWEClient) GetX(ctx context.Context, id uuid.UUID) *CWE {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCertifyVex queries the certify_vex edge of a CWE.
+func (c *CWEClient) QueryCertifyVex(cw *CWE) *CertifyVexQuery {
+	query := (&CertifyVexClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cw.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cwe.Table, cwe.FieldID, id),
+			sqlgraph.To(certifyvex.Table, certifyvex.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, cwe.CertifyVexTable, cwe.CertifyVexPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cw.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConsequence queries the consequence edge of a CWE.
+func (c *CWEClient) QueryConsequence(cw *CWE) *ConsequenceQuery {
+	query := (&ConsequenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cw.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cwe.Table, cwe.FieldID, id),
+			sqlgraph.To(consequence.Table, consequence.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, cwe.ConsequenceTable, cwe.ConsequencePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cw.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDemonstrativeExample queries the demonstrative_example edge of a CWE.
+func (c *CWEClient) QueryDemonstrativeExample(cw *CWE) *DemonstrativeExampleQuery {
+	query := (&DemonstrativeExampleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cw.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cwe.Table, cwe.FieldID, id),
+			sqlgraph.To(demonstrativeexample.Table, demonstrativeexample.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, cwe.DemonstrativeExampleTable, cwe.DemonstrativeExamplePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cw.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryDetectionMethod queries the detection_method edge of a CWE.
+func (c *CWEClient) QueryDetectionMethod(cw *CWE) *DetectionMethodQuery {
+	query := (&DetectionMethodClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cw.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cwe.Table, cwe.FieldID, id),
+			sqlgraph.To(detectionmethod.Table, detectionmethod.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, cwe.DetectionMethodTable, cwe.DetectionMethodPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cw.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPotentialMitigation queries the potential_mitigation edge of a CWE.
+func (c *CWEClient) QueryPotentialMitigation(cw *CWE) *PotentialMitigationQuery {
+	query := (&PotentialMitigationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cw.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(cwe.Table, cwe.FieldID, id),
+			sqlgraph.To(potentialmitigation.Table, potentialmitigation.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, cwe.PotentialMitigationTable, cwe.PotentialMitigationPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cw.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *CWEClient) Hooks() []Hook {
+	return c.hooks.CWE
+}
+
+// Interceptors returns the client interceptors.
+func (c *CWEClient) Interceptors() []Interceptor {
+	return c.inters.CWE
+}
+
+func (c *CWEClient) mutate(ctx context.Context, m *CWEMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&CWECreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&CWEUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&CWEUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&CWEDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown CWE mutation op: %q", m.Op())
+	}
+}
+
 // CertificationClient is a client for the Certification schema.
 type CertificationClient struct {
 	config
@@ -1776,6 +2232,70 @@ func (c *CertifyVexClient) QueryVulnerability(cv *CertifyVex) *VulnerabilityIDQu
 	return query
 }
 
+// QueryCvss queries the cvss edge of a CertifyVex.
+func (c *CertifyVexClient) QueryCvss(cv *CertifyVex) *CVSSQuery {
+	query := (&CVSSClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(certifyvex.Table, certifyvex.FieldID, id),
+			sqlgraph.To(cvss.Table, cvss.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, certifyvex.CvssTable, certifyvex.CvssColumn),
+		)
+		fromV = sqlgraph.Neighbors(cv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryCwe queries the cwe edge of a CertifyVex.
+func (c *CertifyVexClient) QueryCwe(cv *CertifyVex) *CWEQuery {
+	query := (&CWEClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(certifyvex.Table, certifyvex.FieldID, id),
+			sqlgraph.To(cwe.Table, cwe.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, certifyvex.CweTable, certifyvex.CwePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExploit queries the exploit edge of a CertifyVex.
+func (c *CertifyVexClient) QueryExploit(cv *CertifyVex) *ExploitQuery {
+	query := (&ExploitClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(certifyvex.Table, certifyvex.FieldID, id),
+			sqlgraph.To(exploit.Table, exploit.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, certifyvex.ExploitTable, certifyvex.ExploitPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReachableCode queries the reachable_code edge of a CertifyVex.
+func (c *CertifyVexClient) QueryReachableCode(cv *CertifyVex) *ReachableCodeQuery {
+	query := (&ReachableCodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cv.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(certifyvex.Table, certifyvex.FieldID, id),
+			sqlgraph.To(reachablecode.Table, reachablecode.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, certifyvex.ReachableCodeTable, certifyvex.ReachableCodePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cv.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *CertifyVexClient) Hooks() []Hook {
 	return c.hooks.CertifyVex
@@ -1966,6 +2486,634 @@ func (c *CertifyVulnClient) mutate(ctx context.Context, m *CertifyVulnMutation) 
 	}
 }
 
+// ConsequenceClient is a client for the Consequence schema.
+type ConsequenceClient struct {
+	config
+}
+
+// NewConsequenceClient returns a client for the Consequence from the given config.
+func NewConsequenceClient(c config) *ConsequenceClient {
+	return &ConsequenceClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `consequence.Hooks(f(g(h())))`.
+func (c *ConsequenceClient) Use(hooks ...Hook) {
+	c.hooks.Consequence = append(c.hooks.Consequence, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `consequence.Intercept(f(g(h())))`.
+func (c *ConsequenceClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Consequence = append(c.inters.Consequence, interceptors...)
+}
+
+// Create returns a builder for creating a Consequence entity.
+func (c *ConsequenceClient) Create() *ConsequenceCreate {
+	mutation := newConsequenceMutation(c.config, OpCreate)
+	return &ConsequenceCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Consequence entities.
+func (c *ConsequenceClient) CreateBulk(builders ...*ConsequenceCreate) *ConsequenceCreateBulk {
+	return &ConsequenceCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConsequenceClient) MapCreateBulk(slice any, setFunc func(*ConsequenceCreate, int)) *ConsequenceCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConsequenceCreateBulk{err: fmt.Errorf("calling to ConsequenceClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConsequenceCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConsequenceCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Consequence.
+func (c *ConsequenceClient) Update() *ConsequenceUpdate {
+	mutation := newConsequenceMutation(c.config, OpUpdate)
+	return &ConsequenceUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConsequenceClient) UpdateOne(co *Consequence) *ConsequenceUpdateOne {
+	mutation := newConsequenceMutation(c.config, OpUpdateOne, withConsequence(co))
+	return &ConsequenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ConsequenceClient) UpdateOneID(id uuid.UUID) *ConsequenceUpdateOne {
+	mutation := newConsequenceMutation(c.config, OpUpdateOne, withConsequenceID(id))
+	return &ConsequenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Consequence.
+func (c *ConsequenceClient) Delete() *ConsequenceDelete {
+	mutation := newConsequenceMutation(c.config, OpDelete)
+	return &ConsequenceDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConsequenceClient) DeleteOne(co *Consequence) *ConsequenceDeleteOne {
+	return c.DeleteOneID(co.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ConsequenceClient) DeleteOneID(id uuid.UUID) *ConsequenceDeleteOne {
+	builder := c.Delete().Where(consequence.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ConsequenceDeleteOne{builder}
+}
+
+// Query returns a query builder for Consequence.
+func (c *ConsequenceClient) Query() *ConsequenceQuery {
+	return &ConsequenceQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConsequence},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Consequence entity by its id.
+func (c *ConsequenceClient) Get(ctx context.Context, id uuid.UUID) (*Consequence, error) {
+	return c.Query().Where(consequence.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConsequenceClient) GetX(ctx context.Context, id uuid.UUID) *Consequence {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCwe queries the cwe edge of a Consequence.
+func (c *ConsequenceClient) QueryCwe(co *Consequence) *CWEQuery {
+	query := (&CWEClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(consequence.Table, consequence.FieldID, id),
+			sqlgraph.To(cwe.Table, cwe.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, consequence.CweTable, consequence.CwePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConsequenceScope queries the consequence_scope edge of a Consequence.
+func (c *ConsequenceClient) QueryConsequenceScope(co *Consequence) *ConsequenceScopeQuery {
+	query := (&ConsequenceScopeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(consequence.Table, consequence.FieldID, id),
+			sqlgraph.To(consequence_scope.Table, consequence_scope.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, consequence.ConsequenceScopeTable, consequence.ConsequenceScopePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryConsequenceImpact queries the consequence_impact edge of a Consequence.
+func (c *ConsequenceClient) QueryConsequenceImpact(co *Consequence) *ConsequenceImpactQuery {
+	query := (&ConsequenceImpactClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := co.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(consequence.Table, consequence.FieldID, id),
+			sqlgraph.To(consequence_impact.Table, consequence_impact.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, consequence.ConsequenceImpactTable, consequence.ConsequenceImpactPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(co.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ConsequenceClient) Hooks() []Hook {
+	return c.hooks.Consequence
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConsequenceClient) Interceptors() []Interceptor {
+	return c.inters.Consequence
+}
+
+func (c *ConsequenceClient) mutate(ctx context.Context, m *ConsequenceMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConsequenceCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConsequenceUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConsequenceUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConsequenceDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Consequence mutation op: %q", m.Op())
+	}
+}
+
+// ConsequenceImpactClient is a client for the Consequence_Impact schema.
+type ConsequenceImpactClient struct {
+	config
+}
+
+// NewConsequenceImpactClient returns a client for the Consequence_Impact from the given config.
+func NewConsequenceImpactClient(c config) *ConsequenceImpactClient {
+	return &ConsequenceImpactClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `consequence_impact.Hooks(f(g(h())))`.
+func (c *ConsequenceImpactClient) Use(hooks ...Hook) {
+	c.hooks.Consequence_Impact = append(c.hooks.Consequence_Impact, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `consequence_impact.Intercept(f(g(h())))`.
+func (c *ConsequenceImpactClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Consequence_Impact = append(c.inters.Consequence_Impact, interceptors...)
+}
+
+// Create returns a builder for creating a Consequence_Impact entity.
+func (c *ConsequenceImpactClient) Create() *ConsequenceImpactCreate {
+	mutation := newConsequenceImpactMutation(c.config, OpCreate)
+	return &ConsequenceImpactCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Consequence_Impact entities.
+func (c *ConsequenceImpactClient) CreateBulk(builders ...*ConsequenceImpactCreate) *ConsequenceImpactCreateBulk {
+	return &ConsequenceImpactCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConsequenceImpactClient) MapCreateBulk(slice any, setFunc func(*ConsequenceImpactCreate, int)) *ConsequenceImpactCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConsequenceImpactCreateBulk{err: fmt.Errorf("calling to ConsequenceImpactClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConsequenceImpactCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConsequenceImpactCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Consequence_Impact.
+func (c *ConsequenceImpactClient) Update() *ConsequenceImpactUpdate {
+	mutation := newConsequenceImpactMutation(c.config, OpUpdate)
+	return &ConsequenceImpactUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConsequenceImpactClient) UpdateOne(ci *Consequence_Impact) *ConsequenceImpactUpdateOne {
+	mutation := newConsequenceImpactMutation(c.config, OpUpdateOne, withConsequence_Impact(ci))
+	return &ConsequenceImpactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ConsequenceImpactClient) UpdateOneID(id uuid.UUID) *ConsequenceImpactUpdateOne {
+	mutation := newConsequenceImpactMutation(c.config, OpUpdateOne, withConsequence_ImpactID(id))
+	return &ConsequenceImpactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Consequence_Impact.
+func (c *ConsequenceImpactClient) Delete() *ConsequenceImpactDelete {
+	mutation := newConsequenceImpactMutation(c.config, OpDelete)
+	return &ConsequenceImpactDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConsequenceImpactClient) DeleteOne(ci *Consequence_Impact) *ConsequenceImpactDeleteOne {
+	return c.DeleteOneID(ci.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ConsequenceImpactClient) DeleteOneID(id uuid.UUID) *ConsequenceImpactDeleteOne {
+	builder := c.Delete().Where(consequence_impact.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ConsequenceImpactDeleteOne{builder}
+}
+
+// Query returns a query builder for Consequence_Impact.
+func (c *ConsequenceImpactClient) Query() *ConsequenceImpactQuery {
+	return &ConsequenceImpactQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConsequenceImpact},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Consequence_Impact entity by its id.
+func (c *ConsequenceImpactClient) Get(ctx context.Context, id uuid.UUID) (*Consequence_Impact, error) {
+	return c.Query().Where(consequence_impact.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConsequenceImpactClient) GetX(ctx context.Context, id uuid.UUID) *Consequence_Impact {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryConsequence queries the consequence edge of a Consequence_Impact.
+func (c *ConsequenceImpactClient) QueryConsequence(ci *Consequence_Impact) *ConsequenceQuery {
+	query := (&ConsequenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := ci.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(consequence_impact.Table, consequence_impact.FieldID, id),
+			sqlgraph.To(consequence.Table, consequence.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, consequence_impact.ConsequenceTable, consequence_impact.ConsequencePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(ci.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ConsequenceImpactClient) Hooks() []Hook {
+	return c.hooks.Consequence_Impact
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConsequenceImpactClient) Interceptors() []Interceptor {
+	return c.inters.Consequence_Impact
+}
+
+func (c *ConsequenceImpactClient) mutate(ctx context.Context, m *ConsequenceImpactMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConsequenceImpactCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConsequenceImpactUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConsequenceImpactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConsequenceImpactDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Consequence_Impact mutation op: %q", m.Op())
+	}
+}
+
+// ConsequenceScopeClient is a client for the Consequence_Scope schema.
+type ConsequenceScopeClient struct {
+	config
+}
+
+// NewConsequenceScopeClient returns a client for the Consequence_Scope from the given config.
+func NewConsequenceScopeClient(c config) *ConsequenceScopeClient {
+	return &ConsequenceScopeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `consequence_scope.Hooks(f(g(h())))`.
+func (c *ConsequenceScopeClient) Use(hooks ...Hook) {
+	c.hooks.Consequence_Scope = append(c.hooks.Consequence_Scope, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `consequence_scope.Intercept(f(g(h())))`.
+func (c *ConsequenceScopeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Consequence_Scope = append(c.inters.Consequence_Scope, interceptors...)
+}
+
+// Create returns a builder for creating a Consequence_Scope entity.
+func (c *ConsequenceScopeClient) Create() *ConsequenceScopeCreate {
+	mutation := newConsequenceScopeMutation(c.config, OpCreate)
+	return &ConsequenceScopeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Consequence_Scope entities.
+func (c *ConsequenceScopeClient) CreateBulk(builders ...*ConsequenceScopeCreate) *ConsequenceScopeCreateBulk {
+	return &ConsequenceScopeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ConsequenceScopeClient) MapCreateBulk(slice any, setFunc func(*ConsequenceScopeCreate, int)) *ConsequenceScopeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ConsequenceScopeCreateBulk{err: fmt.Errorf("calling to ConsequenceScopeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ConsequenceScopeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ConsequenceScopeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Consequence_Scope.
+func (c *ConsequenceScopeClient) Update() *ConsequenceScopeUpdate {
+	mutation := newConsequenceScopeMutation(c.config, OpUpdate)
+	return &ConsequenceScopeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ConsequenceScopeClient) UpdateOne(cs *Consequence_Scope) *ConsequenceScopeUpdateOne {
+	mutation := newConsequenceScopeMutation(c.config, OpUpdateOne, withConsequence_Scope(cs))
+	return &ConsequenceScopeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ConsequenceScopeClient) UpdateOneID(id uuid.UUID) *ConsequenceScopeUpdateOne {
+	mutation := newConsequenceScopeMutation(c.config, OpUpdateOne, withConsequence_ScopeID(id))
+	return &ConsequenceScopeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Consequence_Scope.
+func (c *ConsequenceScopeClient) Delete() *ConsequenceScopeDelete {
+	mutation := newConsequenceScopeMutation(c.config, OpDelete)
+	return &ConsequenceScopeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ConsequenceScopeClient) DeleteOne(cs *Consequence_Scope) *ConsequenceScopeDeleteOne {
+	return c.DeleteOneID(cs.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ConsequenceScopeClient) DeleteOneID(id uuid.UUID) *ConsequenceScopeDeleteOne {
+	builder := c.Delete().Where(consequence_scope.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ConsequenceScopeDeleteOne{builder}
+}
+
+// Query returns a query builder for Consequence_Scope.
+func (c *ConsequenceScopeClient) Query() *ConsequenceScopeQuery {
+	return &ConsequenceScopeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeConsequenceScope},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Consequence_Scope entity by its id.
+func (c *ConsequenceScopeClient) Get(ctx context.Context, id uuid.UUID) (*Consequence_Scope, error) {
+	return c.Query().Where(consequence_scope.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ConsequenceScopeClient) GetX(ctx context.Context, id uuid.UUID) *Consequence_Scope {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryConsequence queries the consequence edge of a Consequence_Scope.
+func (c *ConsequenceScopeClient) QueryConsequence(cs *Consequence_Scope) *ConsequenceQuery {
+	query := (&ConsequenceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := cs.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(consequence_scope.Table, consequence_scope.FieldID, id),
+			sqlgraph.To(consequence.Table, consequence.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, consequence_scope.ConsequenceTable, consequence_scope.ConsequencePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(cs.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ConsequenceScopeClient) Hooks() []Hook {
+	return c.hooks.Consequence_Scope
+}
+
+// Interceptors returns the client interceptors.
+func (c *ConsequenceScopeClient) Interceptors() []Interceptor {
+	return c.inters.Consequence_Scope
+}
+
+func (c *ConsequenceScopeClient) mutate(ctx context.Context, m *ConsequenceScopeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ConsequenceScopeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ConsequenceScopeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ConsequenceScopeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ConsequenceScopeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Consequence_Scope mutation op: %q", m.Op())
+	}
+}
+
+// DemonstrativeExampleClient is a client for the DemonstrativeExample schema.
+type DemonstrativeExampleClient struct {
+	config
+}
+
+// NewDemonstrativeExampleClient returns a client for the DemonstrativeExample from the given config.
+func NewDemonstrativeExampleClient(c config) *DemonstrativeExampleClient {
+	return &DemonstrativeExampleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `demonstrativeexample.Hooks(f(g(h())))`.
+func (c *DemonstrativeExampleClient) Use(hooks ...Hook) {
+	c.hooks.DemonstrativeExample = append(c.hooks.DemonstrativeExample, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `demonstrativeexample.Intercept(f(g(h())))`.
+func (c *DemonstrativeExampleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DemonstrativeExample = append(c.inters.DemonstrativeExample, interceptors...)
+}
+
+// Create returns a builder for creating a DemonstrativeExample entity.
+func (c *DemonstrativeExampleClient) Create() *DemonstrativeExampleCreate {
+	mutation := newDemonstrativeExampleMutation(c.config, OpCreate)
+	return &DemonstrativeExampleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DemonstrativeExample entities.
+func (c *DemonstrativeExampleClient) CreateBulk(builders ...*DemonstrativeExampleCreate) *DemonstrativeExampleCreateBulk {
+	return &DemonstrativeExampleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DemonstrativeExampleClient) MapCreateBulk(slice any, setFunc func(*DemonstrativeExampleCreate, int)) *DemonstrativeExampleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DemonstrativeExampleCreateBulk{err: fmt.Errorf("calling to DemonstrativeExampleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DemonstrativeExampleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DemonstrativeExampleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DemonstrativeExample.
+func (c *DemonstrativeExampleClient) Update() *DemonstrativeExampleUpdate {
+	mutation := newDemonstrativeExampleMutation(c.config, OpUpdate)
+	return &DemonstrativeExampleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DemonstrativeExampleClient) UpdateOne(de *DemonstrativeExample) *DemonstrativeExampleUpdateOne {
+	mutation := newDemonstrativeExampleMutation(c.config, OpUpdateOne, withDemonstrativeExample(de))
+	return &DemonstrativeExampleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DemonstrativeExampleClient) UpdateOneID(id uuid.UUID) *DemonstrativeExampleUpdateOne {
+	mutation := newDemonstrativeExampleMutation(c.config, OpUpdateOne, withDemonstrativeExampleID(id))
+	return &DemonstrativeExampleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DemonstrativeExample.
+func (c *DemonstrativeExampleClient) Delete() *DemonstrativeExampleDelete {
+	mutation := newDemonstrativeExampleMutation(c.config, OpDelete)
+	return &DemonstrativeExampleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DemonstrativeExampleClient) DeleteOne(de *DemonstrativeExample) *DemonstrativeExampleDeleteOne {
+	return c.DeleteOneID(de.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DemonstrativeExampleClient) DeleteOneID(id uuid.UUID) *DemonstrativeExampleDeleteOne {
+	builder := c.Delete().Where(demonstrativeexample.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DemonstrativeExampleDeleteOne{builder}
+}
+
+// Query returns a query builder for DemonstrativeExample.
+func (c *DemonstrativeExampleClient) Query() *DemonstrativeExampleQuery {
+	return &DemonstrativeExampleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDemonstrativeExample},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DemonstrativeExample entity by its id.
+func (c *DemonstrativeExampleClient) Get(ctx context.Context, id uuid.UUID) (*DemonstrativeExample, error) {
+	return c.Query().Where(demonstrativeexample.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DemonstrativeExampleClient) GetX(ctx context.Context, id uuid.UUID) *DemonstrativeExample {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCwe queries the cwe edge of a DemonstrativeExample.
+func (c *DemonstrativeExampleClient) QueryCwe(de *DemonstrativeExample) *CWEQuery {
+	query := (&CWEClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := de.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(demonstrativeexample.Table, demonstrativeexample.FieldID, id),
+			sqlgraph.To(cwe.Table, cwe.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, demonstrativeexample.CweTable, demonstrativeexample.CwePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(de.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DemonstrativeExampleClient) Hooks() []Hook {
+	return c.hooks.DemonstrativeExample
+}
+
+// Interceptors returns the client interceptors.
+func (c *DemonstrativeExampleClient) Interceptors() []Interceptor {
+	return c.inters.DemonstrativeExample
+}
+
+func (c *DemonstrativeExampleClient) mutate(ctx context.Context, m *DemonstrativeExampleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DemonstrativeExampleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DemonstrativeExampleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DemonstrativeExampleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DemonstrativeExampleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DemonstrativeExample mutation op: %q", m.Op())
+	}
+}
+
 // DependencyClient is a client for the Dependency schema.
 type DependencyClient struct {
 	config
@@ -2144,6 +3292,304 @@ func (c *DependencyClient) mutate(ctx context.Context, m *DependencyMutation) (V
 		return (&DependencyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Dependency mutation op: %q", m.Op())
+	}
+}
+
+// DetectionMethodClient is a client for the DetectionMethod schema.
+type DetectionMethodClient struct {
+	config
+}
+
+// NewDetectionMethodClient returns a client for the DetectionMethod from the given config.
+func NewDetectionMethodClient(c config) *DetectionMethodClient {
+	return &DetectionMethodClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `detectionmethod.Hooks(f(g(h())))`.
+func (c *DetectionMethodClient) Use(hooks ...Hook) {
+	c.hooks.DetectionMethod = append(c.hooks.DetectionMethod, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `detectionmethod.Intercept(f(g(h())))`.
+func (c *DetectionMethodClient) Intercept(interceptors ...Interceptor) {
+	c.inters.DetectionMethod = append(c.inters.DetectionMethod, interceptors...)
+}
+
+// Create returns a builder for creating a DetectionMethod entity.
+func (c *DetectionMethodClient) Create() *DetectionMethodCreate {
+	mutation := newDetectionMethodMutation(c.config, OpCreate)
+	return &DetectionMethodCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of DetectionMethod entities.
+func (c *DetectionMethodClient) CreateBulk(builders ...*DetectionMethodCreate) *DetectionMethodCreateBulk {
+	return &DetectionMethodCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *DetectionMethodClient) MapCreateBulk(slice any, setFunc func(*DetectionMethodCreate, int)) *DetectionMethodCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &DetectionMethodCreateBulk{err: fmt.Errorf("calling to DetectionMethodClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*DetectionMethodCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &DetectionMethodCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for DetectionMethod.
+func (c *DetectionMethodClient) Update() *DetectionMethodUpdate {
+	mutation := newDetectionMethodMutation(c.config, OpUpdate)
+	return &DetectionMethodUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *DetectionMethodClient) UpdateOne(dm *DetectionMethod) *DetectionMethodUpdateOne {
+	mutation := newDetectionMethodMutation(c.config, OpUpdateOne, withDetectionMethod(dm))
+	return &DetectionMethodUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *DetectionMethodClient) UpdateOneID(id uuid.UUID) *DetectionMethodUpdateOne {
+	mutation := newDetectionMethodMutation(c.config, OpUpdateOne, withDetectionMethodID(id))
+	return &DetectionMethodUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for DetectionMethod.
+func (c *DetectionMethodClient) Delete() *DetectionMethodDelete {
+	mutation := newDetectionMethodMutation(c.config, OpDelete)
+	return &DetectionMethodDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *DetectionMethodClient) DeleteOne(dm *DetectionMethod) *DetectionMethodDeleteOne {
+	return c.DeleteOneID(dm.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *DetectionMethodClient) DeleteOneID(id uuid.UUID) *DetectionMethodDeleteOne {
+	builder := c.Delete().Where(detectionmethod.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &DetectionMethodDeleteOne{builder}
+}
+
+// Query returns a query builder for DetectionMethod.
+func (c *DetectionMethodClient) Query() *DetectionMethodQuery {
+	return &DetectionMethodQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeDetectionMethod},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a DetectionMethod entity by its id.
+func (c *DetectionMethodClient) Get(ctx context.Context, id uuid.UUID) (*DetectionMethod, error) {
+	return c.Query().Where(detectionmethod.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *DetectionMethodClient) GetX(ctx context.Context, id uuid.UUID) *DetectionMethod {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCwe queries the cwe edge of a DetectionMethod.
+func (c *DetectionMethodClient) QueryCwe(dm *DetectionMethod) *CWEQuery {
+	query := (&CWEClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := dm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(detectionmethod.Table, detectionmethod.FieldID, id),
+			sqlgraph.To(cwe.Table, cwe.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, detectionmethod.CweTable, detectionmethod.CwePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(dm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *DetectionMethodClient) Hooks() []Hook {
+	return c.hooks.DetectionMethod
+}
+
+// Interceptors returns the client interceptors.
+func (c *DetectionMethodClient) Interceptors() []Interceptor {
+	return c.inters.DetectionMethod
+}
+
+func (c *DetectionMethodClient) mutate(ctx context.Context, m *DetectionMethodMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&DetectionMethodCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&DetectionMethodUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&DetectionMethodUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&DetectionMethodDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown DetectionMethod mutation op: %q", m.Op())
+	}
+}
+
+// ExploitClient is a client for the Exploit schema.
+type ExploitClient struct {
+	config
+}
+
+// NewExploitClient returns a client for the Exploit from the given config.
+func NewExploitClient(c config) *ExploitClient {
+	return &ExploitClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `exploit.Hooks(f(g(h())))`.
+func (c *ExploitClient) Use(hooks ...Hook) {
+	c.hooks.Exploit = append(c.hooks.Exploit, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `exploit.Intercept(f(g(h())))`.
+func (c *ExploitClient) Intercept(interceptors ...Interceptor) {
+	c.inters.Exploit = append(c.inters.Exploit, interceptors...)
+}
+
+// Create returns a builder for creating a Exploit entity.
+func (c *ExploitClient) Create() *ExploitCreate {
+	mutation := newExploitMutation(c.config, OpCreate)
+	return &ExploitCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of Exploit entities.
+func (c *ExploitClient) CreateBulk(builders ...*ExploitCreate) *ExploitCreateBulk {
+	return &ExploitCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ExploitClient) MapCreateBulk(slice any, setFunc func(*ExploitCreate, int)) *ExploitCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ExploitCreateBulk{err: fmt.Errorf("calling to ExploitClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ExploitCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ExploitCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for Exploit.
+func (c *ExploitClient) Update() *ExploitUpdate {
+	mutation := newExploitMutation(c.config, OpUpdate)
+	return &ExploitUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ExploitClient) UpdateOne(e *Exploit) *ExploitUpdateOne {
+	mutation := newExploitMutation(c.config, OpUpdateOne, withExploit(e))
+	return &ExploitUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ExploitClient) UpdateOneID(id uuid.UUID) *ExploitUpdateOne {
+	mutation := newExploitMutation(c.config, OpUpdateOne, withExploitID(id))
+	return &ExploitUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for Exploit.
+func (c *ExploitClient) Delete() *ExploitDelete {
+	mutation := newExploitMutation(c.config, OpDelete)
+	return &ExploitDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ExploitClient) DeleteOne(e *Exploit) *ExploitDeleteOne {
+	return c.DeleteOneID(e.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ExploitClient) DeleteOneID(id uuid.UUID) *ExploitDeleteOne {
+	builder := c.Delete().Where(exploit.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ExploitDeleteOne{builder}
+}
+
+// Query returns a query builder for Exploit.
+func (c *ExploitClient) Query() *ExploitQuery {
+	return &ExploitQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeExploit},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a Exploit entity by its id.
+func (c *ExploitClient) Get(ctx context.Context, id uuid.UUID) (*Exploit, error) {
+	return c.Query().Where(exploit.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ExploitClient) GetX(ctx context.Context, id uuid.UUID) *Exploit {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCertifyVex queries the certify_vex edge of a Exploit.
+func (c *ExploitClient) QueryCertifyVex(e *Exploit) *CertifyVexQuery {
+	query := (&CertifyVexClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := e.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(exploit.Table, exploit.FieldID, id),
+			sqlgraph.To(certifyvex.Table, certifyvex.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, exploit.CertifyVexTable, exploit.CertifyVexPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(e.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ExploitClient) Hooks() []Hook {
+	return c.hooks.Exploit
+}
+
+// Interceptors returns the client interceptors.
+func (c *ExploitClient) Interceptors() []Interceptor {
+	return c.inters.Exploit
+}
+
+func (c *ExploitClient) mutate(ctx context.Context, m *ExploitMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ExploitCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ExploitUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ExploitUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ExploitDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown Exploit mutation op: %q", m.Op())
 	}
 }
 
@@ -4000,6 +5446,469 @@ func (c *PointOfContactClient) mutate(ctx context.Context, m *PointOfContactMuta
 	}
 }
 
+// PotentialMitigationClient is a client for the PotentialMitigation schema.
+type PotentialMitigationClient struct {
+	config
+}
+
+// NewPotentialMitigationClient returns a client for the PotentialMitigation from the given config.
+func NewPotentialMitigationClient(c config) *PotentialMitigationClient {
+	return &PotentialMitigationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `potentialmitigation.Hooks(f(g(h())))`.
+func (c *PotentialMitigationClient) Use(hooks ...Hook) {
+	c.hooks.PotentialMitigation = append(c.hooks.PotentialMitigation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `potentialmitigation.Intercept(f(g(h())))`.
+func (c *PotentialMitigationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.PotentialMitigation = append(c.inters.PotentialMitigation, interceptors...)
+}
+
+// Create returns a builder for creating a PotentialMitigation entity.
+func (c *PotentialMitigationClient) Create() *PotentialMitigationCreate {
+	mutation := newPotentialMitigationMutation(c.config, OpCreate)
+	return &PotentialMitigationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of PotentialMitigation entities.
+func (c *PotentialMitigationClient) CreateBulk(builders ...*PotentialMitigationCreate) *PotentialMitigationCreateBulk {
+	return &PotentialMitigationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *PotentialMitigationClient) MapCreateBulk(slice any, setFunc func(*PotentialMitigationCreate, int)) *PotentialMitigationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &PotentialMitigationCreateBulk{err: fmt.Errorf("calling to PotentialMitigationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*PotentialMitigationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &PotentialMitigationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for PotentialMitigation.
+func (c *PotentialMitigationClient) Update() *PotentialMitigationUpdate {
+	mutation := newPotentialMitigationMutation(c.config, OpUpdate)
+	return &PotentialMitigationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *PotentialMitigationClient) UpdateOne(pm *PotentialMitigation) *PotentialMitigationUpdateOne {
+	mutation := newPotentialMitigationMutation(c.config, OpUpdateOne, withPotentialMitigation(pm))
+	return &PotentialMitigationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *PotentialMitigationClient) UpdateOneID(id uuid.UUID) *PotentialMitigationUpdateOne {
+	mutation := newPotentialMitigationMutation(c.config, OpUpdateOne, withPotentialMitigationID(id))
+	return &PotentialMitigationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for PotentialMitigation.
+func (c *PotentialMitigationClient) Delete() *PotentialMitigationDelete {
+	mutation := newPotentialMitigationMutation(c.config, OpDelete)
+	return &PotentialMitigationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *PotentialMitigationClient) DeleteOne(pm *PotentialMitigation) *PotentialMitigationDeleteOne {
+	return c.DeleteOneID(pm.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *PotentialMitigationClient) DeleteOneID(id uuid.UUID) *PotentialMitigationDeleteOne {
+	builder := c.Delete().Where(potentialmitigation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &PotentialMitigationDeleteOne{builder}
+}
+
+// Query returns a query builder for PotentialMitigation.
+func (c *PotentialMitigationClient) Query() *PotentialMitigationQuery {
+	return &PotentialMitigationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypePotentialMitigation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a PotentialMitigation entity by its id.
+func (c *PotentialMitigationClient) Get(ctx context.Context, id uuid.UUID) (*PotentialMitigation, error) {
+	return c.Query().Where(potentialmitigation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *PotentialMitigationClient) GetX(ctx context.Context, id uuid.UUID) *PotentialMitigation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCwe queries the cwe edge of a PotentialMitigation.
+func (c *PotentialMitigationClient) QueryCwe(pm *PotentialMitigation) *CWEQuery {
+	query := (&CWEClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := pm.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(potentialmitigation.Table, potentialmitigation.FieldID, id),
+			sqlgraph.To(cwe.Table, cwe.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, potentialmitigation.CweTable, potentialmitigation.CwePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(pm.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *PotentialMitigationClient) Hooks() []Hook {
+	return c.hooks.PotentialMitigation
+}
+
+// Interceptors returns the client interceptors.
+func (c *PotentialMitigationClient) Interceptors() []Interceptor {
+	return c.inters.PotentialMitigation
+}
+
+func (c *PotentialMitigationClient) mutate(ctx context.Context, m *PotentialMitigationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&PotentialMitigationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&PotentialMitigationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&PotentialMitigationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&PotentialMitigationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown PotentialMitigation mutation op: %q", m.Op())
+	}
+}
+
+// ReachableCodeClient is a client for the ReachableCode schema.
+type ReachableCodeClient struct {
+	config
+}
+
+// NewReachableCodeClient returns a client for the ReachableCode from the given config.
+func NewReachableCodeClient(c config) *ReachableCodeClient {
+	return &ReachableCodeClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `reachablecode.Hooks(f(g(h())))`.
+func (c *ReachableCodeClient) Use(hooks ...Hook) {
+	c.hooks.ReachableCode = append(c.hooks.ReachableCode, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `reachablecode.Intercept(f(g(h())))`.
+func (c *ReachableCodeClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ReachableCode = append(c.inters.ReachableCode, interceptors...)
+}
+
+// Create returns a builder for creating a ReachableCode entity.
+func (c *ReachableCodeClient) Create() *ReachableCodeCreate {
+	mutation := newReachableCodeMutation(c.config, OpCreate)
+	return &ReachableCodeCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ReachableCode entities.
+func (c *ReachableCodeClient) CreateBulk(builders ...*ReachableCodeCreate) *ReachableCodeCreateBulk {
+	return &ReachableCodeCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ReachableCodeClient) MapCreateBulk(slice any, setFunc func(*ReachableCodeCreate, int)) *ReachableCodeCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ReachableCodeCreateBulk{err: fmt.Errorf("calling to ReachableCodeClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ReachableCodeCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ReachableCodeCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ReachableCode.
+func (c *ReachableCodeClient) Update() *ReachableCodeUpdate {
+	mutation := newReachableCodeMutation(c.config, OpUpdate)
+	return &ReachableCodeUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ReachableCodeClient) UpdateOne(rc *ReachableCode) *ReachableCodeUpdateOne {
+	mutation := newReachableCodeMutation(c.config, OpUpdateOne, withReachableCode(rc))
+	return &ReachableCodeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ReachableCodeClient) UpdateOneID(id uuid.UUID) *ReachableCodeUpdateOne {
+	mutation := newReachableCodeMutation(c.config, OpUpdateOne, withReachableCodeID(id))
+	return &ReachableCodeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ReachableCode.
+func (c *ReachableCodeClient) Delete() *ReachableCodeDelete {
+	mutation := newReachableCodeMutation(c.config, OpDelete)
+	return &ReachableCodeDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ReachableCodeClient) DeleteOne(rc *ReachableCode) *ReachableCodeDeleteOne {
+	return c.DeleteOneID(rc.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ReachableCodeClient) DeleteOneID(id uuid.UUID) *ReachableCodeDeleteOne {
+	builder := c.Delete().Where(reachablecode.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ReachableCodeDeleteOne{builder}
+}
+
+// Query returns a query builder for ReachableCode.
+func (c *ReachableCodeClient) Query() *ReachableCodeQuery {
+	return &ReachableCodeQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeReachableCode},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ReachableCode entity by its id.
+func (c *ReachableCodeClient) Get(ctx context.Context, id uuid.UUID) (*ReachableCode, error) {
+	return c.Query().Where(reachablecode.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ReachableCodeClient) GetX(ctx context.Context, id uuid.UUID) *ReachableCode {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryCertifyVex queries the certify_vex edge of a ReachableCode.
+func (c *ReachableCodeClient) QueryCertifyVex(rc *ReachableCode) *CertifyVexQuery {
+	query := (&CertifyVexClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := rc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(reachablecode.Table, reachablecode.FieldID, id),
+			sqlgraph.To(certifyvex.Table, certifyvex.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, reachablecode.CertifyVexTable, reachablecode.CertifyVexPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryReachableCodeArtifact queries the reachable_code_artifact edge of a ReachableCode.
+func (c *ReachableCodeClient) QueryReachableCodeArtifact(rc *ReachableCode) *ReachableCodeArtifactQuery {
+	query := (&ReachableCodeArtifactClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := rc.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(reachablecode.Table, reachablecode.FieldID, id),
+			sqlgraph.To(reachablecodeartifact.Table, reachablecodeartifact.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, reachablecode.ReachableCodeArtifactTable, reachablecode.ReachableCodeArtifactPrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(rc.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ReachableCodeClient) Hooks() []Hook {
+	return c.hooks.ReachableCode
+}
+
+// Interceptors returns the client interceptors.
+func (c *ReachableCodeClient) Interceptors() []Interceptor {
+	return c.inters.ReachableCode
+}
+
+func (c *ReachableCodeClient) mutate(ctx context.Context, m *ReachableCodeMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ReachableCodeCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ReachableCodeUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ReachableCodeUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ReachableCodeDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ReachableCode mutation op: %q", m.Op())
+	}
+}
+
+// ReachableCodeArtifactClient is a client for the ReachableCodeArtifact schema.
+type ReachableCodeArtifactClient struct {
+	config
+}
+
+// NewReachableCodeArtifactClient returns a client for the ReachableCodeArtifact from the given config.
+func NewReachableCodeArtifactClient(c config) *ReachableCodeArtifactClient {
+	return &ReachableCodeArtifactClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `reachablecodeartifact.Hooks(f(g(h())))`.
+func (c *ReachableCodeArtifactClient) Use(hooks ...Hook) {
+	c.hooks.ReachableCodeArtifact = append(c.hooks.ReachableCodeArtifact, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `reachablecodeartifact.Intercept(f(g(h())))`.
+func (c *ReachableCodeArtifactClient) Intercept(interceptors ...Interceptor) {
+	c.inters.ReachableCodeArtifact = append(c.inters.ReachableCodeArtifact, interceptors...)
+}
+
+// Create returns a builder for creating a ReachableCodeArtifact entity.
+func (c *ReachableCodeArtifactClient) Create() *ReachableCodeArtifactCreate {
+	mutation := newReachableCodeArtifactMutation(c.config, OpCreate)
+	return &ReachableCodeArtifactCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of ReachableCodeArtifact entities.
+func (c *ReachableCodeArtifactClient) CreateBulk(builders ...*ReachableCodeArtifactCreate) *ReachableCodeArtifactCreateBulk {
+	return &ReachableCodeArtifactCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *ReachableCodeArtifactClient) MapCreateBulk(slice any, setFunc func(*ReachableCodeArtifactCreate, int)) *ReachableCodeArtifactCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &ReachableCodeArtifactCreateBulk{err: fmt.Errorf("calling to ReachableCodeArtifactClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*ReachableCodeArtifactCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &ReachableCodeArtifactCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for ReachableCodeArtifact.
+func (c *ReachableCodeArtifactClient) Update() *ReachableCodeArtifactUpdate {
+	mutation := newReachableCodeArtifactMutation(c.config, OpUpdate)
+	return &ReachableCodeArtifactUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *ReachableCodeArtifactClient) UpdateOne(rca *ReachableCodeArtifact) *ReachableCodeArtifactUpdateOne {
+	mutation := newReachableCodeArtifactMutation(c.config, OpUpdateOne, withReachableCodeArtifact(rca))
+	return &ReachableCodeArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *ReachableCodeArtifactClient) UpdateOneID(id uuid.UUID) *ReachableCodeArtifactUpdateOne {
+	mutation := newReachableCodeArtifactMutation(c.config, OpUpdateOne, withReachableCodeArtifactID(id))
+	return &ReachableCodeArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for ReachableCodeArtifact.
+func (c *ReachableCodeArtifactClient) Delete() *ReachableCodeArtifactDelete {
+	mutation := newReachableCodeArtifactMutation(c.config, OpDelete)
+	return &ReachableCodeArtifactDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *ReachableCodeArtifactClient) DeleteOne(rca *ReachableCodeArtifact) *ReachableCodeArtifactDeleteOne {
+	return c.DeleteOneID(rca.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *ReachableCodeArtifactClient) DeleteOneID(id uuid.UUID) *ReachableCodeArtifactDeleteOne {
+	builder := c.Delete().Where(reachablecodeartifact.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &ReachableCodeArtifactDeleteOne{builder}
+}
+
+// Query returns a query builder for ReachableCodeArtifact.
+func (c *ReachableCodeArtifactClient) Query() *ReachableCodeArtifactQuery {
+	return &ReachableCodeArtifactQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeReachableCodeArtifact},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a ReachableCodeArtifact entity by its id.
+func (c *ReachableCodeArtifactClient) Get(ctx context.Context, id uuid.UUID) (*ReachableCodeArtifact, error) {
+	return c.Query().Where(reachablecodeartifact.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *ReachableCodeArtifactClient) GetX(ctx context.Context, id uuid.UUID) *ReachableCodeArtifact {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryReachableCode queries the reachable_code edge of a ReachableCodeArtifact.
+func (c *ReachableCodeArtifactClient) QueryReachableCode(rca *ReachableCodeArtifact) *ReachableCodeQuery {
+	query := (&ReachableCodeClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := rca.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(reachablecodeartifact.Table, reachablecodeartifact.FieldID, id),
+			sqlgraph.To(reachablecode.Table, reachablecode.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, true, reachablecodeartifact.ReachableCodeTable, reachablecodeartifact.ReachableCodePrimaryKey...),
+		)
+		fromV = sqlgraph.Neighbors(rca.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *ReachableCodeArtifactClient) Hooks() []Hook {
+	return c.hooks.ReachableCodeArtifact
+}
+
+// Interceptors returns the client interceptors.
+func (c *ReachableCodeArtifactClient) Interceptors() []Interceptor {
+	return c.inters.ReachableCodeArtifact
+}
+
+func (c *ReachableCodeArtifactClient) mutate(ctx context.Context, m *ReachableCodeArtifactMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&ReachableCodeArtifactCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&ReachableCodeArtifactUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&ReachableCodeArtifactUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&ReachableCodeArtifactDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown ReachableCodeArtifact mutation op: %q", m.Op())
+	}
+}
+
 // SLSAAttestationClient is a client for the SLSAAttestation schema.
 type SLSAAttestationClient struct {
 	config
@@ -4956,17 +6865,21 @@ func (c *VulnerabilityMetadataClient) mutate(ctx context.Context, m *Vulnerabili
 // hooks and interceptors per client, for fast access.
 type (
 	hooks struct {
-		Artifact, BillOfMaterials, Builder, Certification, CertifyLegal,
-		CertifyScorecard, CertifyVex, CertifyVuln, Dependency, HasMetadata,
-		HasSourceAt, HashEqual, License, Occurrence, PackageName, PackageVersion,
-		PkgEqual, PointOfContact, SLSAAttestation, SourceName, VulnEqual,
-		VulnerabilityID, VulnerabilityMetadata []ent.Hook
+		Artifact, BillOfMaterials, Builder, CVSS, CWE, Certification, CertifyLegal,
+		CertifyScorecard, CertifyVex, CertifyVuln, Consequence, Consequence_Impact,
+		Consequence_Scope, DemonstrativeExample, Dependency, DetectionMethod, Exploit,
+		HasMetadata, HasSourceAt, HashEqual, License, Occurrence, PackageName,
+		PackageVersion, PkgEqual, PointOfContact, PotentialMitigation, ReachableCode,
+		ReachableCodeArtifact, SLSAAttestation, SourceName, VulnEqual, VulnerabilityID,
+		VulnerabilityMetadata []ent.Hook
 	}
 	inters struct {
-		Artifact, BillOfMaterials, Builder, Certification, CertifyLegal,
-		CertifyScorecard, CertifyVex, CertifyVuln, Dependency, HasMetadata,
-		HasSourceAt, HashEqual, License, Occurrence, PackageName, PackageVersion,
-		PkgEqual, PointOfContact, SLSAAttestation, SourceName, VulnEqual,
-		VulnerabilityID, VulnerabilityMetadata []ent.Interceptor
+		Artifact, BillOfMaterials, Builder, CVSS, CWE, Certification, CertifyLegal,
+		CertifyScorecard, CertifyVex, CertifyVuln, Consequence, Consequence_Impact,
+		Consequence_Scope, DemonstrativeExample, Dependency, DetectionMethod, Exploit,
+		HasMetadata, HasSourceAt, HashEqual, License, Occurrence, PackageName,
+		PackageVersion, PkgEqual, PointOfContact, PotentialMitigation, ReachableCode,
+		ReachableCodeArtifact, SLSAAttestation, SourceName, VulnEqual, VulnerabilityID,
+		VulnerabilityMetadata []ent.Interceptor
 	}
 )

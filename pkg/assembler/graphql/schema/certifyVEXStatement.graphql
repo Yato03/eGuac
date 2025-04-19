@@ -70,6 +70,142 @@ enum VexJustification {
 }
 
 """
+CVSS is a representation of the Common Vulnerability Scoring System (CVSS) v3.1
+base score. It is a floating point number between 0.0 and 10.0.
+"""
+
+type CVSS {
+  "Base score of the vulnerability"
+  VulnImpact: Float
+  "Version of the CVSS standard"
+  Version: String
+  "Vector string of the vulnerability"
+  AttackString: String
+}
+
+input CVSSInput {
+  VulnImpact: Float
+  Version: String
+  AttackString: String
+}
+
+input CVSSSpec {
+  VulnImpact: Float
+  Version: String
+  AttackString: String
+}
+
+
+"""
+CWE is a representation of the Common Weakness Enumeration (CWE) identifier.
+It is a string of the form "CWE-<number>".
+"""
+
+type CWE {
+  "CWE identifier"
+  ID: String!
+  "Description of the CWE"
+  Abstraction: String!
+  "Name of the CWE"
+  Name: String!
+  "Background of the CWE"
+  BackgroundDetail: String
+  "Potential mitigations of the CWE"
+  PotentialMitigations: [PotentialMitigations]
+  "Consequences of the CWE"
+  Consequences: [Consequences]
+  "Demonstrative examples of the CWE"
+  DemonstrativeExamples: [String]
+  "Detection methods of the CWE"
+  DetectionMethods: [DetectionMethods]
+}
+
+input CWEInput {
+  ID: String!
+  Abstraction: String!
+  Name: String!
+  BackgroundDetail: String
+  PotentialMitigations: [PotentialMitigationsInput]
+  Consequences: [ConsequencesInput]
+  DemonstrativeExamples: [String]
+  DetectionMethods: [DetectionMethodsInput]
+}
+
+input CWEInputSpec {
+  ID: String
+  Abstraction: String
+  Name: String
+  BackgroundDetail: String
+  PotentialMitigations: [PotentialMitigationsInputSpec]
+  Consequences: [ConsequencesInputSpec]
+  DemonstrativeExamples: [String]
+  DetectionMethods: [DetectionMethodsInputSpec]
+}
+
+type PotentialMitigations {
+  Phase: String
+  Description: String
+  Effectiveness: String
+  EffectivenessNotes: String
+}
+
+input PotentialMitigationsInput {
+  Phase: String
+  Description: String
+  Effectiveness: String
+  EffectivenessNotes: String
+}
+
+input PotentialMitigationsInputSpec {
+  Phase: String
+  Description: String
+  Effectiveness: String
+  EffectivenessNotes: String
+}
+
+type Consequences {
+  Scope: [String]
+  Impact: [String]
+  Notes: String
+  Likelihood: String
+}
+
+input ConsequencesInput {
+  Scope: [String]
+  Impact: [String]
+  Notes: String
+  Likelihood: String
+}
+
+input ConsequencesInputSpec {
+  Scope: [String]
+  Impact: [String]
+  Notes: String
+  Likelihood: String
+}
+
+type DetectionMethods {
+  id: String
+  Method: String
+  Description: String
+  Effectiveness: String
+}
+
+input DetectionMethodsInput {
+  id: String
+  Method: String
+  Description: String
+  Effectiveness: String
+}
+
+input DetectionMethodsInputSpec {
+  id: String
+  Method: String
+  Description: String
+  Effectiveness: String
+}
+
+"""
 CertifyVEXStatement is an attestation to attach VEX statements to a package or
 artifact to clarify the impact of a specific vulnerability.
 """
@@ -95,7 +231,68 @@ type CertifyVEXStatement {
   collector: String!
   "Reference location of the document in the persistent blob store (if that is configured)"
   documentRef: String!
+  "Description of the vex statement"
+  description: String
+  "CVSS score of the vulnerability"
+  cvss: CVSS
+  "CWE identifier of the vulnerability"
+  cwe: [CWE]
+  "Reachable code for the vulnerability"
+  reachableCode: [ReachableCode]
+  "Exploits"
+  exploits: [Exploits]
+  "Priority of the VEX statement"
+  priority: Float
 }
+
+type ReachableCode {
+  PathToFile: String
+  UsedArtifacts: [UsedArtifact]
+}
+
+input ReachableCodeInput {
+  PathToFile: String
+  UsedArtifacts: [UsedArtifactInput]
+}
+
+input ReachableCodeInputSpec {
+  PathToFile: String
+  UsedArtifacts: [UsedArtifactInputSpec]
+}
+
+type UsedArtifact {
+  Name: String
+  UsedInLines: [Int]
+}
+
+input UsedArtifactInput {
+  Name: String
+  UsedInLines: [Int]
+}
+
+input UsedArtifactInputSpec {
+  Name: String
+  UsedInLines: [Int]
+}
+
+type Exploits {
+  id: String
+  Description: String
+  Payload: String
+}
+
+input ExploitsInput {
+  id: String
+  Description: String
+  Payload: String
+}
+
+input ExploitsInputSpec {
+  id: String
+  Description: String
+  Payload: String
+}
+
 
 """
 CertifyVEXStatementSpec allows filtering the list of VEX statements to
@@ -117,7 +314,14 @@ input CertifyVEXStatementSpec {
   origin: String
   collector: String
   documentRef: String
+  description: String
+  cvss: CVSSSpec
+  cwe: [CWEInputSpec]
+  reachableCode: [ReachableCodeInputSpec]
+  exploits: [ExploitsInputSpec]
+  priority: Float
 }
+
 
 "VexStatementInputSpec represents the input to ingest VEX statements."
 input VexStatementInputSpec {
@@ -129,6 +333,12 @@ input VexStatementInputSpec {
   origin: String!
   collector: String!
   documentRef: String!
+  description: String
+  cvss: CVSSInput
+  cwe: [CWEInput]
+  reachableCode: [ReachableCodeInputSpec]
+  exploits: [ExploitsInputSpec]
+  priority: Float
 }
 
 """

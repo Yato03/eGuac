@@ -18,6 +18,8 @@ package backend
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"entgo.io/contrib/entgql"
 	"entgo.io/ent/dialect/sql"
@@ -202,6 +204,209 @@ func generateVexCreate(ctx context.Context, tx *ent.Tx, pkg *model.IDorPkgInput,
 		SetCollector(vexStatement.Collector).
 		SetDocumentRef(vexStatement.DocumentRef)
 
+	if vexStatement.Description != nil {
+		certifyVexCreate.SetDescription(*vexStatement.Description)
+	}
+
+	// Create and link CVSS if provided
+	if vexStatement.Cvss != nil {
+		cvss := tx.CVSS.Create()
+		if vexStatement.Cvss.VulnImpact != nil {
+			cvss.SetVulnImpact(*vexStatement.Cvss.VulnImpact)
+		}
+		if vexStatement.Cvss.Version != nil {
+			cvss.SetVersion(*vexStatement.Cvss.Version)
+		}
+		if vexStatement.Cvss.AttackString != nil {
+			cvss.SetAttackVector(*vexStatement.Cvss.AttackString)
+		}
+		cvssEntity, err := cvss.Save(ctx)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create CVSS: %w", err)
+		}
+
+		certifyVexCreate.SetCvss(cvssEntity)
+	}
+
+	// Create and link CWE if provided
+	if vexStatement.Cwe != nil {
+		for _, cwe := range vexStatement.Cwe {
+			cwe_input := tx.CWE.Create()
+			cwe_input.SetVexID(cwe.ID)
+			cwe_input.SetName(cwe.Name)
+			cwe_input.SetDescription(cwe.Abstraction)
+
+			if cwe.BackgroundDetail != nil {
+				cwe_input.SetBackgroundDetail(*cwe.BackgroundDetail)
+			}
+
+			// Create and link potential mitigations if provided
+			if cwe.PotentialMitigations != nil {
+				for _, mitigation := range cwe.PotentialMitigations {
+					mitigation_input := tx.PotentialMitigation.Create()
+					mitigation_input.SetPhase(*mitigation.Phase)
+					mitigation_input.SetDescription(*mitigation.Description)
+					mitigation_input.SetEffectiveness(*mitigation.Effectiveness)
+					mitigation_input.SetEffectivenessNotes(*mitigation.EffectivenessNotes)
+
+					mitigation_entity, err := mitigation_input.Save(ctx)
+					if err != nil {
+						return nil, fmt.Errorf("failed to create potential mitigation: %w", err)
+					}
+
+					cwe_input.AddPotentialMitigation(mitigation_entity)
+				}
+			}
+
+			// Create and link detection methods if provided
+			if cwe.DetectionMethods != nil {
+				for _, detection := range cwe.DetectionMethods {
+					detection_input := tx.DetectionMethod.Create()
+					detection_input.SetDetectionID(*detection.ID)
+					detection_input.SetDescription(*detection.Description)
+					detection_input.SetEffectiveness(*detection.Effectiveness)
+					detection_input.SetMethod(*detection.Method)
+					detection_entity, err := detection_input.Save(ctx)
+
+					if err != nil {
+						return nil, fmt.Errorf("failed to create detection method: %w", err)
+					}
+
+					cwe_input.AddDetectionMethod(detection_entity)
+				}
+			}
+
+			// Create and link Demonstrative examples if provided
+			if cwe.DemonstrativeExamples != nil {
+				for _, example := range cwe.DemonstrativeExamples {
+					example_input := tx.DemonstrativeExample.Create()
+					example_input.SetDescription(*example)
+					example_entity, err := example_input.Save(ctx)
+
+					if err != nil {
+						return nil, fmt.Errorf("failed to create demonstrative example: %w", err)
+					}
+
+					cwe_input.AddDemonstrativeExample(example_entity)
+				}
+			}
+
+			// Create and link Consequences if provided
+			if cwe.Consequences != nil {
+				for _, consequence := range cwe.Consequences {
+					consequence_input := tx.Consequence.Create()
+					consequence_input.SetNotes(*consequence.Notes)
+					consequence_input.SetLikelihood(*consequence.Likelihood)
+
+					// Create and link Scope if provided
+
+					if consequence.Scope != nil {
+						for _, scope := range consequence.Scope {
+							scope_input := tx.Consequence_Scope.Create()
+							scope_input.SetScope(*scope)
+							scope_entity, err := scope_input.Save(ctx)
+
+							if err != nil {
+								return nil, fmt.Errorf("failed to create consequence scope: %w", err)
+							}
+
+							consequence_input.AddConsequenceScope(scope_entity)
+						}
+					}
+
+					// Create and link Impact if provided
+					if consequence.Impact != nil {
+						for _, impact := range consequence.Impact {
+							impact_input := tx.Consequence_Impact.Create()
+							impact_input.SetImpact(*impact)
+							impact_entity, err := impact_input.Save(ctx)
+
+							if err != nil {
+								return nil, fmt.Errorf("failed to create consequence impact: %w", err)
+							}
+
+							consequence_input.AddConsequenceImpact(impact_entity)
+						}
+					}
+
+					consequence_entity, err := consequence_input.Save(ctx)
+
+					if err != nil {
+						return nil, fmt.Errorf("failed to create consequence: %w", err)
+					}
+
+					cwe_input.AddConsequence(consequence_entity)
+				}
+			}
+
+			cweEntity, err := cwe_input.Save(ctx)
+			if err != nil {
+				return nil, fmt.Errorf("failed to create CWE: %w", err)
+			}
+
+			certifyVexCreate.AddCwe(cweEntity)
+		}
+	}
+
+	// Create and link Exploit if provided
+	if vexStatement.Exploits != nil {
+		for _, exploit := range vexStatement.Exploits {
+			exploit_input := tx.Exploit.Create()
+			exploit_input.SetExploitID(*exploit.ID)
+			exploit_input.SetDescription(*exploit.Description)
+			exploit_input.SetPayload(*exploit.Payload)
+			exploit_entity, err := exploit_input.Save(ctx)
+
+			if err != nil {
+				return nil, fmt.Errorf("failed to create exploit: %w", err)
+			}
+
+			certifyVexCreate.AddExploit(exploit_entity)
+		}
+	}
+
+	// Create and link ReachableCode if provided
+	if vexStatement.ReachableCode != nil {
+		for _, reachableCode := range vexStatement.ReachableCode {
+			reachableCode_input := tx.ReachableCode.Create()
+			reachableCode_input.SetPathToFile(*reachableCode.PathToFile)
+
+			// Create and link UsedArtifacts if provided
+			if reachableCode.UsedArtifacts != nil {
+				for _, artifact := range reachableCode.UsedArtifacts {
+					artifact_input := tx.ReachableCodeArtifact.Create()
+					artifact_input.SetArtifactName(*artifact.Name)
+
+					// Make used lines [1,2,3] : int[] convert to 1,2,3 string
+					var usedLines []string
+					for _, line := range artifact.UsedInLines {
+						usedLines = append(usedLines, strconv.Itoa(*line))
+					}
+					artifact_input.SetUsedInLines(strings.Join(usedLines, ","))
+
+					artifact_entity, err := artifact_input.Save(ctx)
+
+					if err != nil {
+						return nil, fmt.Errorf("failed to create used artifact: %w", err)
+					}
+
+					reachableCode_input.AddReachableCodeArtifact(artifact_entity)
+				}
+			}
+			reachableCode_entity, err := reachableCode_input.Save(ctx)
+
+			if err != nil {
+				return nil, fmt.Errorf("failed to create reachable code: %w", err)
+			}
+
+			certifyVexCreate.AddReachableCode(reachableCode_entity)
+		}
+	}
+
+	if vexStatement.Priority != nil {
+		certifyVexCreate.SetPriority(*vexStatement.Priority)
+	}
+
 	return certifyVexCreate, nil
 }
 
@@ -253,7 +458,7 @@ func upsertBulkVEX(ctx context.Context, tx *ent.Tx, subjects model.PackageOrArti
 				sql.ConflictColumns(conflictColumns...),
 				sql.ConflictWhere(conflictWhere),
 			).
-			DoNothing().
+			UpdateNewValues().
 			Exec(ctx)
 		if err != nil {
 			return nil, errors.Wrap(err, "bulk upsert certifyVex node")
@@ -335,7 +540,7 @@ func (b *EntBackend) CertifyVEXStatement(ctx context.Context, spec *model.Certif
 	return collect(records, toModelCertifyVEXStatement), nil
 }
 
-// getVEXObject is used recreate the VEX object be eager loading the edges
+// getVEXObject is used to recreate the VEX object by eager loading the edges
 func getVEXObject(q *ent.CertifyVexQuery) *ent.CertifyVexQuery {
 	return q.
 		WithVulnerability(func(q *ent.VulnerabilityIDQuery) {
@@ -343,15 +548,44 @@ func getVEXObject(q *ent.CertifyVexQuery) *ent.CertifyVexQuery {
 		WithPackage(func(q *ent.PackageVersionQuery) {
 			q.WithName(func(q *ent.PackageNameQuery) {})
 		}).
-		WithArtifact()
+		WithArtifact().
+		WithCvss().
+		WithCwe(func(q *ent.CWEQuery) {
+			q.WithDemonstrativeExample()
+			q.WithDetectionMethod()
+			q.WithPotentialMitigation()
+			q.WithConsequence(func(q *ent.ConsequenceQuery) {
+				q.WithConsequenceImpact()
+				q.WithConsequenceScope()
+			})
+		}).
+		WithExploit().
+		WithReachableCode(func(q *ent.ReachableCodeQuery) {
+			q.WithReachableCodeArtifact()
+		})
 }
 
 func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStatement {
+
+	var subject model.PackageOrArtifact
+	if record.Edges.Package != nil {
+		subject = model.Package{
+			ID:   record.Edges.Package.ID.String(),
+			Type: record.Edges.Package.Edges.Name.Type,
+		}
+	} else if record.Edges.Artifact != nil {
+		subject = model.Artifact{
+			ID:        record.Edges.Artifact.ID.String(),
+			Algorithm: record.Edges.Artifact.Algorithm,
+			Digest:    record.Edges.Artifact.Digest,
+		}
+	}
+
 	return &model.CertifyVEXStatement{
 		ID:               certifyVEXGlobalID(record.ID.String()),
-		Subject:          toPackageOrArtifact(record.Edges.Package, record.Edges.Artifact),
 		Vulnerability:    toModelVulnerabilityFromVulnerabilityID(record.Edges.Vulnerability),
 		KnownSince:       record.KnownSince,
+		Subject:          subject,
 		Status:           model.VexStatus(record.Status),
 		Statement:        record.Statement,
 		StatusNotes:      record.StatusNotes,
@@ -359,8 +593,13 @@ func toModelCertifyVEXStatement(record *ent.CertifyVex) *model.CertifyVEXStateme
 		Origin:           record.Origin,
 		Collector:        record.Collector,
 		DocumentRef:      record.DocumentRef,
+		Description:      record.Description,
+		Cvss:             toModelCvss(record.Edges.Cvss),
+		Cwe:              toModelCwes(record.Edges.Cwe),
+		Exploits:         toModelExploits(record.Edges.Exploit),
+		ReachableCode:    toModelReachableCodes(record.Edges.ReachableCode),
+		Priority:         record.Priority,
 	}
-
 }
 
 func certifyVexPredicate(filter model.CertifyVEXStatementSpec) predicate.CertifyVex {
@@ -372,6 +611,7 @@ func certifyVexPredicate(filter model.CertifyVEXStatementSpec) predicate.Certify
 		optionalPredicate(filter.Collector, certifyvex.CollectorEQ),
 		optionalPredicate(filter.Origin, certifyvex.OriginEQ),
 		optionalPredicate(filter.DocumentRef, certifyvex.DocumentRefEQ),
+		optionalPredicate(filter.Description, certifyvex.DescriptionEQ),
 	}
 	if filter.Status != nil {
 		status := filter.Status.String()

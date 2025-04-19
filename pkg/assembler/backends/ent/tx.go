@@ -18,6 +18,10 @@ type Tx struct {
 	BillOfMaterials *BillOfMaterialsClient
 	// Builder is the client for interacting with the Builder builders.
 	Builder *BuilderClient
+	// CVSS is the client for interacting with the CVSS builders.
+	CVSS *CVSSClient
+	// CWE is the client for interacting with the CWE builders.
+	CWE *CWEClient
 	// Certification is the client for interacting with the Certification builders.
 	Certification *CertificationClient
 	// CertifyLegal is the client for interacting with the CertifyLegal builders.
@@ -28,8 +32,20 @@ type Tx struct {
 	CertifyVex *CertifyVexClient
 	// CertifyVuln is the client for interacting with the CertifyVuln builders.
 	CertifyVuln *CertifyVulnClient
+	// Consequence is the client for interacting with the Consequence builders.
+	Consequence *ConsequenceClient
+	// Consequence_Impact is the client for interacting with the Consequence_Impact builders.
+	Consequence_Impact *ConsequenceImpactClient
+	// Consequence_Scope is the client for interacting with the Consequence_Scope builders.
+	Consequence_Scope *ConsequenceScopeClient
+	// DemonstrativeExample is the client for interacting with the DemonstrativeExample builders.
+	DemonstrativeExample *DemonstrativeExampleClient
 	// Dependency is the client for interacting with the Dependency builders.
 	Dependency *DependencyClient
+	// DetectionMethod is the client for interacting with the DetectionMethod builders.
+	DetectionMethod *DetectionMethodClient
+	// Exploit is the client for interacting with the Exploit builders.
+	Exploit *ExploitClient
 	// HasMetadata is the client for interacting with the HasMetadata builders.
 	HasMetadata *HasMetadataClient
 	// HasSourceAt is the client for interacting with the HasSourceAt builders.
@@ -48,6 +64,12 @@ type Tx struct {
 	PkgEqual *PkgEqualClient
 	// PointOfContact is the client for interacting with the PointOfContact builders.
 	PointOfContact *PointOfContactClient
+	// PotentialMitigation is the client for interacting with the PotentialMitigation builders.
+	PotentialMitigation *PotentialMitigationClient
+	// ReachableCode is the client for interacting with the ReachableCode builders.
+	ReachableCode *ReachableCodeClient
+	// ReachableCodeArtifact is the client for interacting with the ReachableCodeArtifact builders.
+	ReachableCodeArtifact *ReachableCodeArtifactClient
 	// SLSAAttestation is the client for interacting with the SLSAAttestation builders.
 	SLSAAttestation *SLSAAttestationClient
 	// SourceName is the client for interacting with the SourceName builders.
@@ -192,12 +214,20 @@ func (tx *Tx) init() {
 	tx.Artifact = NewArtifactClient(tx.config)
 	tx.BillOfMaterials = NewBillOfMaterialsClient(tx.config)
 	tx.Builder = NewBuilderClient(tx.config)
+	tx.CVSS = NewCVSSClient(tx.config)
+	tx.CWE = NewCWEClient(tx.config)
 	tx.Certification = NewCertificationClient(tx.config)
 	tx.CertifyLegal = NewCertifyLegalClient(tx.config)
 	tx.CertifyScorecard = NewCertifyScorecardClient(tx.config)
 	tx.CertifyVex = NewCertifyVexClient(tx.config)
 	tx.CertifyVuln = NewCertifyVulnClient(tx.config)
+	tx.Consequence = NewConsequenceClient(tx.config)
+	tx.Consequence_Impact = NewConsequenceImpactClient(tx.config)
+	tx.Consequence_Scope = NewConsequenceScopeClient(tx.config)
+	tx.DemonstrativeExample = NewDemonstrativeExampleClient(tx.config)
 	tx.Dependency = NewDependencyClient(tx.config)
+	tx.DetectionMethod = NewDetectionMethodClient(tx.config)
+	tx.Exploit = NewExploitClient(tx.config)
 	tx.HasMetadata = NewHasMetadataClient(tx.config)
 	tx.HasSourceAt = NewHasSourceAtClient(tx.config)
 	tx.HashEqual = NewHashEqualClient(tx.config)
@@ -207,6 +237,9 @@ func (tx *Tx) init() {
 	tx.PackageVersion = NewPackageVersionClient(tx.config)
 	tx.PkgEqual = NewPkgEqualClient(tx.config)
 	tx.PointOfContact = NewPointOfContactClient(tx.config)
+	tx.PotentialMitigation = NewPotentialMitigationClient(tx.config)
+	tx.ReachableCode = NewReachableCodeClient(tx.config)
+	tx.ReachableCodeArtifact = NewReachableCodeArtifactClient(tx.config)
 	tx.SLSAAttestation = NewSLSAAttestationClient(tx.config)
 	tx.SourceName = NewSourceNameClient(tx.config)
 	tx.VulnEqual = NewVulnEqualClient(tx.config)

@@ -20,7 +20,15 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyscorecard"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvuln"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_impact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/consequence_scope"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cvss"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cwe"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/demonstrativeexample"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/dependency"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/detectionmethod"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/exploit"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hashequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hasmetadata"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/hassourceat"
@@ -30,6 +38,9 @@ import (
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pkgequal"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/pointofcontact"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/potentialmitigation"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecode"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecodeartifact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/slsaattestation"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/sourcename"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnequal"
@@ -98,12 +109,20 @@ func checkColumn(table, column string) error {
 			artifact.Table:              artifact.ValidColumn,
 			billofmaterials.Table:       billofmaterials.ValidColumn,
 			builder.Table:               builder.ValidColumn,
+			cvss.Table:                  cvss.ValidColumn,
+			cwe.Table:                   cwe.ValidColumn,
 			certification.Table:         certification.ValidColumn,
 			certifylegal.Table:          certifylegal.ValidColumn,
 			certifyscorecard.Table:      certifyscorecard.ValidColumn,
 			certifyvex.Table:            certifyvex.ValidColumn,
 			certifyvuln.Table:           certifyvuln.ValidColumn,
+			consequence.Table:           consequence.ValidColumn,
+			consequence_impact.Table:    consequence_impact.ValidColumn,
+			consequence_scope.Table:     consequence_scope.ValidColumn,
+			demonstrativeexample.Table:  demonstrativeexample.ValidColumn,
 			dependency.Table:            dependency.ValidColumn,
+			detectionmethod.Table:       detectionmethod.ValidColumn,
+			exploit.Table:               exploit.ValidColumn,
 			hasmetadata.Table:           hasmetadata.ValidColumn,
 			hassourceat.Table:           hassourceat.ValidColumn,
 			hashequal.Table:             hashequal.ValidColumn,
@@ -113,6 +132,9 @@ func checkColumn(table, column string) error {
 			packageversion.Table:        packageversion.ValidColumn,
 			pkgequal.Table:              pkgequal.ValidColumn,
 			pointofcontact.Table:        pointofcontact.ValidColumn,
+			potentialmitigation.Table:   potentialmitigation.ValidColumn,
+			reachablecode.Table:         reachablecode.ValidColumn,
+			reachablecodeartifact.Table: reachablecodeartifact.ValidColumn,
 			slsaattestation.Table:       slsaattestation.ValidColumn,
 			sourcename.Table:            sourcename.ValidColumn,
 			vulnequal.Table:             vulnequal.ValidColumn,
