@@ -29,7 +29,7 @@ func (_ *openVexTypeGuesser) GuessDocumentType(blob []byte, format processor.For
 		// Decode the BOM
 		var decoded vex.VEX
 		err := json.Unmarshal(blob, &decoded)
-		if err == nil && decoded.Metadata.ID != "" {
+		if err == nil && decoded.Metadata.ID != "" && decoded.Statements != nil {
 			return processor.DocumentOpenVEX
 		}
 	}

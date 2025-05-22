@@ -1277,6 +1277,7 @@ func (pvq *PackageVersionQuery) loadVex(ctx context.Context, query *CertifyVexQu
 			init(nodes[i])
 		}
 	}
+	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(certifyvex.FieldPackageID)
 	}

@@ -47,6 +47,8 @@ func (CertifyVex) Fields() []ent.Field {
 		field.String("origin"),
 		field.String("collector"),
 		field.String("document_ref"),
+		field.String("description").Optional().Nillable(),
+		field.Float("priority").Optional().Nillable(),
 	}
 }
 
@@ -56,6 +58,10 @@ func (CertifyVex) Edges() []ent.Edge {
 		edge.To("package", PackageVersion.Type).Unique().Field("package_id"),
 		edge.To("artifact", Artifact.Type).Unique().Field("artifact_id"),
 		edge.To("vulnerability", VulnerabilityID.Type).Unique().Required().Field("vulnerability_id"),
+		edge.To("cvss", CVSS.Type).Unique(),
+		edge.To("cwe", CWE.Type),
+		edge.To("exploit", Exploit.Type),
+		edge.To("reachable_code", ReachableCode.Type),
 	}
 }
 

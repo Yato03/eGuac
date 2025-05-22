@@ -3088,6 +3088,121 @@ var (
 		},
 	}
 
+	// Extended Vex
+	//go:embed exampledata/extended_vex.json
+	ExtendedVexExample []byte
+
+	//go:embed exampledata/extended_vex_small.json
+	ExtendedVexSmallExample []byte
+
+	ExtendedVexIngest = []assembler.VexIngest{
+		{
+			Pkg: &generated.PkgInputSpec{
+				Name:      "fast-xml-parser",
+				Version:   strP("4.1.2"),
+				Namespace: strP(""),
+				Type:      "npm",
+				Subpath:   strP(""),
+			},
+			Artifact: nil,
+			Vulnerability: &generated.VulnerabilityInputSpec{
+				Type:            "cve",
+				VulnerabilityID: "cve-2023-34104",
+			},
+			VexData: &generated.VexStatementInputSpec{
+				KnownSince:       parseRfc3339("2024-09-06T13:11:08.068416Z"),
+				Origin:           "https://github.com/GermanMT/VexGen",
+				VexJustification: generated.VexJustificationVulnerableCodeNotPresent,
+				Status:           generated.VexStatusAffected,
+				Statement:        "a short description",
+				Description:      ptrfrom.String("a short description"),
+				Cvss: &generated.CVSSInput{
+					VulnImpact:   ptrfrom.Float64(3.6),
+					Version:      ptrfrom.String("3.1"),
+					AttackString: ptrfrom.String("CVSS:3.1/AV:N/AC:L/PR:N/UI:N/S:U/C:N/I:N/A:H"),
+				},
+				Cwe: []*generated.CWEInput{
+					{
+						ID:               "https://cwe.mitre.org/data/definitions/1333.html",
+						Name:             "1333",
+						Abstraction:      "Base",
+						BackgroundDetail: ptrfrom.String("Regular Expression Without Backtracking"),
+						PotentialMitigations: []*generated.PotentialMitigationsInput{
+							{
+								Phase:              ptrfrom.String("Architecture and Design"),
+								Description:        ptrfrom.String("Use regular expressions that do not support backtracking, e.g. by removing nested quantifiers."),
+								Effectiveness:      ptrfrom.String("High"),
+								EffectivenessNotes: ptrfrom.String("This is one of the few effective solutions when using user-provided regular expressions."),
+							},
+						},
+						Consequences: []*generated.ConsequencesInput{
+							{
+								Scope:      []*string{ptrfrom.String("Availability")},
+								Impact:     []*string{ptrfrom.String("DoS: Resource Consumption (CPU)")},
+								Notes:      ptrfrom.String("This can cause the application to consume excessive resources, such as CPU cycles."),
+								Likelihood: ptrfrom.String("High"),
+							},
+						},
+						DemonstrativeExamples: []*string{
+							ptrfrom.String("This is a demonstrative example"),
+						},
+						DetectionMethods: []*generated.DetectionMethodsInput{
+							{
+								Id:            ptrfrom.String("09870987098"),
+								Method:        ptrfrom.String("Automated Static Analysis"),
+								Description:   ptrfrom.String("Use a regular expression that is known to be vulnerable to catastrophic backtracking."),
+								Effectiveness: ptrfrom.String("High"),
+							},
+						},
+					},
+				},
+				Exploits: []*generated.ExploitsInputSpec{
+					{
+						Id:          ptrfrom.String("https://cve.mitre.org/cgi-bin/cvename.cgi?name=CVE-2023-34104"),
+						Description: ptrfrom.String("This is a description of the exploit"),
+						Payload:     ptrfrom.String("This is the payload"),
+					},
+				},
+				ReachableCode: []*generated.ReachableCodeInputSpec{
+
+					&generated.ReachableCodeInputSpec{
+						PathToFile: ptrfrom.String("src/index.js"),
+						UsedArtifacts: []*generated.UsedArtifactInputSpec{
+							{
+								Name: ptrfrom.String("fast-xml-parser"),
+								UsedInLines: []*int{
+									ptrfrom.Int(1),
+									ptrfrom.Int(2),
+									ptrfrom.Int(3),
+								},
+							},
+						},
+					},
+				},
+				Priority: ptrfrom.Float64(3.52),
+			},
+		},
+	}
+
+	ExtendedVexCertifyVulnIngest = []assembler.CertifyVulnIngest{
+		{
+			Pkg: &generated.PkgInputSpec{
+				Name:      "fast-xml-parser",
+				Version:   strP("4.1.2"),
+				Namespace: strP(""),
+				Type:      "npm",
+				Subpath:   strP(""),
+			},
+			Vulnerability: &generated.VulnerabilityInputSpec{
+				Type:            "cve",
+				VulnerabilityID: "cve-2023-34104",
+			},
+			VulnData: &generated.ScanMetadataInput{
+				TimeScanned: parseRfc3339("2024-09-06T13:11:08.068416Z"),
+			},
+		},
+	}
+
 	// CSAF
 	//go:embed exampledata/rhsa-csaf.json
 	CsafExampleRedHat []byte

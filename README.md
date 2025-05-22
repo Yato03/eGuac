@@ -1,4 +1,4 @@
-# GUAC: Graph for Understanding Artifact Composition
+# eGUAC: Extended Graph for Understanding Artifact Composition
 
 eGuac is an extension of the GUAC tool. This enhancement allows the tool to support the eVEX file format and to leverage the GUAC graph to have a greater context of the security of a software supply chain.
 

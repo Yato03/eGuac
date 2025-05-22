@@ -14,8 +14,12 @@ import (
 	"github.com/google/uuid"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/artifact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cvss"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cwe"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/exploit"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/predicate"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecode"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnerabilityid"
 )
 
@@ -198,6 +202,53 @@ func (cvu *CertifyVexUpdate) SetNillableDocumentRef(s *string) *CertifyVexUpdate
 	return cvu
 }
 
+// SetDescription sets the "description" field.
+func (cvu *CertifyVexUpdate) SetDescription(s string) *CertifyVexUpdate {
+	cvu.mutation.SetDescription(s)
+	return cvu
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cvu *CertifyVexUpdate) SetNillableDescription(s *string) *CertifyVexUpdate {
+	if s != nil {
+		cvu.SetDescription(*s)
+	}
+	return cvu
+}
+
+// ClearDescription clears the value of the "description" field.
+func (cvu *CertifyVexUpdate) ClearDescription() *CertifyVexUpdate {
+	cvu.mutation.ClearDescription()
+	return cvu
+}
+
+// SetPriority sets the "priority" field.
+func (cvu *CertifyVexUpdate) SetPriority(f float64) *CertifyVexUpdate {
+	cvu.mutation.ResetPriority()
+	cvu.mutation.SetPriority(f)
+	return cvu
+}
+
+// SetNillablePriority sets the "priority" field if the given value is not nil.
+func (cvu *CertifyVexUpdate) SetNillablePriority(f *float64) *CertifyVexUpdate {
+	if f != nil {
+		cvu.SetPriority(*f)
+	}
+	return cvu
+}
+
+// AddPriority adds f to the "priority" field.
+func (cvu *CertifyVexUpdate) AddPriority(f float64) *CertifyVexUpdate {
+	cvu.mutation.AddPriority(f)
+	return cvu
+}
+
+// ClearPriority clears the value of the "priority" field.
+func (cvu *CertifyVexUpdate) ClearPriority() *CertifyVexUpdate {
+	cvu.mutation.ClearPriority()
+	return cvu
+}
+
 // SetPackage sets the "package" edge to the PackageVersion entity.
 func (cvu *CertifyVexUpdate) SetPackage(p *PackageVersion) *CertifyVexUpdate {
 	return cvu.SetPackageID(p.ID)
@@ -211,6 +262,70 @@ func (cvu *CertifyVexUpdate) SetArtifact(a *Artifact) *CertifyVexUpdate {
 // SetVulnerability sets the "vulnerability" edge to the VulnerabilityID entity.
 func (cvu *CertifyVexUpdate) SetVulnerability(v *VulnerabilityID) *CertifyVexUpdate {
 	return cvu.SetVulnerabilityID(v.ID)
+}
+
+// SetCvssID sets the "cvss" edge to the CVSS entity by ID.
+func (cvu *CertifyVexUpdate) SetCvssID(id uuid.UUID) *CertifyVexUpdate {
+	cvu.mutation.SetCvssID(id)
+	return cvu
+}
+
+// SetNillableCvssID sets the "cvss" edge to the CVSS entity by ID if the given value is not nil.
+func (cvu *CertifyVexUpdate) SetNillableCvssID(id *uuid.UUID) *CertifyVexUpdate {
+	if id != nil {
+		cvu = cvu.SetCvssID(*id)
+	}
+	return cvu
+}
+
+// SetCvss sets the "cvss" edge to the CVSS entity.
+func (cvu *CertifyVexUpdate) SetCvss(c *CVSS) *CertifyVexUpdate {
+	return cvu.SetCvssID(c.ID)
+}
+
+// AddCweIDs adds the "cwe" edge to the CWE entity by IDs.
+func (cvu *CertifyVexUpdate) AddCweIDs(ids ...uuid.UUID) *CertifyVexUpdate {
+	cvu.mutation.AddCweIDs(ids...)
+	return cvu
+}
+
+// AddCwe adds the "cwe" edges to the CWE entity.
+func (cvu *CertifyVexUpdate) AddCwe(c ...*CWE) *CertifyVexUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cvu.AddCweIDs(ids...)
+}
+
+// AddExploitIDs adds the "exploit" edge to the Exploit entity by IDs.
+func (cvu *CertifyVexUpdate) AddExploitIDs(ids ...uuid.UUID) *CertifyVexUpdate {
+	cvu.mutation.AddExploitIDs(ids...)
+	return cvu
+}
+
+// AddExploit adds the "exploit" edges to the Exploit entity.
+func (cvu *CertifyVexUpdate) AddExploit(e ...*Exploit) *CertifyVexUpdate {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return cvu.AddExploitIDs(ids...)
+}
+
+// AddReachableCodeIDs adds the "reachable_code" edge to the ReachableCode entity by IDs.
+func (cvu *CertifyVexUpdate) AddReachableCodeIDs(ids ...uuid.UUID) *CertifyVexUpdate {
+	cvu.mutation.AddReachableCodeIDs(ids...)
+	return cvu
+}
+
+// AddReachableCode adds the "reachable_code" edges to the ReachableCode entity.
+func (cvu *CertifyVexUpdate) AddReachableCode(r ...*ReachableCode) *CertifyVexUpdate {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return cvu.AddReachableCodeIDs(ids...)
 }
 
 // Mutation returns the CertifyVexMutation object of the builder.
@@ -234,6 +349,75 @@ func (cvu *CertifyVexUpdate) ClearArtifact() *CertifyVexUpdate {
 func (cvu *CertifyVexUpdate) ClearVulnerability() *CertifyVexUpdate {
 	cvu.mutation.ClearVulnerability()
 	return cvu
+}
+
+// ClearCvss clears the "cvss" edge to the CVSS entity.
+func (cvu *CertifyVexUpdate) ClearCvss() *CertifyVexUpdate {
+	cvu.mutation.ClearCvss()
+	return cvu
+}
+
+// ClearCwe clears all "cwe" edges to the CWE entity.
+func (cvu *CertifyVexUpdate) ClearCwe() *CertifyVexUpdate {
+	cvu.mutation.ClearCwe()
+	return cvu
+}
+
+// RemoveCweIDs removes the "cwe" edge to CWE entities by IDs.
+func (cvu *CertifyVexUpdate) RemoveCweIDs(ids ...uuid.UUID) *CertifyVexUpdate {
+	cvu.mutation.RemoveCweIDs(ids...)
+	return cvu
+}
+
+// RemoveCwe removes "cwe" edges to CWE entities.
+func (cvu *CertifyVexUpdate) RemoveCwe(c ...*CWE) *CertifyVexUpdate {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cvu.RemoveCweIDs(ids...)
+}
+
+// ClearExploit clears all "exploit" edges to the Exploit entity.
+func (cvu *CertifyVexUpdate) ClearExploit() *CertifyVexUpdate {
+	cvu.mutation.ClearExploit()
+	return cvu
+}
+
+// RemoveExploitIDs removes the "exploit" edge to Exploit entities by IDs.
+func (cvu *CertifyVexUpdate) RemoveExploitIDs(ids ...uuid.UUID) *CertifyVexUpdate {
+	cvu.mutation.RemoveExploitIDs(ids...)
+	return cvu
+}
+
+// RemoveExploit removes "exploit" edges to Exploit entities.
+func (cvu *CertifyVexUpdate) RemoveExploit(e ...*Exploit) *CertifyVexUpdate {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return cvu.RemoveExploitIDs(ids...)
+}
+
+// ClearReachableCode clears all "reachable_code" edges to the ReachableCode entity.
+func (cvu *CertifyVexUpdate) ClearReachableCode() *CertifyVexUpdate {
+	cvu.mutation.ClearReachableCode()
+	return cvu
+}
+
+// RemoveReachableCodeIDs removes the "reachable_code" edge to ReachableCode entities by IDs.
+func (cvu *CertifyVexUpdate) RemoveReachableCodeIDs(ids ...uuid.UUID) *CertifyVexUpdate {
+	cvu.mutation.RemoveReachableCodeIDs(ids...)
+	return cvu
+}
+
+// RemoveReachableCode removes "reachable_code" edges to ReachableCode entities.
+func (cvu *CertifyVexUpdate) RemoveReachableCode(r ...*ReachableCode) *CertifyVexUpdate {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return cvu.RemoveReachableCodeIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -306,6 +490,21 @@ func (cvu *CertifyVexUpdate) sqlSave(ctx context.Context) (n int, err error) {
 	}
 	if value, ok := cvu.mutation.DocumentRef(); ok {
 		_spec.SetField(certifyvex.FieldDocumentRef, field.TypeString, value)
+	}
+	if value, ok := cvu.mutation.Description(); ok {
+		_spec.SetField(certifyvex.FieldDescription, field.TypeString, value)
+	}
+	if cvu.mutation.DescriptionCleared() {
+		_spec.ClearField(certifyvex.FieldDescription, field.TypeString)
+	}
+	if value, ok := cvu.mutation.Priority(); ok {
+		_spec.SetField(certifyvex.FieldPriority, field.TypeFloat64, value)
+	}
+	if value, ok := cvu.mutation.AddedPriority(); ok {
+		_spec.AddField(certifyvex.FieldPriority, field.TypeFloat64, value)
+	}
+	if cvu.mutation.PriorityCleared() {
+		_spec.ClearField(certifyvex.FieldPriority, field.TypeFloat64)
 	}
 	if cvu.mutation.PackageCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -387,6 +586,170 @@ func (cvu *CertifyVexUpdate) sqlSave(ctx context.Context) (n int, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(vulnerabilityid.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cvu.mutation.CvssCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   certifyvex.CvssTable,
+			Columns: []string{certifyvex.CvssColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cvss.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvu.mutation.CvssIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   certifyvex.CvssTable,
+			Columns: []string{certifyvex.CvssColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cvss.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cvu.mutation.CweCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.CweTable,
+			Columns: certifyvex.CwePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cwe.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvu.mutation.RemovedCweIDs(); len(nodes) > 0 && !cvu.mutation.CweCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.CweTable,
+			Columns: certifyvex.CwePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cwe.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvu.mutation.CweIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.CweTable,
+			Columns: certifyvex.CwePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cwe.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cvu.mutation.ExploitCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ExploitTable,
+			Columns: certifyvex.ExploitPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(exploit.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvu.mutation.RemovedExploitIDs(); len(nodes) > 0 && !cvu.mutation.ExploitCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ExploitTable,
+			Columns: certifyvex.ExploitPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(exploit.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvu.mutation.ExploitIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ExploitTable,
+			Columns: certifyvex.ExploitPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(exploit.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cvu.mutation.ReachableCodeCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ReachableCodeTable,
+			Columns: certifyvex.ReachableCodePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(reachablecode.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvu.mutation.RemovedReachableCodeIDs(); len(nodes) > 0 && !cvu.mutation.ReachableCodeCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ReachableCodeTable,
+			Columns: certifyvex.ReachableCodePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(reachablecode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvu.mutation.ReachableCodeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ReachableCodeTable,
+			Columns: certifyvex.ReachableCodePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(reachablecode.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {
@@ -580,6 +943,53 @@ func (cvuo *CertifyVexUpdateOne) SetNillableDocumentRef(s *string) *CertifyVexUp
 	return cvuo
 }
 
+// SetDescription sets the "description" field.
+func (cvuo *CertifyVexUpdateOne) SetDescription(s string) *CertifyVexUpdateOne {
+	cvuo.mutation.SetDescription(s)
+	return cvuo
+}
+
+// SetNillableDescription sets the "description" field if the given value is not nil.
+func (cvuo *CertifyVexUpdateOne) SetNillableDescription(s *string) *CertifyVexUpdateOne {
+	if s != nil {
+		cvuo.SetDescription(*s)
+	}
+	return cvuo
+}
+
+// ClearDescription clears the value of the "description" field.
+func (cvuo *CertifyVexUpdateOne) ClearDescription() *CertifyVexUpdateOne {
+	cvuo.mutation.ClearDescription()
+	return cvuo
+}
+
+// SetPriority sets the "priority" field.
+func (cvuo *CertifyVexUpdateOne) SetPriority(f float64) *CertifyVexUpdateOne {
+	cvuo.mutation.ResetPriority()
+	cvuo.mutation.SetPriority(f)
+	return cvuo
+}
+
+// SetNillablePriority sets the "priority" field if the given value is not nil.
+func (cvuo *CertifyVexUpdateOne) SetNillablePriority(f *float64) *CertifyVexUpdateOne {
+	if f != nil {
+		cvuo.SetPriority(*f)
+	}
+	return cvuo
+}
+
+// AddPriority adds f to the "priority" field.
+func (cvuo *CertifyVexUpdateOne) AddPriority(f float64) *CertifyVexUpdateOne {
+	cvuo.mutation.AddPriority(f)
+	return cvuo
+}
+
+// ClearPriority clears the value of the "priority" field.
+func (cvuo *CertifyVexUpdateOne) ClearPriority() *CertifyVexUpdateOne {
+	cvuo.mutation.ClearPriority()
+	return cvuo
+}
+
 // SetPackage sets the "package" edge to the PackageVersion entity.
 func (cvuo *CertifyVexUpdateOne) SetPackage(p *PackageVersion) *CertifyVexUpdateOne {
 	return cvuo.SetPackageID(p.ID)
@@ -593,6 +1003,70 @@ func (cvuo *CertifyVexUpdateOne) SetArtifact(a *Artifact) *CertifyVexUpdateOne {
 // SetVulnerability sets the "vulnerability" edge to the VulnerabilityID entity.
 func (cvuo *CertifyVexUpdateOne) SetVulnerability(v *VulnerabilityID) *CertifyVexUpdateOne {
 	return cvuo.SetVulnerabilityID(v.ID)
+}
+
+// SetCvssID sets the "cvss" edge to the CVSS entity by ID.
+func (cvuo *CertifyVexUpdateOne) SetCvssID(id uuid.UUID) *CertifyVexUpdateOne {
+	cvuo.mutation.SetCvssID(id)
+	return cvuo
+}
+
+// SetNillableCvssID sets the "cvss" edge to the CVSS entity by ID if the given value is not nil.
+func (cvuo *CertifyVexUpdateOne) SetNillableCvssID(id *uuid.UUID) *CertifyVexUpdateOne {
+	if id != nil {
+		cvuo = cvuo.SetCvssID(*id)
+	}
+	return cvuo
+}
+
+// SetCvss sets the "cvss" edge to the CVSS entity.
+func (cvuo *CertifyVexUpdateOne) SetCvss(c *CVSS) *CertifyVexUpdateOne {
+	return cvuo.SetCvssID(c.ID)
+}
+
+// AddCweIDs adds the "cwe" edge to the CWE entity by IDs.
+func (cvuo *CertifyVexUpdateOne) AddCweIDs(ids ...uuid.UUID) *CertifyVexUpdateOne {
+	cvuo.mutation.AddCweIDs(ids...)
+	return cvuo
+}
+
+// AddCwe adds the "cwe" edges to the CWE entity.
+func (cvuo *CertifyVexUpdateOne) AddCwe(c ...*CWE) *CertifyVexUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cvuo.AddCweIDs(ids...)
+}
+
+// AddExploitIDs adds the "exploit" edge to the Exploit entity by IDs.
+func (cvuo *CertifyVexUpdateOne) AddExploitIDs(ids ...uuid.UUID) *CertifyVexUpdateOne {
+	cvuo.mutation.AddExploitIDs(ids...)
+	return cvuo
+}
+
+// AddExploit adds the "exploit" edges to the Exploit entity.
+func (cvuo *CertifyVexUpdateOne) AddExploit(e ...*Exploit) *CertifyVexUpdateOne {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return cvuo.AddExploitIDs(ids...)
+}
+
+// AddReachableCodeIDs adds the "reachable_code" edge to the ReachableCode entity by IDs.
+func (cvuo *CertifyVexUpdateOne) AddReachableCodeIDs(ids ...uuid.UUID) *CertifyVexUpdateOne {
+	cvuo.mutation.AddReachableCodeIDs(ids...)
+	return cvuo
+}
+
+// AddReachableCode adds the "reachable_code" edges to the ReachableCode entity.
+func (cvuo *CertifyVexUpdateOne) AddReachableCode(r ...*ReachableCode) *CertifyVexUpdateOne {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return cvuo.AddReachableCodeIDs(ids...)
 }
 
 // Mutation returns the CertifyVexMutation object of the builder.
@@ -616,6 +1090,75 @@ func (cvuo *CertifyVexUpdateOne) ClearArtifact() *CertifyVexUpdateOne {
 func (cvuo *CertifyVexUpdateOne) ClearVulnerability() *CertifyVexUpdateOne {
 	cvuo.mutation.ClearVulnerability()
 	return cvuo
+}
+
+// ClearCvss clears the "cvss" edge to the CVSS entity.
+func (cvuo *CertifyVexUpdateOne) ClearCvss() *CertifyVexUpdateOne {
+	cvuo.mutation.ClearCvss()
+	return cvuo
+}
+
+// ClearCwe clears all "cwe" edges to the CWE entity.
+func (cvuo *CertifyVexUpdateOne) ClearCwe() *CertifyVexUpdateOne {
+	cvuo.mutation.ClearCwe()
+	return cvuo
+}
+
+// RemoveCweIDs removes the "cwe" edge to CWE entities by IDs.
+func (cvuo *CertifyVexUpdateOne) RemoveCweIDs(ids ...uuid.UUID) *CertifyVexUpdateOne {
+	cvuo.mutation.RemoveCweIDs(ids...)
+	return cvuo
+}
+
+// RemoveCwe removes "cwe" edges to CWE entities.
+func (cvuo *CertifyVexUpdateOne) RemoveCwe(c ...*CWE) *CertifyVexUpdateOne {
+	ids := make([]uuid.UUID, len(c))
+	for i := range c {
+		ids[i] = c[i].ID
+	}
+	return cvuo.RemoveCweIDs(ids...)
+}
+
+// ClearExploit clears all "exploit" edges to the Exploit entity.
+func (cvuo *CertifyVexUpdateOne) ClearExploit() *CertifyVexUpdateOne {
+	cvuo.mutation.ClearExploit()
+	return cvuo
+}
+
+// RemoveExploitIDs removes the "exploit" edge to Exploit entities by IDs.
+func (cvuo *CertifyVexUpdateOne) RemoveExploitIDs(ids ...uuid.UUID) *CertifyVexUpdateOne {
+	cvuo.mutation.RemoveExploitIDs(ids...)
+	return cvuo
+}
+
+// RemoveExploit removes "exploit" edges to Exploit entities.
+func (cvuo *CertifyVexUpdateOne) RemoveExploit(e ...*Exploit) *CertifyVexUpdateOne {
+	ids := make([]uuid.UUID, len(e))
+	for i := range e {
+		ids[i] = e[i].ID
+	}
+	return cvuo.RemoveExploitIDs(ids...)
+}
+
+// ClearReachableCode clears all "reachable_code" edges to the ReachableCode entity.
+func (cvuo *CertifyVexUpdateOne) ClearReachableCode() *CertifyVexUpdateOne {
+	cvuo.mutation.ClearReachableCode()
+	return cvuo
+}
+
+// RemoveReachableCodeIDs removes the "reachable_code" edge to ReachableCode entities by IDs.
+func (cvuo *CertifyVexUpdateOne) RemoveReachableCodeIDs(ids ...uuid.UUID) *CertifyVexUpdateOne {
+	cvuo.mutation.RemoveReachableCodeIDs(ids...)
+	return cvuo
+}
+
+// RemoveReachableCode removes "reachable_code" edges to ReachableCode entities.
+func (cvuo *CertifyVexUpdateOne) RemoveReachableCode(r ...*ReachableCode) *CertifyVexUpdateOne {
+	ids := make([]uuid.UUID, len(r))
+	for i := range r {
+		ids[i] = r[i].ID
+	}
+	return cvuo.RemoveReachableCodeIDs(ids...)
 }
 
 // Where appends a list predicates to the CertifyVexUpdate builder.
@@ -719,6 +1262,21 @@ func (cvuo *CertifyVexUpdateOne) sqlSave(ctx context.Context) (_node *CertifyVex
 	if value, ok := cvuo.mutation.DocumentRef(); ok {
 		_spec.SetField(certifyvex.FieldDocumentRef, field.TypeString, value)
 	}
+	if value, ok := cvuo.mutation.Description(); ok {
+		_spec.SetField(certifyvex.FieldDescription, field.TypeString, value)
+	}
+	if cvuo.mutation.DescriptionCleared() {
+		_spec.ClearField(certifyvex.FieldDescription, field.TypeString)
+	}
+	if value, ok := cvuo.mutation.Priority(); ok {
+		_spec.SetField(certifyvex.FieldPriority, field.TypeFloat64, value)
+	}
+	if value, ok := cvuo.mutation.AddedPriority(); ok {
+		_spec.AddField(certifyvex.FieldPriority, field.TypeFloat64, value)
+	}
+	if cvuo.mutation.PriorityCleared() {
+		_spec.ClearField(certifyvex.FieldPriority, field.TypeFloat64)
+	}
 	if cvuo.mutation.PackageCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -799,6 +1357,170 @@ func (cvuo *CertifyVexUpdateOne) sqlSave(ctx context.Context) (_node *CertifyVex
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(vulnerabilityid.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cvuo.mutation.CvssCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   certifyvex.CvssTable,
+			Columns: []string{certifyvex.CvssColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cvss.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvuo.mutation.CvssIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: false,
+			Table:   certifyvex.CvssTable,
+			Columns: []string{certifyvex.CvssColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cvss.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cvuo.mutation.CweCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.CweTable,
+			Columns: certifyvex.CwePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cwe.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvuo.mutation.RemovedCweIDs(); len(nodes) > 0 && !cvuo.mutation.CweCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.CweTable,
+			Columns: certifyvex.CwePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cwe.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvuo.mutation.CweIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.CweTable,
+			Columns: certifyvex.CwePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(cwe.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cvuo.mutation.ExploitCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ExploitTable,
+			Columns: certifyvex.ExploitPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(exploit.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvuo.mutation.RemovedExploitIDs(); len(nodes) > 0 && !cvuo.mutation.ExploitCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ExploitTable,
+			Columns: certifyvex.ExploitPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(exploit.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvuo.mutation.ExploitIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ExploitTable,
+			Columns: certifyvex.ExploitPrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(exploit.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if cvuo.mutation.ReachableCodeCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ReachableCodeTable,
+			Columns: certifyvex.ReachableCodePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(reachablecode.FieldID, field.TypeUUID),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvuo.mutation.RemovedReachableCodeIDs(); len(nodes) > 0 && !cvuo.mutation.ReachableCodeCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ReachableCodeTable,
+			Columns: certifyvex.ReachableCodePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(reachablecode.FieldID, field.TypeUUID),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := cvuo.mutation.ReachableCodeIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2M,
+			Inverse: false,
+			Table:   certifyvex.ReachableCodeTable,
+			Columns: certifyvex.ReachableCodePrimaryKey,
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(reachablecode.FieldID, field.TypeUUID),
 			},
 		}
 		for _, k := range nodes {

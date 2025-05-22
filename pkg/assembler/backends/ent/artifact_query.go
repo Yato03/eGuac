@@ -1165,6 +1165,7 @@ func (aq *ArtifactQuery) loadVex(ctx context.Context, query *CertifyVexQuery, no
 			init(nodes[i])
 		}
 	}
+	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(certifyvex.FieldArtifactID)
 	}

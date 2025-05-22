@@ -45,6 +45,30 @@ func (f BuilderFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, err
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.BuilderMutation", m)
 }
 
+// The CVSSFunc type is an adapter to allow the use of ordinary
+// function as CVSS mutator.
+type CVSSFunc func(context.Context, *ent.CVSSMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CVSSFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CVSSMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CVSSMutation", m)
+}
+
+// The CWEFunc type is an adapter to allow the use of ordinary
+// function as CWE mutator.
+type CWEFunc func(context.Context, *ent.CWEMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f CWEFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.CWEMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CWEMutation", m)
+}
+
 // The CertificationFunc type is an adapter to allow the use of ordinary
 // function as Certification mutator.
 type CertificationFunc func(context.Context, *ent.CertificationMutation) (ent.Value, error)
@@ -105,6 +129,54 @@ func (f CertifyVulnFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value,
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.CertifyVulnMutation", m)
 }
 
+// The ConsequenceFunc type is an adapter to allow the use of ordinary
+// function as Consequence mutator.
+type ConsequenceFunc func(context.Context, *ent.ConsequenceMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ConsequenceFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConsequenceMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConsequenceMutation", m)
+}
+
+// The Consequence_ImpactFunc type is an adapter to allow the use of ordinary
+// function as Consequence_Impact mutator.
+type Consequence_ImpactFunc func(context.Context, *ent.ConsequenceImpactMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f Consequence_ImpactFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConsequenceImpactMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConsequenceImpactMutation", m)
+}
+
+// The Consequence_ScopeFunc type is an adapter to allow the use of ordinary
+// function as Consequence_Scope mutator.
+type Consequence_ScopeFunc func(context.Context, *ent.ConsequenceScopeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f Consequence_ScopeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ConsequenceScopeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ConsequenceScopeMutation", m)
+}
+
+// The DemonstrativeExampleFunc type is an adapter to allow the use of ordinary
+// function as DemonstrativeExample mutator.
+type DemonstrativeExampleFunc func(context.Context, *ent.DemonstrativeExampleMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DemonstrativeExampleFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DemonstrativeExampleMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DemonstrativeExampleMutation", m)
+}
+
 // The DependencyFunc type is an adapter to allow the use of ordinary
 // function as Dependency mutator.
 type DependencyFunc func(context.Context, *ent.DependencyMutation) (ent.Value, error)
@@ -115,6 +187,30 @@ func (f DependencyFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, 
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DependencyMutation", m)
+}
+
+// The DetectionMethodFunc type is an adapter to allow the use of ordinary
+// function as DetectionMethod mutator.
+type DetectionMethodFunc func(context.Context, *ent.DetectionMethodMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f DetectionMethodFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.DetectionMethodMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.DetectionMethodMutation", m)
+}
+
+// The ExploitFunc type is an adapter to allow the use of ordinary
+// function as Exploit mutator.
+type ExploitFunc func(context.Context, *ent.ExploitMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ExploitFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ExploitMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ExploitMutation", m)
 }
 
 // The HasMetadataFunc type is an adapter to allow the use of ordinary
@@ -223,6 +319,42 @@ func (f PointOfContactFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Val
 		return f(ctx, mv)
 	}
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PointOfContactMutation", m)
+}
+
+// The PotentialMitigationFunc type is an adapter to allow the use of ordinary
+// function as PotentialMitigation mutator.
+type PotentialMitigationFunc func(context.Context, *ent.PotentialMitigationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f PotentialMitigationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.PotentialMitigationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.PotentialMitigationMutation", m)
+}
+
+// The ReachableCodeFunc type is an adapter to allow the use of ordinary
+// function as ReachableCode mutator.
+type ReachableCodeFunc func(context.Context, *ent.ReachableCodeMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReachableCodeFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ReachableCodeMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReachableCodeMutation", m)
+}
+
+// The ReachableCodeArtifactFunc type is an adapter to allow the use of ordinary
+// function as ReachableCodeArtifact mutator.
+type ReachableCodeArtifactFunc func(context.Context, *ent.ReachableCodeArtifactMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f ReachableCodeArtifactFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.ReachableCodeArtifactMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.ReachableCodeArtifactMutation", m)
 }
 
 // The SLSAAttestationFunc type is an adapter to allow the use of ordinary

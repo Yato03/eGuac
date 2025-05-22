@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -14,23 +15,35 @@ import (
 	"github.com/google/uuid"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/artifact"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/certifyvex"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cvss"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/cwe"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/exploit"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/packageversion"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/predicate"
+	"github.com/guacsec/guac/pkg/assembler/backends/ent/reachablecode"
 	"github.com/guacsec/guac/pkg/assembler/backends/ent/vulnerabilityid"
 )
 
 // CertifyVexQuery is the builder for querying CertifyVex entities.
 type CertifyVexQuery struct {
 	config
-	ctx               *QueryContext
-	order             []certifyvex.OrderOption
-	inters            []Interceptor
-	predicates        []predicate.CertifyVex
-	withPackage       *PackageVersionQuery
-	withArtifact      *ArtifactQuery
-	withVulnerability *VulnerabilityIDQuery
-	modifiers         []func(*sql.Selector)
-	loadTotal         []func(context.Context, []*CertifyVex) error
+	ctx                    *QueryContext
+	order                  []certifyvex.OrderOption
+	inters                 []Interceptor
+	predicates             []predicate.CertifyVex
+	withPackage            *PackageVersionQuery
+	withArtifact           *ArtifactQuery
+	withVulnerability      *VulnerabilityIDQuery
+	withCvss               *CVSSQuery
+	withCwe                *CWEQuery
+	withExploit            *ExploitQuery
+	withReachableCode      *ReachableCodeQuery
+	withFKs                bool
+	modifiers              []func(*sql.Selector)
+	loadTotal              []func(context.Context, []*CertifyVex) error
+	withNamedCwe           map[string]*CWEQuery
+	withNamedExploit       map[string]*ExploitQuery
+	withNamedReachableCode map[string]*ReachableCodeQuery
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -126,6 +139,94 @@ func (cvq *CertifyVexQuery) QueryVulnerability() *VulnerabilityIDQuery {
 			sqlgraph.From(certifyvex.Table, certifyvex.FieldID, selector),
 			sqlgraph.To(vulnerabilityid.Table, vulnerabilityid.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, false, certifyvex.VulnerabilityTable, certifyvex.VulnerabilityColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cvq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCvss chains the current query on the "cvss" edge.
+func (cvq *CertifyVexQuery) QueryCvss() *CVSSQuery {
+	query := (&CVSSClient{config: cvq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cvq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cvq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(certifyvex.Table, certifyvex.FieldID, selector),
+			sqlgraph.To(cvss.Table, cvss.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, false, certifyvex.CvssTable, certifyvex.CvssColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(cvq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryCwe chains the current query on the "cwe" edge.
+func (cvq *CertifyVexQuery) QueryCwe() *CWEQuery {
+	query := (&CWEClient{config: cvq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cvq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cvq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(certifyvex.Table, certifyvex.FieldID, selector),
+			sqlgraph.To(cwe.Table, cwe.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, certifyvex.CweTable, certifyvex.CwePrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(cvq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryExploit chains the current query on the "exploit" edge.
+func (cvq *CertifyVexQuery) QueryExploit() *ExploitQuery {
+	query := (&ExploitClient{config: cvq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cvq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cvq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(certifyvex.Table, certifyvex.FieldID, selector),
+			sqlgraph.To(exploit.Table, exploit.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, certifyvex.ExploitTable, certifyvex.ExploitPrimaryKey...),
+		)
+		fromU = sqlgraph.SetNeighbors(cvq.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryReachableCode chains the current query on the "reachable_code" edge.
+func (cvq *CertifyVexQuery) QueryReachableCode() *ReachableCodeQuery {
+	query := (&ReachableCodeClient{config: cvq.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := cvq.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := cvq.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(certifyvex.Table, certifyvex.FieldID, selector),
+			sqlgraph.To(reachablecode.Table, reachablecode.FieldID),
+			sqlgraph.Edge(sqlgraph.M2M, false, certifyvex.ReachableCodeTable, certifyvex.ReachableCodePrimaryKey...),
 		)
 		fromU = sqlgraph.SetNeighbors(cvq.driver.Dialect(), step)
 		return fromU, nil
@@ -328,6 +429,10 @@ func (cvq *CertifyVexQuery) Clone() *CertifyVexQuery {
 		withPackage:       cvq.withPackage.Clone(),
 		withArtifact:      cvq.withArtifact.Clone(),
 		withVulnerability: cvq.withVulnerability.Clone(),
+		withCvss:          cvq.withCvss.Clone(),
+		withCwe:           cvq.withCwe.Clone(),
+		withExploit:       cvq.withExploit.Clone(),
+		withReachableCode: cvq.withReachableCode.Clone(),
 		// clone intermediate query.
 		sql:  cvq.sql.Clone(),
 		path: cvq.path,
@@ -364,6 +469,50 @@ func (cvq *CertifyVexQuery) WithVulnerability(opts ...func(*VulnerabilityIDQuery
 		opt(query)
 	}
 	cvq.withVulnerability = query
+	return cvq
+}
+
+// WithCvss tells the query-builder to eager-load the nodes that are connected to
+// the "cvss" edge. The optional arguments are used to configure the query builder of the edge.
+func (cvq *CertifyVexQuery) WithCvss(opts ...func(*CVSSQuery)) *CertifyVexQuery {
+	query := (&CVSSClient{config: cvq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cvq.withCvss = query
+	return cvq
+}
+
+// WithCwe tells the query-builder to eager-load the nodes that are connected to
+// the "cwe" edge. The optional arguments are used to configure the query builder of the edge.
+func (cvq *CertifyVexQuery) WithCwe(opts ...func(*CWEQuery)) *CertifyVexQuery {
+	query := (&CWEClient{config: cvq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cvq.withCwe = query
+	return cvq
+}
+
+// WithExploit tells the query-builder to eager-load the nodes that are connected to
+// the "exploit" edge. The optional arguments are used to configure the query builder of the edge.
+func (cvq *CertifyVexQuery) WithExploit(opts ...func(*ExploitQuery)) *CertifyVexQuery {
+	query := (&ExploitClient{config: cvq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cvq.withExploit = query
+	return cvq
+}
+
+// WithReachableCode tells the query-builder to eager-load the nodes that are connected to
+// the "reachable_code" edge. The optional arguments are used to configure the query builder of the edge.
+func (cvq *CertifyVexQuery) WithReachableCode(opts ...func(*ReachableCodeQuery)) *CertifyVexQuery {
+	query := (&ReachableCodeClient{config: cvq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	cvq.withReachableCode = query
 	return cvq
 }
 
@@ -444,13 +593,24 @@ func (cvq *CertifyVexQuery) prepareQuery(ctx context.Context) error {
 func (cvq *CertifyVexQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*CertifyVex, error) {
 	var (
 		nodes       = []*CertifyVex{}
+		withFKs     = cvq.withFKs
 		_spec       = cvq.querySpec()
-		loadedTypes = [3]bool{
+		loadedTypes = [7]bool{
 			cvq.withPackage != nil,
 			cvq.withArtifact != nil,
 			cvq.withVulnerability != nil,
+			cvq.withCvss != nil,
+			cvq.withCwe != nil,
+			cvq.withExploit != nil,
+			cvq.withReachableCode != nil,
 		}
 	)
+	if cvq.withCvss != nil {
+		withFKs = true
+	}
+	if withFKs {
+		_spec.Node.Columns = append(_spec.Node.Columns, certifyvex.ForeignKeys...)
+	}
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*CertifyVex).scanValues(nil, columns)
 	}
@@ -487,6 +647,54 @@ func (cvq *CertifyVexQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*
 	if query := cvq.withVulnerability; query != nil {
 		if err := cvq.loadVulnerability(ctx, query, nodes, nil,
 			func(n *CertifyVex, e *VulnerabilityID) { n.Edges.Vulnerability = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := cvq.withCvss; query != nil {
+		if err := cvq.loadCvss(ctx, query, nodes, nil,
+			func(n *CertifyVex, e *CVSS) { n.Edges.Cvss = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := cvq.withCwe; query != nil {
+		if err := cvq.loadCwe(ctx, query, nodes,
+			func(n *CertifyVex) { n.Edges.Cwe = []*CWE{} },
+			func(n *CertifyVex, e *CWE) { n.Edges.Cwe = append(n.Edges.Cwe, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := cvq.withExploit; query != nil {
+		if err := cvq.loadExploit(ctx, query, nodes,
+			func(n *CertifyVex) { n.Edges.Exploit = []*Exploit{} },
+			func(n *CertifyVex, e *Exploit) { n.Edges.Exploit = append(n.Edges.Exploit, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := cvq.withReachableCode; query != nil {
+		if err := cvq.loadReachableCode(ctx, query, nodes,
+			func(n *CertifyVex) { n.Edges.ReachableCode = []*ReachableCode{} },
+			func(n *CertifyVex, e *ReachableCode) { n.Edges.ReachableCode = append(n.Edges.ReachableCode, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range cvq.withNamedCwe {
+		if err := cvq.loadCwe(ctx, query, nodes,
+			func(n *CertifyVex) { n.appendNamedCwe(name) },
+			func(n *CertifyVex, e *CWE) { n.appendNamedCwe(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range cvq.withNamedExploit {
+		if err := cvq.loadExploit(ctx, query, nodes,
+			func(n *CertifyVex) { n.appendNamedExploit(name) },
+			func(n *CertifyVex, e *Exploit) { n.appendNamedExploit(name, e) }); err != nil {
+			return nil, err
+		}
+	}
+	for name, query := range cvq.withNamedReachableCode {
+		if err := cvq.loadReachableCode(ctx, query, nodes,
+			func(n *CertifyVex) { n.appendNamedReachableCode(name) },
+			func(n *CertifyVex, e *ReachableCode) { n.appendNamedReachableCode(name, e) }); err != nil {
 			return nil, err
 		}
 	}
@@ -591,6 +799,221 @@ func (cvq *CertifyVexQuery) loadVulnerability(ctx context.Context, query *Vulner
 	}
 	return nil
 }
+func (cvq *CertifyVexQuery) loadCvss(ctx context.Context, query *CVSSQuery, nodes []*CertifyVex, init func(*CertifyVex), assign func(*CertifyVex, *CVSS)) error {
+	ids := make([]uuid.UUID, 0, len(nodes))
+	nodeids := make(map[uuid.UUID][]*CertifyVex)
+	for i := range nodes {
+		if nodes[i].certify_vex_cvss == nil {
+			continue
+		}
+		fk := *nodes[i].certify_vex_cvss
+		if _, ok := nodeids[fk]; !ok {
+			ids = append(ids, fk)
+		}
+		nodeids[fk] = append(nodeids[fk], nodes[i])
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+	query.Where(cvss.IDIn(ids...))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nodeids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected foreign-key "certify_vex_cvss" returned %v`, n.ID)
+		}
+		for i := range nodes {
+			assign(nodes[i], n)
+		}
+	}
+	return nil
+}
+func (cvq *CertifyVexQuery) loadCwe(ctx context.Context, query *CWEQuery, nodes []*CertifyVex, init func(*CertifyVex), assign func(*CertifyVex, *CWE)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*CertifyVex)
+	nids := make(map[uuid.UUID]map[*CertifyVex]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(certifyvex.CweTable)
+		s.Join(joinT).On(s.C(cwe.FieldID), joinT.C(certifyvex.CwePrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(certifyvex.CwePrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(certifyvex.CwePrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*CertifyVex]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*CWE](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "cwe" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (cvq *CertifyVexQuery) loadExploit(ctx context.Context, query *ExploitQuery, nodes []*CertifyVex, init func(*CertifyVex), assign func(*CertifyVex, *Exploit)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*CertifyVex)
+	nids := make(map[uuid.UUID]map[*CertifyVex]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(certifyvex.ExploitTable)
+		s.Join(joinT).On(s.C(exploit.FieldID), joinT.C(certifyvex.ExploitPrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(certifyvex.ExploitPrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(certifyvex.ExploitPrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*CertifyVex]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*Exploit](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "exploit" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
+func (cvq *CertifyVexQuery) loadReachableCode(ctx context.Context, query *ReachableCodeQuery, nodes []*CertifyVex, init func(*CertifyVex), assign func(*CertifyVex, *ReachableCode)) error {
+	edgeIDs := make([]driver.Value, len(nodes))
+	byID := make(map[uuid.UUID]*CertifyVex)
+	nids := make(map[uuid.UUID]map[*CertifyVex]struct{})
+	for i, node := range nodes {
+		edgeIDs[i] = node.ID
+		byID[node.ID] = node
+		if init != nil {
+			init(node)
+		}
+	}
+	query.Where(func(s *sql.Selector) {
+		joinT := sql.Table(certifyvex.ReachableCodeTable)
+		s.Join(joinT).On(s.C(reachablecode.FieldID), joinT.C(certifyvex.ReachableCodePrimaryKey[1]))
+		s.Where(sql.InValues(joinT.C(certifyvex.ReachableCodePrimaryKey[0]), edgeIDs...))
+		columns := s.SelectedColumns()
+		s.Select(joinT.C(certifyvex.ReachableCodePrimaryKey[0]))
+		s.AppendSelect(columns...)
+		s.SetDistinct(false)
+	})
+	if err := query.prepareQuery(ctx); err != nil {
+		return err
+	}
+	qr := QuerierFunc(func(ctx context.Context, q Query) (Value, error) {
+		return query.sqlAll(ctx, func(_ context.Context, spec *sqlgraph.QuerySpec) {
+			assign := spec.Assign
+			values := spec.ScanValues
+			spec.ScanValues = func(columns []string) ([]any, error) {
+				values, err := values(columns[1:])
+				if err != nil {
+					return nil, err
+				}
+				return append([]any{new(uuid.UUID)}, values...), nil
+			}
+			spec.Assign = func(columns []string, values []any) error {
+				outValue := *values[0].(*uuid.UUID)
+				inValue := *values[1].(*uuid.UUID)
+				if nids[inValue] == nil {
+					nids[inValue] = map[*CertifyVex]struct{}{byID[outValue]: {}}
+					return assign(columns[1:], values[1:])
+				}
+				nids[inValue][byID[outValue]] = struct{}{}
+				return nil
+			}
+		})
+	})
+	neighbors, err := withInterceptors[[]*ReachableCode](ctx, query, qr, query.inters)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		nodes, ok := nids[n.ID]
+		if !ok {
+			return fmt.Errorf(`unexpected "reachable_code" node returned %v`, n.ID)
+		}
+		for kn := range nodes {
+			assign(kn, n)
+		}
+	}
+	return nil
+}
 
 func (cvq *CertifyVexQuery) sqlCount(ctx context.Context) (int, error) {
 	_spec := cvq.querySpec()
@@ -683,6 +1106,48 @@ func (cvq *CertifyVexQuery) sqlQuery(ctx context.Context) *sql.Selector {
 		selector.Limit(*limit)
 	}
 	return selector
+}
+
+// WithNamedCwe tells the query-builder to eager-load the nodes that are connected to the "cwe"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (cvq *CertifyVexQuery) WithNamedCwe(name string, opts ...func(*CWEQuery)) *CertifyVexQuery {
+	query := (&CWEClient{config: cvq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if cvq.withNamedCwe == nil {
+		cvq.withNamedCwe = make(map[string]*CWEQuery)
+	}
+	cvq.withNamedCwe[name] = query
+	return cvq
+}
+
+// WithNamedExploit tells the query-builder to eager-load the nodes that are connected to the "exploit"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (cvq *CertifyVexQuery) WithNamedExploit(name string, opts ...func(*ExploitQuery)) *CertifyVexQuery {
+	query := (&ExploitClient{config: cvq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if cvq.withNamedExploit == nil {
+		cvq.withNamedExploit = make(map[string]*ExploitQuery)
+	}
+	cvq.withNamedExploit[name] = query
+	return cvq
+}
+
+// WithNamedReachableCode tells the query-builder to eager-load the nodes that are connected to the "reachable_code"
+// edge with the given name. The optional arguments are used to configure the query builder of the edge.
+func (cvq *CertifyVexQuery) WithNamedReachableCode(name string, opts ...func(*ReachableCodeQuery)) *CertifyVexQuery {
+	query := (&ReachableCodeClient{config: cvq.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	if cvq.withNamedReachableCode == nil {
+		cvq.withNamedReachableCode = make(map[string]*ReachableCodeQuery)
+	}
+	cvq.withNamedReachableCode[name] = query
+	return cvq
 }
 
 // CertifyVexGroupBy is the group-by builder for CertifyVex entities.

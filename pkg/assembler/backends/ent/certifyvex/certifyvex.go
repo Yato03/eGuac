@@ -35,12 +35,24 @@ const (
 	FieldCollector = "collector"
 	// FieldDocumentRef holds the string denoting the document_ref field in the database.
 	FieldDocumentRef = "document_ref"
+	// FieldDescription holds the string denoting the description field in the database.
+	FieldDescription = "description"
+	// FieldPriority holds the string denoting the priority field in the database.
+	FieldPriority = "priority"
 	// EdgePackage holds the string denoting the package edge name in mutations.
 	EdgePackage = "package"
 	// EdgeArtifact holds the string denoting the artifact edge name in mutations.
 	EdgeArtifact = "artifact"
 	// EdgeVulnerability holds the string denoting the vulnerability edge name in mutations.
 	EdgeVulnerability = "vulnerability"
+	// EdgeCvss holds the string denoting the cvss edge name in mutations.
+	EdgeCvss = "cvss"
+	// EdgeCwe holds the string denoting the cwe edge name in mutations.
+	EdgeCwe = "cwe"
+	// EdgeExploit holds the string denoting the exploit edge name in mutations.
+	EdgeExploit = "exploit"
+	// EdgeReachableCode holds the string denoting the reachable_code edge name in mutations.
+	EdgeReachableCode = "reachable_code"
 	// Table holds the table name of the certifyvex in the database.
 	Table = "certify_vexes"
 	// PackageTable is the table that holds the package relation/edge.
@@ -64,6 +76,28 @@ const (
 	VulnerabilityInverseTable = "vulnerability_ids"
 	// VulnerabilityColumn is the table column denoting the vulnerability relation/edge.
 	VulnerabilityColumn = "vulnerability_id"
+	// CvssTable is the table that holds the cvss relation/edge.
+	CvssTable = "certify_vexes"
+	// CvssInverseTable is the table name for the CVSS entity.
+	// It exists in this package in order to avoid circular dependency with the "cvss" package.
+	CvssInverseTable = "cvs_ss"
+	// CvssColumn is the table column denoting the cvss relation/edge.
+	CvssColumn = "certify_vex_cvss"
+	// CweTable is the table that holds the cwe relation/edge. The primary key declared below.
+	CweTable = "certify_vex_cwe"
+	// CweInverseTable is the table name for the CWE entity.
+	// It exists in this package in order to avoid circular dependency with the "cwe" package.
+	CweInverseTable = "cw_es"
+	// ExploitTable is the table that holds the exploit relation/edge. The primary key declared below.
+	ExploitTable = "certify_vex_exploit"
+	// ExploitInverseTable is the table name for the Exploit entity.
+	// It exists in this package in order to avoid circular dependency with the "exploit" package.
+	ExploitInverseTable = "exploits"
+	// ReachableCodeTable is the table that holds the reachable_code relation/edge. The primary key declared below.
+	ReachableCodeTable = "certify_vex_reachable_code"
+	// ReachableCodeInverseTable is the table name for the ReachableCode entity.
+	// It exists in this package in order to avoid circular dependency with the "reachablecode" package.
+	ReachableCodeInverseTable = "reachable_codes"
 )
 
 // Columns holds all SQL columns for certifyvex fields.
@@ -80,12 +114,37 @@ var Columns = []string{
 	FieldOrigin,
 	FieldCollector,
 	FieldDocumentRef,
+	FieldDescription,
+	FieldPriority,
 }
+
+// ForeignKeys holds the SQL foreign-keys that are owned by the "certify_vexes"
+// table and are not defined as standalone fields in the schema.
+var ForeignKeys = []string{
+	"certify_vex_cvss",
+}
+
+var (
+	// CwePrimaryKey and CweColumn2 are the table columns denoting the
+	// primary key for the cwe relation (M2M).
+	CwePrimaryKey = []string{"certify_vex_id", "cwe_id"}
+	// ExploitPrimaryKey and ExploitColumn2 are the table columns denoting the
+	// primary key for the exploit relation (M2M).
+	ExploitPrimaryKey = []string{"certify_vex_id", "exploit_id"}
+	// ReachableCodePrimaryKey and ReachableCodeColumn2 are the table columns denoting the
+	// primary key for the reachable_code relation (M2M).
+	ReachableCodePrimaryKey = []string{"certify_vex_id", "reachable_code_id"}
+)
 
 // ValidColumn reports if the column name is valid (part of the table columns).
 func ValidColumn(column string) bool {
 	for i := range Columns {
 		if column == Columns[i] {
+			return true
+		}
+	}
+	for i := range ForeignKeys {
+		if column == ForeignKeys[i] {
 			return true
 		}
 	}
@@ -160,6 +219,16 @@ func ByDocumentRef(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldDocumentRef, opts...).ToFunc()
 }
 
+// ByDescription orders the results by the description field.
+func ByDescription(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDescription, opts...).ToFunc()
+}
+
+// ByPriority orders the results by the priority field.
+func ByPriority(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPriority, opts...).ToFunc()
+}
+
 // ByPackageField orders the results by package field.
 func ByPackageField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -178,6 +247,55 @@ func ByArtifactField(field string, opts ...sql.OrderTermOption) OrderOption {
 func ByVulnerabilityField(field string, opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
 		sqlgraph.OrderByNeighborTerms(s, newVulnerabilityStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByCvssField orders the results by cvss field.
+func ByCvssField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCvssStep(), sql.OrderByField(field, opts...))
+	}
+}
+
+// ByCweCount orders the results by cwe count.
+func ByCweCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newCweStep(), opts...)
+	}
+}
+
+// ByCwe orders the results by cwe terms.
+func ByCwe(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newCweStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByExploitCount orders the results by exploit count.
+func ByExploitCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newExploitStep(), opts...)
+	}
+}
+
+// ByExploit orders the results by exploit terms.
+func ByExploit(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newExploitStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByReachableCodeCount orders the results by reachable_code count.
+func ByReachableCodeCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newReachableCodeStep(), opts...)
+	}
+}
+
+// ByReachableCode orders the results by reachable_code terms.
+func ByReachableCode(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newReachableCodeStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
 func newPackageStep() *sqlgraph.Step {
@@ -199,5 +317,33 @@ func newVulnerabilityStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(VulnerabilityInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, false, VulnerabilityTable, VulnerabilityColumn),
+	)
+}
+func newCvssStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CvssInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, false, CvssTable, CvssColumn),
+	)
+}
+func newCweStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(CweInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, CweTable, CwePrimaryKey...),
+	)
+}
+func newExploitStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ExploitInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, ExploitTable, ExploitPrimaryKey...),
+	)
+}
+func newReachableCodeStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ReachableCodeInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2M, false, ReachableCodeTable, ReachableCodePrimaryKey...),
 	)
 }

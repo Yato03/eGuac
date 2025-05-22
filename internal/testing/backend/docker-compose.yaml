@@ -21,7 +21,7 @@ services:
       - arangodb_data_container:/var/lib/arangodb3
       - arangodb_apps_data_container:/var/lib/arangodb3-apps
   postgres:
-    image: docker.io/library/postgres:16
+    image: docker.io/library/postgres:15
     environment:
       POSTGRES_USER: guac
       POSTGRES_PASSWORD: guac
